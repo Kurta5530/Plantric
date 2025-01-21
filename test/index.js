@@ -2,4 +2,9 @@ import { Lyvo }  from '../src/lyvo.js';
 
 const lyvo = new Lyvo();
 
-lyvo.test();
+const workflow = lyvo.generateWorkflow('');
+const result = lyvo.execute(workflow, {
+    callback (node) {
+        console.log(node);
+    }
+});
