@@ -20,7 +20,7 @@
 
 ## **Introduction**
 
-**Lyvo** is a full-stack agent development framework built on the [Fellou browser](https://fellou.ai), which transforms human words into actions. By leveraging natural language processing and advanced AI capabilities, it bridges the gap between user intent and system execution. Whether you're automating workflows, building browser agents, or accessing system-level operations, Lyvo provides the tools to make it effortless.  
+**Lyvo** is a full-stack agent development framework built on the [Fellou AI browser](https://fellou.ai), which transforms human words into actions. By leveraging natural language processing and advanced AI capabilities, it bridges the gap between user intent and system execution. Whether you're automating workflows, building browser agents, or accessing system-level operations, Lyvo provides the tools to make it effortless.  
 
 The biggest advantage of using Lyvo is that developers don’t need to build client software, and users don’t need to install any additional client to enjoy the most advanced AI-powered computer use capabilities. These capabilities span across both the browser and the operating system.
 
@@ -30,7 +30,7 @@ The biggest advantage of using Lyvo is that developers don’t need to build cli
 ### **Key Benefits**
 - **Language as Code**: Use natural language to write commands and create workflows.  
 - **Cross-Platform Integration**: Access browser and operating system APIs seamlessly.  
-- **AI-Powered**: Harness the capabilities of AI systems like Claude 3.5 for advanced automation.  
+- **AI-Powered**: Harness the capabilities of AI systems like Claude 3.5, OpenAI for advanced automation.  
 - **Developer-Friendly**: Simplify complex tasks with an intuitive and flexible framework.  
 
 ---
@@ -40,8 +40,8 @@ The biggest advantage of using Lyvo is that developers don’t need to build cli
 - **Natural Language Programming**: Write code in plain English to interact with your system and browser.  
 - **Unified API Access**: A single interface for browser APIs, OS-level operations, and AI tools.  
 - **Event-Driven Automation**: Trigger workflows based on browser or system events.  
-- **Customizable Agents**: Build intelligent agents to perform repetitive or complex tasks.  
-- **AI Integration**: Leverage advanced AI models to understand and execute complex commands.  
+- **Customizable Agents**: Build intelligent agents to perform repetitive or complex tasks.
+- **AI Integration**: Leverage advanced AI models to understand and execute complex commands.
 
 ---
 
@@ -50,22 +50,21 @@ The biggest advantage of using Lyvo is that developers don’t need to build cli
 ### **Using npm**
 
 ```bash
-npm install lyvo-framework
+npm install fellou-lyvo
+```
 
+## Contributing
 
-Contributing
 Contributions are welcome! Please follow these steps to contribute:
 
-Fork the repository.
-Create a new branch: git checkout -b feature/your-feature-name.
-Make your changes and commit them: git commit -m 'Add some feature'.
-Push to the branch: git push origin feature/your-feature-name.
-Submit a pull request.
-For detailed guidelines, see CONTRIBUTING.md.
+- Fork the repository.
+- Create a new branch: git checkout -b feature/- your-feature-name.
+- Make your changes and commit them: git commit -m 'Add some feature'.
+- Push to the branch: git push origin feature/your-feature-name.
+- Submit a pull request.
+- For detailed guidelines, see CONTRIBUTING.md.
 
-License
+## License
 This project is licensed under the MIT License.
 
-Acknowledgments
-[Acknowledgment #1]
-[Acknowledgment #2]
+## Acknowledgments
