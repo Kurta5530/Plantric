@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Empowering language to transform human words into action.",
   "main": "src/lyvo.js",
+  "type": "module",
   "directories": {
     "test": "test"
   },
@@ -21,13 +22,17 @@
     "AI",
     "automation",
     "natural language programming",
-    "propmt engineering",
-    ""
+    "propmt engineering"
   ],
   "author": "Fellou AI Browser",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/LyvoAI/lyvo/issues"
   },
-  "homepage": "https://github.com/LyvoAI/lyvo#readme"
+  "homepage": "https://github.com/LyvoAI/lyvo#readme",
+  "dependencies": {
+    "@langchain/anthropic": "^0.3.8",
+    "@langchain/core": "^0.3.18",
+    "langchain": "^0.3.6"
+  }
 }

@@ -57,12 +57,12 @@ npm install fellou-lyvo
 
 Contributions are welcome! Please follow these steps to contribute:
 
-- Fork the repository.
-- Create a new branch: git checkout -b feature/- your-feature-name.
-- Make your changes and commit them: git commit -m 'Add some feature'.
-- Push to the branch: git push origin feature/your-feature-name.
-- Submit a pull request.
-- For detailed guidelines, see CONTRIBUTING.md.
+1. Fork the repository.
+2. Create a new branch: git checkout -b feature/- your-feature-name.
+3. Make your changes and commit them: git commit -m 'Add some feature'.
+4. Push to the branch: git push origin feature/your-feature-name.
+5. Submit a pull request.
+6. For detailed guidelines, see CONTRIBUTING.md.
 
 ## License
 This project is licensed under the MIT License.
