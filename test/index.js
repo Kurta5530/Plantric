@@ -13,7 +13,7 @@ const workflow = await lyvo.invoke(`打开领英，搜索 Chromium 开发者，�
 if(workflow !== null){
     const result = lyvo.execute(workflow, {
         callback (node) {
-            console.log(node);
+            node.$(node, '判断是否和表头相关');
         }
     });
 }

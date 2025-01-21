@@ -17,7 +17,7 @@ export class Lyvo {
 ${task}` }]);
         try {
             workflow = JSON.parse(res.content);
-            console.log(workflow)
+            // console.log(workflow)
         } catch (error) {
             return null;
         }
@@ -26,27 +26,45 @@ ${task}` }]);
 
     execute(workflow, options) {
         this.options = options || this.options;
-        // workflow = workflow || [];
+        workflow = workflow || [];
 
-        console.log('workflow');
-
-        this.recursiveTraverse(workflow);
+        this.recursiveTraverse(workflow, options.callback);
     }
 
-    recursiveTraverse(input) {
+    recursiveTraverse(input, callback) {
+        let node = {};
         if (typeof input === 'object' && input !== null) {
           for (let key in input) {
             if (input.hasOwnProperty(key)) {
-              console.log(key + ':');
-              this.recursiveTraverse(input[key]); // Recursively call the function
+                node = {
+                    key,
+                    value: input[key],
+                }
+                callback({
+                    ...node,
+                    $: this.$.bind(node),
+                });
+                // Recursively call the function
+                this.recursiveTraverse(input[key], callback);
             }
           }
         } else {
-          console.log(input); // Print value if it’s not an object or array
+            // Callback value if it’s not an object or array
+            node = {
+                key: null,
+                value: input,
+            }
+            callback({
+                ...node,
+                $: this.$.bind(node),
+            });
         }
       }
 
-    $() {
-
+    async $(node, task) {
+        console.log(node)
+        // const res = await this.model.invoke([{ role: "user", content: `${workflowPropmts}
+// ${task}` }]);
+        return task;
     }
 }
