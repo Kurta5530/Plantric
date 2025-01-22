@@ -10,14 +10,13 @@ export class Lyvo {
         this.model = model;
     }
 
-    async invoke(task) {
+    async task(task) {
         let workflow = [];
 
         const res = await this.model.invoke([{ role: "user", content: `${workflowPropmts}
 ${task}` }]);
         try {
             workflow = JSON.parse(res.content);
-            // console.log(workflow)
         } catch (error) {
             return null;
         }

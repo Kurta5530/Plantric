@@ -8,12 +8,12 @@ const model = new ChatAnthropic({
 
 const lyvo = new Lyvo(model);
 
-const workflow = await lyvo.invoke(`打开领英，搜索 Chromium 开发者，将前十页的信息整理成一个表格`);
+const workflow = await lyvo.task(`打开领英，搜索 Chromium 开发者，将前十页的信息整理成一个表格`);
 
 if(workflow !== null){
     const result = lyvo.execute(workflow, {
         callback (node) {
-            node.$(node, '判断是否和表头相关');
+            node.$(`判断是否和表头相关`);
         }
     });
 }
