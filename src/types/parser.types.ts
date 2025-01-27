@@ -1,12 +1,12 @@
-import { Workflow, WorkflowNode } from './workflow.types';
+import { Workflow, WorkflowNode } from "./workflow.types";
 
 export interface ValidationError {
-    type: 'schema' | 'reference' | 'type' | 'tool';
-    message: string;
-    path?: string;  // JSON pointer to error location
+  type: "schema" | "reference" | "type" | "tool";
+  message: string;
+  path?: string; // JSON pointer to error location
 }
 
 export interface ValidationResult {
-    valid: boolean;
-    errors: ValidationError[];
+  valid: boolean;
+  errors: ValidationError[];
 }

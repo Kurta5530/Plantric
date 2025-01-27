@@ -3,6 +3,7 @@
 Thank you for your interest in contributing to Lyvo! This document provides guidelines and instructions for contributing to the project.
 
 ## Table of Contents
+
 - [Development Setup](#development-setup)
 - [Branching Strategy](#branching-strategy)
 - [Commit Message Guidelines](#commit-message-guidelines)
@@ -11,24 +12,29 @@ Thank you for your interest in contributing to Lyvo! This document provides guid
 ## Development Setup
 
 ### Prerequisites
+
 - Node.js (>= 18.0.0)
 - npm (latest stable version)
 - Git
 
 ### Setting Up the Development Environment
+
 1. Fork the repository
 2. Clone your fork:
+
    ```bash
    git clone https://github.com/your-username/lyvo.git
    cd lyvo
    ```
 
 3. Install dependencies:
+
    ```bash
    npm install
    ```
 
 4. Start the TypeScript compiler in watch mode:
+
    ```bash
    npm run dev
    ```
@@ -39,6 +45,7 @@ Thank you for your interest in contributing to Lyvo! This document provides guid
    ```
 
 ### Development Commands
+
 - `npm run dev`: Start TypeScript compiler in watch mode
 - `npm test`: Run tests
 - `npm run test:watch`: Run tests in watch mode
@@ -49,6 +56,7 @@ Thank you for your interest in contributing to Lyvo! This document provides guid
 ## Branching Strategy
 
 ### Branch Types
+
 - `main`: Production-ready code
 - `feature/*`: New features or enhancements (e.g., `feature/workflow-parser`)
 - `fix/*`: Bug fixes (e.g., `fix/parsing-error`)
@@ -59,6 +67,7 @@ Thank you for your interest in contributing to Lyvo! This document provides guid
 - `build/*`: Changes affecting the build system
 
 ### Branch Naming Convention
+
 - Use lowercase letters and hyphens
 - Start with the type followed by a descriptive name
 - Examples:
@@ -69,6 +78,7 @@ Thank you for your interest in contributing to Lyvo! This document provides guid
 ## Commit Message Guidelines
 
 ### Format
+
 ```
 <type>(<scope>): <subject>
 
@@ -78,7 +88,9 @@ Thank you for your interest in contributing to Lyvo! This document provides guid
 ```
 
 ### Type
+
 Must be one of:
+
 - `build`: Changes affecting build system or external dependencies
 - `ci`: CI configuration changes
 - `docs`: Documentation only changes
@@ -90,18 +102,21 @@ Must be one of:
 - `test`: Adding or correcting tests
 
 ### Subject
+
 - Use imperative, present tense: "change" not "changed" nor "changes"
 - Don't capitalize the first letter
 - No period (.) at the end
 - Maximum 50 characters
 
 ### Body
+
 - Optional
 - Use imperative, present tense
 - Include motivation for change and contrast with previous behavior
 - Wrap at 72 characters
 
 ### Examples
+
 ```
 feat(parser): add JSON workflow parser implementation
 
@@ -121,6 +136,7 @@ Now it detects and reports them as validation errors.
 ## Pull Request Process
 
 1. Rebase your branch onto the latest main:
+
    ```bash
    git checkout main
    git pull upstream main
@@ -129,17 +145,20 @@ Now it detects and reports them as validation errors.
    ```
 
 2. Fix up commits to maintain clean history:
+
    ```bash
    git rebase -i main
    ```
 
 3. Ensure:
+
    - All tests pass
    - Code is properly formatted
    - Documentation is updated
    - Commit messages follow guidelines
 
 4. Submit PR:
+
    - Use a clear title following commit message format
    - Include comprehensive description
    - Reference any related issues
@@ -149,9 +168,91 @@ Now it detects and reports them as validation errors.
    - Force push updates after rebasing
    - Don't add "fix review comments" commits
 
+## Code Style
+
+We use ESLint and Prettier to enforce consistent code style. The project comes with pre-configured ESLint and Prettier settings.
+
+### Style Guidelines
+
+- Use 2 spaces for indentation
+- Maximum line length of 100 characters
+- Single quotes for strings
+- Semicolons are required
+- Trailing commas in multiline objects
+- Explicit function return types
+- Explicit accessibility modifiers in classes
+
+### Examples
+
+```typescript
+// Good
+interface Config {
+  name: string;
+  options?: Record<string, unknown>;
+}
+
+export class Parser {
+  private readonly config: Config;
+
+  public constructor(config: Config) {
+    this.config = config;
+  }
+
+  public parse(input: string): Record<string, unknown> {
+    const result = this.processInput(input);
+    return {
+      name: this.config.name,
+      result,
+    };
+  }
+}
+
+// Bad - Various style issues
+interface config {
+  name: string;
+  options?: any; // Avoid 'any'
+}
+
+export class parser {
+  config: config; // Missing accessibility modifier
+  constructor(config: config) {
+    // Missing explicit 'public'
+    this.config = config;
+  } // Missing semicolon
+}
+```
+
+### Editor Setup
+
+1. Install required VS Code extensions:
+
+   - ESLint
+   - Prettier
+
+2. VS Code will automatically use project's ESLint and Prettier configurations.
+
+3. Enable format on save in VS Code settings:
+   ```json
+   {
+     "editor.formatOnSave": true,
+     "editor.defaultFormatter": "esbenp.prettier-vscode",
+     "editor.codeActionsOnSave": {
+       "source.fixAll.eslint": true
+     }
+   }
+   ```
+
+### Available Scripts
+
+- `npm run lint`: Check code style
+- `npm run lint:fix`: Fix auto-fixable style issues
+- `npm run format`: Format code using Prettier
+- `npm run format:check`: Check if files are properly formatted
+
 ## Questions?
 
 If you have questions or need help, please:
+
 1. Check existing issues and documentation
 2. Create a new issue for discussion
 3. Ask in the project's communication channels

@@ -1,13 +1,13 @@
-import { Action } from './action.types';
+import { Action } from "./action.types";
 
 export interface WorkflowNode {
-   id: string;
-   name: string;
-   description?: string;
-   input: NodeIO;
-   output: NodeIO;
-   action: Action;
-   dependencies: string[];
+  id: string;
+  name: string;
+  description?: string;
+  input: NodeIO;
+  output: NodeIO;
+  action: Action;
+  dependencies: string[];
 }
 
 export interface NodeIO {
@@ -17,15 +17,15 @@ export interface NodeIO {
 }
 
 export interface Workflow {
-    id: string;
-    name: string;
-    description?: string;
-    nodes: WorkflowNode[];
-    variables: Map<string, any>;
+  id: string;
+  name: string;
+  description?: string;
+  nodes: WorkflowNode[];
+  variables: Map<string, any>;
 
-    execute(): Promise<void>;
-    addNode(node: WorkflowNode): void;
-    removeNode(nodeId: string): void;
-    getNode(nodeId: string): WorkflowNode;
-    validateDAG(): boolean;
-  }
+  execute(): Promise<void>;
+  addNode(node: WorkflowNode): void;
+  removeNode(nodeId: string): void;
+  getNode(nodeId: string): WorkflowNode;
+  validateDAG(): boolean;
+}
