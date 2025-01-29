@@ -15,7 +15,7 @@ export const workflowSchema = {
           id: { type: "string" },
           type: {
             type: "string",
-            enum: ["action", "condition", "loop"],
+            enum: ["action"],    // only action nodes for now; reserved for future types like condition, loop, etc.
           },
           dependencies: {
             type: "array",
