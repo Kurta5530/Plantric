@@ -1,18 +1,26 @@
-import { Workflow } from "../../types/workflow.types";
-import { ValidationResult } from "../../types/parser.types";
+import { Workflow, WorkflowNode, NodeIO } from '../../types/workflow.types';
+import { ValidationResult, ValidationError } from '../../types/parser.types';
+import { WorkflowImpl } from '../../models/workflow';
+import { workflowSchema } from '../../schemas/workflow.schema';
 
 export class WorkflowParser {
   /**
    * Parse JSON string into runtime Workflow object
-   * @throws {ValidationError} if JSON is invalid or schema validation fails
+   * @throws {Error} if JSON is invalid or schema validation fails
    */
   static parse(json: string): Workflow {
-    const parsed = JSON.parse(json);
-    const validationResult = this.validate(parsed);
+    let parsed: any;
 
+    try {
+      parsed = JSON.parse(json);
+    } catch (e) {
+      throw new Error(`Invalid JSON: ${(e as Error).message}`);
+    }
+
+    const validationResult = this.validate(parsed);
     if (!validationResult.valid) {
       throw new Error(
-        `Invalid workflow: ${validationResult.errors.map((e) => e.message).join(", ")}`
+        `Invalid workflow: ${validationResult.errors.map((e) => e.message).join(', ')}`
       );
     }
 
@@ -28,26 +36,201 @@ export class WorkflowParser {
   }
 
   /**
-   * Validate workflow JSON structure
+   * Validate workflow JSON structure against schema
    */
   static validate(json: unknown): ValidationResult {
-    // Implementation would use JSON Schema validation
-    throw new Error("Not implemented");
+    const errors: ValidationError[] = [];
+
+    // Basic structure validation
+    if (!json || typeof json !== 'object') {
+      errors.push({
+        type: 'schema',
+        message: 'Workflow must be an object',
+      });
+      return { valid: false, errors };
+    }
+
+    const workflow = json as Record<string, any>;
+
+    // Required fields validation
+    const requiredFields = ['version', 'id', 'name', 'nodes'];
+    for (const field of requiredFields) {
+      if (!(field in workflow)) {
+        errors.push({
+          type: 'schema',
+          message: `Missing required field: ${field}`,
+          path: `/${field}`,
+        });
+      }
+    }
+
+    // Version validation
+    if (typeof workflow.version !== 'string') {
+      errors.push({
+        type: 'type',
+        message: 'Version must be a string',
+        path: '/version',
+      });
+    }
+
+    // Nodes validation
+    if (!Array.isArray(workflow.nodes)) {
+      errors.push({
+        type: 'type',
+        message: 'Nodes must be an array',
+        path: '/nodes',
+      });
+    } else {
+      const nodeIds = new Set<string>();
+
+      // Validate each node
+      workflow.nodes.forEach((node: any, index: number) => {
+        if (!node.id) {
+          errors.push({
+            type: 'schema',
+            message: `Node at index ${index} missing id`,
+            path: `/nodes/${index}/id`,
+          });
+        } else {
+          if (nodeIds.has(node.id)) {
+            errors.push({
+              type: 'reference',
+              message: `Duplicate node id: ${node.id}`,
+              path: `/nodes/${index}/id`,
+            });
+          }
+          nodeIds.add(node.id);
+        }
+
+        // Validate dependencies
+        if (node.dependencies) {
+          if (!Array.isArray(node.dependencies)) {
+            errors.push({
+              type: 'type',
+              message: `Dependencies must be an array for node ${node.id}`,
+              path: `/nodes/${index}/dependencies`,
+            });
+          } else {
+            node.dependencies.forEach((depId: any) => {
+              if (typeof depId !== 'string') {
+                errors.push({
+                  type: 'type',
+                  message: `Dependency id must be a string in node ${node.id}`,
+                  path: `/nodes/${index}/dependencies`,
+                });
+              }
+            });
+          }
+        }
+
+        // Validate action
+        if (!node.action) {
+          errors.push({
+            type: 'schema',
+            message: `Node ${node.id} missing action`,
+            path: `/nodes/${index}/action`,
+          });
+        } else {
+          if (!['prompt', 'script', 'hybrid'].includes(node.action.type)) {
+            errors.push({
+              type: 'type',
+              message: `Invalid action type for node ${node.id}`,
+              path: `/nodes/${index}/action/type`,
+            });
+          }
+        }
+      });
+
+      // Validate dependency references
+      workflow.nodes.forEach((node: any) => {
+        if (node.dependencies) {
+          node.dependencies.forEach((depId: string) => {
+            if (!nodeIds.has(depId)) {
+              errors.push({
+                type: 'reference',
+                message: `Node ${node.id} references non-existent dependency: ${depId}`,
+                path: `/nodes/${workflow.nodes.findIndex((n: any) => n.id === node.id)}/dependencies`,
+              });
+            }
+          });
+        }
+      });
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors,
+    };
   }
 
   /**
-   * Convert parsed JSON to runtime object
+   * Convert parsed JSON to runtime Workflow object
    */
   private static toRuntime(json: any): Workflow {
-    // Implementation would map JSON structure to runtime objects
-    throw new Error("Not implemented");
+    const variables = new Map(Object.entries(json.variables || {}));
+
+    const workflow = new WorkflowImpl(json.id, json.name, json.description, [], variables);
+
+    // Convert nodes
+    json.nodes.forEach((nodeJson: any) => {
+      const node: WorkflowNode = {
+        id: nodeJson.id,
+        name: nodeJson.name || nodeJson.id,
+        description: nodeJson.description,
+        dependencies: nodeJson.dependencies || [],
+        input: this.convertIO(nodeJson.input),
+        output: this.convertIO(nodeJson.output),
+        action: {
+          type: nodeJson.action.type,
+          name: nodeJson.action.name,
+          tools: nodeJson.action.tools || [],
+          execute: async (input: unknown, context: any) => {
+            // Default implementation - should be overridden by specific action types
+            return input;
+          },
+        },
+      };
+
+      workflow.addNode(node);
+    });
+
+    return workflow;
   }
 
   /**
-   * Convert runtime object to JSON structure
+   * Convert runtime Workflow object to JSON structure
    */
   private static fromRuntime(workflow: Workflow): unknown {
-    // Implementation would map runtime objects to JSON structure
-    throw new Error("Not implemented");
+    return {
+      version: '1.0',
+      id: workflow.id,
+      name: workflow.name,
+      description: workflow.description,
+      nodes: workflow.nodes.map((node) => ({
+        id: node.id,
+        name: node.name,
+        description: node.description,
+        dependencies: node.dependencies,
+        input: node.input,
+        output: node.output,
+        action: {
+          type: node.action.type,
+          name: node.action.name,
+          tools: node.action.tools,
+        },
+      })),
+      variables: Object.fromEntries(workflow.variables),
+    };
+  }
+
+  /**
+   * Helper to convert IO definitions
+   */
+  private static convertIO(io?: any): NodeIO {
+    return {
+      type: io?.type || 'object',
+      schema: io?.schema || {},
+      value: null,
+    };
   }
 }
