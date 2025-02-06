@@ -22,7 +22,9 @@
     "docs": "typedoc src/index.ts"
   },
   "dependencies": {
-    "zod": "^3.22.4"
+    "@anthropic-ai/sdk": "^0.33.0",
+    "zod": "^3.22.4",
+    "dotenv": "^16.0.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
