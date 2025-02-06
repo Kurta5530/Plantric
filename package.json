@@ -2,14 +2,15 @@
   "name": "lyvo",
   "version": "1.0.0",
   "description": "Empowering language to transform human words into action.",
-  "main": "dist/index.js",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
   "type": "module",
   "directories": {
     "test": "test"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "rollup -c",
     "dev": "tsc --watch",
     "clean": "rimraf dist",
     "test": "jest",
@@ -21,10 +22,16 @@
     "prepublishOnly": "npm run build",
     "docs": "typedoc src/index.ts"
   },
+  "author": "LyvoAI",
+  "license": "MIT",
   "dependencies": {
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.2",
+    "@rollup/plugin-node-resolve": "^16.0.0",
+    "@rollup/plugin-typescript": "^12.1.2",
+    "@types/chrome": "0.0.158",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.11.24",
     "@typescript-eslint/eslint-plugin": "^7.1.0",
@@ -33,6 +40,9 @@
     "jest": "^29.7.0",
     "prettier": "^3.2.5",
     "rimraf": "^5.0.5",
+    "rollup": "^4.28.1",
+    "rollup-plugin-copy": "^3.5.0",
+    "tslib": "^2.8.1",
     "ts-jest": "^29.1.2",
     "typescript": "^5.3.3"
   },
