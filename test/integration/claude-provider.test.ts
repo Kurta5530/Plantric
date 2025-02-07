@@ -23,7 +23,7 @@ describeIntegration('ClaudeProvider Integration', () => {
     provider = new ClaudeProvider(ANTHROPIC_API_KEY);
   });
 
-  describe.skip('generateText', () => {
+  describe('generateText', () => {
     const params: LLMParameters = {
       model: DEFAULT_MODEL,
       temperature: 0.7,
@@ -112,7 +112,7 @@ describeIntegration('ClaudeProvider Integration', () => {
   });
 
   describe('generateStream', () => {
-    it.skip('should stream text content', async () => {
+    it('should stream text content', async () => {
       const accumulated: string[] = [];
       let isStarted = false;
       let isCompleted = false;

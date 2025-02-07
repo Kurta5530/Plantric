@@ -1,6 +1,12 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { LLMProvider, LLMParameters, LLMResponse, Message, LLMStreamHandler, ToolCall } from '../../types/llm.types';
 
+interface PartialToolUse {
+  id: string;
+  name: string;
+  accumulatedJson: string;
+}
+
 export class ClaudeProvider implements LLMProvider {
   private client: Anthropic;
   private defaultModel = 'claude-3-5-sonnet-20241022';
@@ -62,27 +68,42 @@ export class ClaudeProvider implements LLMProvider {
 
     handler.onStart?.();
 
+    let currentToolUse: PartialToolUse | null = null;
+
     try {
       for await (const event of stream) {
-        debugger;
-        if (event.type === 'message_start') {
-          continue;
-        }
+        switch (event.type) {
+          case 'content_block_start':
+            if (event.content_block.type === 'text') {
+              handler.onContent?.('');
+            } else if (event.content_block.type === 'tool_use') {
+              currentToolUse = {
+                id: event.content_block.id,
+                name: event.content_block.name,
+                accumulatedJson: '',
+              };
+            }
+            break;
 
-        if (event.type === 'content_block_start') {
-          if (event.content_block.type === 'text') {
-            handler.onContent?.('');
-          } else if (event.content_block.type === 'tool_use') {
-            handler.onToolUse?.({
-              id: event.content_block.id,
-              name: event.content_block.name,
-              input: event.content_block.input as Record<string, unknown>,
-            });
-          }
-        }
+          case 'content_block_delta':
+            if (event.delta.type === 'text_delta') {
+              handler.onContent?.(event.delta.text);
+            } else if (event.delta.type === 'input_json_delta' && currentToolUse) {
+              currentToolUse.accumulatedJson += event.delta.partial_json;
+            }
+            break;
 
-        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-          handler.onContent?.(event.delta.text);
+          case 'content_block_stop':
+            if (currentToolUse) {
+              const toolCall: ToolCall = {
+                id: currentToolUse.id,
+                name: currentToolUse.name,
+                input: JSON.parse(currentToolUse.accumulatedJson),
+              };
+              handler.onToolUse?.(toolCall);
+              currentToolUse = null;
+            }
+            break;
         }
       }
 
