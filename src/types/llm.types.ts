@@ -13,6 +13,8 @@ export interface ToolDefinition {
   };
 }
 
+export interface LLMConfig {}
+
 export interface ToolCall {
   id: string;
   name: string;
