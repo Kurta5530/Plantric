@@ -1,5 +1,5 @@
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
-import { executeScript, getCurrentTabId, injectScript, sleep } from '../utils';
+import { getTabId, executeScript, injectScript, sleep } from '../utils';
 
 /**
  * Extract Page Content
@@ -19,7 +19,7 @@ export class ExtractContent implements Tool {
   }
 
   async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
-    let tabId = await this.getTabId(context);
+    let tabId = await getTabId(context);
     let tab = await chrome.tabs.get(tabId);
     await injectScript(tabId);
     await sleep(500);
@@ -35,13 +35,6 @@ export class ExtractContent implements Tool {
     };
   }
 
-  async getTabId(context: ExecutionContext): Promise<number> {
-    let tabId = context.variables.get('tabId') as any;
-    if (!tabId) {
-      tabId = await getCurrentTabId();
-    }
-    return tabId as number;
-  }
 }
 
 function getContent() {

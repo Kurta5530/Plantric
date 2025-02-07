@@ -1,5 +1,5 @@
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
-import { waitForTabComplete } from '../utils';
+import { getWindowId, waitForTabComplete } from '../utils';
 
 /**
  * Open Url
@@ -24,7 +24,7 @@ export class OpenUrl implements Tool {
           description: 'true: Open in a new window; false: Open in the current window.',
         },
       },
-      required: ["url"]
+      required: ['url'],
     };
   }
 
@@ -42,13 +42,7 @@ export class OpenUrl implements Tool {
       } as any as chrome.windows.CreateData);
       windowId = window.id as number;
     } else {
-      let _windowId = context.variables.get('windowId');
-      if (_windowId) {
-        windowId = _windowId as number;
-      } else {
-        let window = await chrome.windows.getCurrent();
-        windowId = window.id as number;
-      }
+      windowId = await getWindowId(context);
     }
     let tab = await chrome.tabs.create({
       url: url,

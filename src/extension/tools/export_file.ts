@@ -1,5 +1,5 @@
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
-import { getCurrentTabId } from '../utils';
+import { getTabId } from '../utils';
 
 /**
  * Export file
@@ -71,7 +71,7 @@ export class ExportFile implements Tool {
     if (!filename) {
       filename = new Date().getTime() + '.' + fileType;
     }
-    let tabId = await this.getTabId(context);
+    let tabId = await getTabId(context);
     await chrome.scripting.executeScript({
       target: { tabId: tabId as number },
       func: exportFile,
@@ -80,13 +80,6 @@ export class ExportFile implements Tool {
     return { success: true };
   }
 
-  async getTabId(context: ExecutionContext): Promise<number> {
-    let tabId = context.variables.get('tabId') as any;
-    if (!tabId) {
-      tabId = await getCurrentTabId();
-    }
-    return tabId as number;
-  }
 }
 
 function exportFile(filename: string, type: string, content: string) {

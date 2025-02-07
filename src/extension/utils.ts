@@ -1,11 +1,27 @@
+import { ExecutionContext } from '../types/action.types';
+
+export async function getWindowId(context: ExecutionContext): Promise<number> {
+  let windowId = context.variables.get('windowId') as any;
+  if (!windowId) {
+    const window = await chrome.windows.getCurrent();
+    windowId = window.id;
+  }
+  return windowId as number;
+}
+
+export async function getTabId(context: ExecutionContext): Promise<number> {
+  let tabId = context.variables.get('tabId') as any;
+  if (!tabId) {
+    tabId = await getCurrentTabId();
+  }
+  return tabId as number;
+}
+
 export function getCurrentTabId(): Promise<number | undefined> {
   return new Promise((resolve) => {
-    chrome.tabs.query(
-      { active: true, lastFocusedWindow: true },
-      function (tabs) {
-        resolve(tabs.length ? tabs[0].id : undefined);
-      }
-    );
+    chrome.tabs.query({ active: true, lastFocusedWindow: true }, function (tabs) {
+      resolve(tabs.length ? tabs[0].id : undefined);
+    });
   });
 }
 
@@ -44,18 +60,11 @@ export async function getPageSize(tabId?: number): Promise<[number, number]> {
   let injectionResult = await chrome.scripting.executeScript({
     target: { tabId: tabId as number },
     func: () => [
-      window.innerWidth ||
-        document.documentElement.clientWidth ||
-        document.body.clientWidth,
-      window.innerHeight ||
-        document.documentElement.clientHeight ||
-        document.body.clientHeight,
+      window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth,
+      window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight,
     ],
   });
-  return [
-    injectionResult[0].result[0] as number,
-    injectionResult[0].result[1] as number
-  ];
+  return [injectionResult[0].result[0] as number, injectionResult[0].result[1] as number];
 }
 
 export function sleep(time: number): Promise<void> {
@@ -82,7 +91,7 @@ export class MsgEvent {
 
   addListener(callback: Function, id: string) {
     if (!id) {
-      id = new Date().getTime() + "" + Math.floor(Math.random() * 10000);
+      id = new Date().getTime() + '' + Math.floor(Math.random() * 10000);
     }
     this.eventMap[id] = callback;
     return id;
@@ -148,7 +157,7 @@ export class CountDownLatch {
 export function isPromise(obj: any) {
   return (
     !!obj &&
-    (typeof obj === "object" || typeof obj === "function") &&
-    typeof obj.then === "function"
+    (typeof obj === 'object' || typeof obj === 'function') &&
+    typeof obj.then === 'function'
   );
 }

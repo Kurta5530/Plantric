@@ -1,4 +1,5 @@
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
+import { getTabId, getWindowId } from '../utils';
 
 /**
  * Browser tab management
@@ -32,15 +33,39 @@ export class TabManagement implements Tool {
       throw new Error('Invalid parameters. Expected an object with a "action" property.');
     }
     let action = (params as any).action as string;
+    let windowId = await getWindowId(context);
+    let result: any = null;
     if (action == 'tab_all') {
+      result = [];
+      let tabs = await chrome.tabs.query({ windowId: windowId });
+      for (let i = 0; i < tabs.length; i++) {
+        let tab = tabs[i];
+        result.push({ tabId: tab.id, windowId: tab.windowId, title: tab.title, url: tab.url });
+      }
     } else if (action == 'current_tab') {
+      let tabId = await getTabId(context);
+      let tab = await chrome.tabs.get(tabId);
+      result = { tabId, windowId: tab.windowId, title: tab.title, url: tab.url };
     } else if (action == 'close_tab') {
+      let closedTabId = await getTabId(context);
+      await chrome.tabs.remove(closedTabId);
+      let currentTabId = null;
+      let tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      if (tabs.length > 0) {
+        currentTabId = tabs[0].id;
+        context.variables.set('tabId', tabs[0].id);
+        context.variables.set('windowId', tabs[0].windowId);
+      }
+      result = { closedTabId, currentTabId };
     } else if (action.startsWith('switch_tab')) {
-      let tabId = action.replace('switch_tab', '').replace('[', '').replace(']', '');
+      let tabId = parseInt(action.replace('switch_tab', '').replace('[', '').replace(']', ''));
+      let tab = await chrome.tabs.update(tabId, { active: true });
+      context.variables.set('tabId', tab.id);
+      context.variables.set('windowId', tab.windowId);
+      result = { tabId, windowId: tab.windowId, title: tab.title, url: tab.url };
     }
-    // TODO ....
-    throw new Error('Not implemented')
     return {
+      result,
       success: true,
     };
   }
