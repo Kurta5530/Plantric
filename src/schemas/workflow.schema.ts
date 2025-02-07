@@ -47,7 +47,7 @@ export const workflowSchema = {
               params: { type: "object" },
               tools: {
                 type: "array",
-                items: { type: "string" },
+                items: { type: "string" },   // enum values from tool registry will be dynamically populated
               },
             },
           },

@@ -1,33 +1,37 @@
 import { LLMProvider, LLMParameters, Message } from '../../types/llm.types';
-import { Workflow, WorkflowNode } from '../../types/workflow.types';
+import { Workflow } from '../../types/workflow.types';
 import { WorkflowImpl } from '../../models/workflow';
-import { WORKFLOW_GENERATION_TOOL } from '../../schemas/workflow-tool.schema';
-import { WORKFLOW_GENERATION_PROMPTS } from './prompts';
+import { ToolRegistry } from '../../core/tool-registry';
+import { createWorkflowPrompts, createWorkflowGenerationTool } from './templates';
 import { v4 as uuidv4 } from 'uuid';
 
 export class WorkflowGenerator {
   constructor(
     private llmProvider: LLMProvider,
+    private toolRegistry: ToolRegistry,
     private defaultModel: string = 'claude-3-5-sonnet-20241022'
   ) {}
 
   async generateWorkflow(prompt: string): Promise<Workflow> {
+    // Create prompts with current set of tools
+    const prompts = createWorkflowPrompts(this.toolRegistry.getToolDefinitions());
+
     const messages: Message[] = [
       {
         role: 'user',
-        content: WORKFLOW_GENERATION_PROMPTS.SYSTEM_PROMPT
+        content: prompts.formatSystemPrompt()
       },
       {
         role: 'user',
-        content: WORKFLOW_GENERATION_PROMPTS.formatUserPrompt(prompt)
+        content: prompts.formatUserPrompt(prompt)
       }
     ];
 
     const params: LLMParameters = {
       model: this.defaultModel,
       temperature: 0.7,
-      maxTokens: 4000,
-      tools: [WORKFLOW_GENERATION_TOOL],
+      maxTokens: 8192,
+      tools: [createWorkflowGenerationTool(this.toolRegistry)],
       toolChoice: { type: 'tool', name: 'generate_workflow' }
     };
 
@@ -39,21 +43,26 @@ export class WorkflowGenerator {
 
     const workflowData = response.toolCalls[0].input.workflow as any;
 
+    // Validate all tools exist
+    for (const node of workflowData.nodes) {
+      if (!this.toolRegistry.hasTools(node.action.tools)) {
+        throw new Error(`Workflow contains undefined tools: ${node.action.tools}`);
+      }
+    }
+
     // Generate a new UUID if not provided
     if (!workflowData.id) {
       workflowData.id = uuidv4();
     }
 
-    // Convert to runtime workflow object
     return this.createWorkflowFromData(workflowData);
   }
 
   private createWorkflowFromData(data: any): Workflow {
-    // Convert plain object to WorkflowImpl instance
     const workflow = new WorkflowImpl(
       data.id,
       data.name,
-      undefined,
+      data.description,
       [],
       new Map(Object.entries(data.variables || {}))
     );
@@ -61,12 +70,18 @@ export class WorkflowGenerator {
     // Add nodes to workflow
     if (Array.isArray(data.nodes)) {
       data.nodes.forEach((nodeData: any) => {
-        const node: WorkflowNode = {
+        const node = {
           id: nodeData.id,
           name: nodeData.name || nodeData.id,
           input: nodeData.input || { type: 'any', schema: {}, value: undefined },
           output: nodeData.output || { type: 'any', schema: {}, value: undefined },
-          action: nodeData.action,
+          action: {
+            ...nodeData.action,
+            // Map tool names to actual tool instances
+            tools: nodeData.action.tools.map((toolName: string) =>
+              this.toolRegistry.getTool(toolName)
+            )
+          },
           dependencies: nodeData.dependencies || []
         };
         workflow.addNode(node);
@@ -77,35 +92,6 @@ export class WorkflowGenerator {
   }
 
   async modifyWorkflow(workflow: Workflow, prompt: string): Promise<Workflow> {
-    const messages: Message[] = [
-      {
-        role: 'user',
-        content: WORKFLOW_GENERATION_PROMPTS.MODIFICATION_SYSTEM_PROMPT
-      },
-      {
-        role: 'user',
-        content: WORKFLOW_GENERATION_PROMPTS.formatModificationPrompt(
-          JSON.stringify(workflow, null, 2),
-          prompt
-        )
-      }
-    ];
-
-    const params: LLMParameters = {
-      model: this.defaultModel,
-      temperature: 0.7,
-      maxTokens: 30000,
-      tools: [WORKFLOW_GENERATION_TOOL],
-      toolChoice: { type: 'tool', name: 'generate_workflow' }
-    };
-
-    const response = await this.llmProvider.generateText(messages, params);
-
-    if (!response.toolCalls.length || !response.toolCalls[0].input.workflow) {
-      throw new Error('Failed to modify workflow: Invalid response from LLM');
-    }
-
-    const modifiedWorkflowData = response.toolCalls[0].input.workflow;
-    return this.createWorkflowFromData(modifiedWorkflowData);
+    throw new Error('Not implemented');
   }
 }
