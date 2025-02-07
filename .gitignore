@@ -52,3 +52,6 @@ coverage/
 
 # TypeScript build
 *.tsbuildinfo
+
+# Test generated files
+/test/fixtures/generated/

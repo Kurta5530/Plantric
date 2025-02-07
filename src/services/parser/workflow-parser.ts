@@ -53,7 +53,7 @@ export class WorkflowParser {
     const workflow = json as Record<string, any>;
 
     // Required fields validation
-    const requiredFields = ['version', 'id', 'name', 'nodes'];
+    const requiredFields = ['id', 'name', 'nodes'];
     for (const field of requiredFields) {
       if (!(field in workflow)) {
         errors.push({
@@ -62,15 +62,6 @@ export class WorkflowParser {
           path: `/${field}`,
         });
       }
-    }
-
-    // Version validation
-    if (typeof workflow.version !== 'string') {
-      errors.push({
-        type: 'type',
-        message: 'Version must be a string',
-        path: '/version',
-      });
     }
 
     // Nodes validation

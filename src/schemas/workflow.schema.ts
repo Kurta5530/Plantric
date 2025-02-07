@@ -1,8 +1,7 @@
 export const workflowSchema = {
   type: "object",
-  required: ["version", "id", "name", "nodes"],
+  required: ["id", "name", "nodes"],
   properties: {
-    version: { type: "string" },
     id: { type: "string" },
     name: { type: "string" },
     description: { type: "string" },
@@ -41,7 +40,8 @@ export const workflowSchema = {
             properties: {
               type: {
                 type: "string",
-                enum: ["prompt", "script", "hybrid"],
+                // enum: ["prompt", "script", "hybrid"],
+                enum: ["prompt"],
               },
               name: { type: "string" },
               params: { type: "object" },
