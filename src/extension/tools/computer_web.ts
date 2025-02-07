@@ -1,4 +1,4 @@
-import { Tool, InputSchema } from '../../types/action.types';
+import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
 import { getCurrentTabId, getPageSize, sleep } from '../utils';
 
 /**
@@ -8,8 +8,6 @@ export class ComputerWeb implements Tool {
   name: string;
   description: string;
   input_schema: InputSchema;
-  windowId?: number;
-  tabId?: number;
 
   constructor(size: [number, number]) {
     this.name = 'computer_web';
@@ -72,12 +70,13 @@ export class ComputerWeb implements Tool {
    * @param {*} params { action: 'mouse_move', coordinate: [100, 200] }
    * @returns { success: true, coordinate?: [], image?: { type: 'base64', media_type: 'image/jpeg', data: '/9j...' } }
    */
-  async execute(params: unknown): Promise<unknown> {
+  async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
     if (typeof params !== 'object' || params === null || !('action' in params)) {
       throw new Error('Invalid parameters. Expected an object with a "action" property.');
     }
     let { action, coordinate, text } = params as any;
-    let tabId = await this.getTabId();
+    let windowId = context.variables.get('windowId') as any
+    let tabId = await this.getTabId(context);
     let result;
     switch (action as string) {
       case 'key':
@@ -102,7 +101,7 @@ export class ComputerWeb implements Tool {
         result = await double_click(tabId, coordinate);
         break;
       case 'screenshot':
-        result = await screenshot(this.windowId);
+        result = await screenshot(windowId);
         break;
       case 'cursor_position':
         result = await cursor_position(tabId);
@@ -118,8 +117,8 @@ export class ComputerWeb implements Tool {
     return { success: true, ...result };
   }
 
-  async getTabId(): Promise<number> {
-    let tabId = this.tabId;
+  async getTabId(context: ExecutionContext): Promise<number> {
+    let tabId = context.variables.get('tabId') as any
     if (!tabId) {
       tabId = await getCurrentTabId();
     }

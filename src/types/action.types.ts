@@ -2,7 +2,7 @@ export interface Tool {
   name: string;
   description: string;
   input_schema: InputSchema;
-  execute: (params: unknown) => Promise<unknown>;
+  execute: (context: ExecutionContext, params: unknown) => Promise<unknown>;
 }
 
 export interface InputSchema {

@@ -1,4 +1,4 @@
-import { Tool, InputSchema } from "../../types/action.types";
+import { Tool, InputSchema, ExecutionContext } from "../../types/action.types";
 
 /**
  * Computer Use for fellou
@@ -70,7 +70,7 @@ export class ComputerUse implements Tool {
    * @param {*} params { action: 'mouse_move', coordinate: [100, 200] }
    * @returns { success: true, coordinate?: [], image?: { type: 'base64', media_type: 'image/jpeg', data: '/9j...' } }
    */
-  async execute(params: unknown): Promise<unknown> {
+  async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
     if (
       typeof params !== "object" ||
       params === null ||
