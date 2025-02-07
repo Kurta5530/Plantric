@@ -9,6 +9,34 @@ export function getCurrentTabId(): Promise<number | undefined> {
   });
 }
 
+export async function executeScript(tabId: number, func: any, args: any): Promise<any> {
+  return await chrome.scripting.executeScript({
+    target: { tabId: tabId as number },
+    func: func,
+    args: args,
+  });
+}
+
+export async function waitForTabComplete(tabId: number) {
+  return new Promise((resolve, reject) => {
+    const listener = (updatedTabId: any, changeInfo: any) => {
+      if (updatedTabId === tabId && changeInfo.status === 'complete') {
+        chrome.tabs.onUpdated.removeListener(listener);
+        resolve(changeInfo);
+      }
+    };
+    chrome.tabs.get(tabId, (tab) => {
+      chrome.tabs.onUpdated.removeListener(listener);
+      if (chrome.runtime.lastError) {
+        reject(chrome.runtime.lastError);
+      } else if (tab.status === 'complete') {
+        resolve(tab);
+      }
+    });
+    chrome.tabs.onUpdated.addListener(listener);
+  });
+}
+
 export async function getPageSize(tabId?: number): Promise<[number, number]> {
   if (!tabId) {
     tabId = await getCurrentTabId();
@@ -34,10 +62,14 @@ export function sleep(time: number): Promise<void> {
   return new Promise((resolve) => setTimeout(() => resolve(), time));
 }
 
-export async function injectScript(tabId: number, filename: string) {
+export async function injectScript(tabId: number, filename?: string) {
+  let files = ['lyvo/script/common.js'];
+  if (filename) {
+    files.push('lyvo/script/' + filename);
+  }
   await chrome.scripting.executeScript({
     target: { tabId },
-    files: ["lyvo/script/common.js", "lyvo/script/" + filename],
+    files: files,
   });
 }
 

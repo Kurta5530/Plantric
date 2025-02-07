@@ -1,4 +1,4 @@
-import { Tool, InputSchema } from '../../types/action.types';
+import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
 import { MsgEvent, CountDownLatch, sleep, injectScript } from '../utils';
 
 /**
@@ -34,7 +34,7 @@ export class WebSearch implements Tool {
    * @param {*} params { url: 'https://google.com', query: 'ai', maxResults: 5 }
    * @returns [{ title, url, content }]
    */
-  async execute(params: unknown): Promise<unknown> {
+  async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
     if (typeof params !== 'object' || params === null || !('query' in params)) {
       throw new Error('Invalid parameters. Expected an object with a "query" property.');
     }
