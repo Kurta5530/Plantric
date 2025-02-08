@@ -37,7 +37,7 @@ export class ExportFile implements Tool {
    * export
    *
    * @param {*} params { fileType: 'csv', content: 'field1,field2\ndata1,data2' }
-   * @returns { success: true }
+   * @returns > { success: true }
    */
   async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
     if (typeof params !== 'object' || params === null || !('content' in params)) {

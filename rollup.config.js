@@ -19,10 +19,36 @@ export default [
     plugins: [
       resolve(),
       commonjs(),
+      typescript({
+        tsconfig: './tsconfig.json',
+        declaration: true,
+        declarationDir: 'dist',
+        include: ['src/**/*'],
+        exclude: ['node_modules', 'dist', 'src/extension/**/*']
+      })
+    ]
+  },
+  {
+    input: 'src/extension/index.ts',
+    output: [
+      {
+        file: 'dist/extension.cjs.js',
+        format: 'cjs'
+      },
+      {
+        file: 'dist/extension.esm.js',
+        format: 'esm'
+      }
+    ],
+    plugins: [
+      resolve(),
+      commonjs(),
       typescript({ 
         tsconfig: './tsconfig.json',
         declaration: true,
-        declarationDir: 'dist'
+        declarationDir: 'dist',
+        include: ['src/types/*', 'src/extension/**/*'],
+        exclude: ['src/extension/script']
       }),
       copy({
         targets: [
@@ -34,13 +60,18 @@ export default [
   {
     input: 'src/extension/content/index.ts',
     output: {
-      file: 'dist/extension.js',
+      file: 'dist/extension_content_script.js',
       format: 'esm'
     },
     plugins: [
       resolve(),
       commonjs(),
-      typescript({ tsconfig: './tsconfig.json' })
+      typescript({ 
+        tsconfig: './tsconfig.json',
+        declaration: false,
+        include: ['src/extension/content/*'],
+        declarationDir: 'dist'
+      })
     ]
   }
 ];

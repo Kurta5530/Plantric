@@ -18,6 +18,12 @@ export class ExtractContent implements Tool {
     };
   }
 
+  /**
+   * Extract Page Content
+   *
+   * @param {*} params {}
+   * @returns > { tabId, result: { title, url, content }, success: true }
+   */
   async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
     let tabId = await getTabId(context);
     let tab = await chrome.tabs.get(tabId);
@@ -34,7 +40,6 @@ export class ExtractContent implements Tool {
       success: true,
     };
   }
-
 }
 
 function getContent() {

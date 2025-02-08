@@ -20,35 +20,44 @@ export async function getTabId(context: ExecutionContext): Promise<number> {
 export function getCurrentTabId(): Promise<number | undefined> {
   return new Promise((resolve) => {
     chrome.tabs.query({ active: true, lastFocusedWindow: true }, function (tabs) {
-      resolve(tabs.length ? tabs[0].id : undefined);
+      if (tabs.length > 0) {
+        resolve(tabs[0].id);
+      } else {
+        chrome.tabs.query({ active: true, currentWindow: true }, function (_tabs) {
+          resolve(_tabs.length ? _tabs[0].id : undefined);
+        });
+      }
     });
   });
 }
 
 export async function executeScript(tabId: number, func: any, args: any): Promise<any> {
-  return await chrome.scripting.executeScript({
+  let frameResults = await chrome.scripting.executeScript({
     target: { tabId: tabId as number },
     func: func,
     args: args,
   });
+  return frameResults[0].result
 }
 
-export async function waitForTabComplete(tabId: number) {
-  return new Promise((resolve, reject) => {
-    const listener = (updatedTabId: any, changeInfo: any) => {
+export async function waitForTabComplete(tabId: number, timeout: number = 30_000): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    let tab = await chrome.tabs.get(tabId);
+    if (tab.status === 'complete') {
+      resolve(tab);
+      return;
+    }
+    const time = setTimeout(() => {
+      chrome.tabs.onUpdated.removeListener(listener);
+      reject()
+    }, timeout);
+    const listener = async (updatedTabId: any, changeInfo: any, tab: any) => {
       if (updatedTabId === tabId && changeInfo.status === 'complete') {
         chrome.tabs.onUpdated.removeListener(listener);
-        resolve(changeInfo);
-      }
-    };
-    chrome.tabs.get(tabId, (tab) => {
-      chrome.tabs.onUpdated.removeListener(listener);
-      if (chrome.runtime.lastError) {
-        reject(chrome.runtime.lastError);
-      } else if (tab.status === 'complete') {
+        clearTimeout(time);
         resolve(tab);
       }
-    });
+    };
     chrome.tabs.onUpdated.addListener(listener);
   });
 }

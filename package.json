@@ -6,11 +6,33 @@
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
   "type": "module",
+  "files": [
+    "dist/",
+    "LICENSE",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "require": "./dist/index.cjs.js",
+      "import": "./dist/index.esm.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts"
+    },
+    "./extension": {
+      "require": "./dist/extension.cjs.js",
+      "import": "./dist/extension.esm.js",
+      "types": "./dist/extension/index.d.ts"
+    }
+  },
   "directories": {
-    "test": "test"
+    "test": "test",
+    "doc": "docs"
   },
   "scripts": {
     "build": "rollup -c",
+    "build:dev": "npm run build && npm link",
     "dev": "tsc --watch",
     "clean": "rimraf dist",
     "test": "jest",
@@ -24,6 +46,11 @@
   },
   "author": "LyvoAI",
   "license": "MIT",
+  "keywords": ["fellou-agent"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LyvoAI/lyvo.git"
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.33.0",
     "dotenv": "^16.0.0",

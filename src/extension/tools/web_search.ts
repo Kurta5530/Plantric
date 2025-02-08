@@ -31,8 +31,8 @@ export class WebSearch implements Tool {
   /**
    * search
    *
-   * @param {*} params { url: 'https://google.com', query: 'ai', maxResults: 5 }
-   * @returns [{ title, url, content }]
+   * @param {*} params { url: 'https://google.com', query: 'ai agent', maxResults: 5 }
+   * @returns > [{ title, url, content }]
    */
   async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
     if (typeof params !== 'object' || params === null || !('query' in params)) {

@@ -1,5 +1,5 @@
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
-import { getTabId, getWindowId } from '../utils';
+import { getTabId, getWindowId, sleep } from '../utils';
 
 /**
  * Browser tab management
@@ -28,6 +28,12 @@ export class TabManagement implements Tool {
     };
   }
 
+  /**
+   * Tab management
+   *
+   * @param {*} params { action: 'tab_all' | 'current_tab' | 'close_tab' | 'switch_tab [tabId]' }
+   * @returns > { result, success: true }
+   */
   async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
     if (typeof params !== 'object' || params === null || !('action' in params)) {
       throw new Error('Invalid parameters. Expected an object with a "action" property.');
@@ -40,7 +46,16 @@ export class TabManagement implements Tool {
       let tabs = await chrome.tabs.query({ windowId: windowId });
       for (let i = 0; i < tabs.length; i++) {
         let tab = tabs[i];
-        result.push({ tabId: tab.id, windowId: tab.windowId, title: tab.title, url: tab.url });
+        let tabInfo: any = {
+          tabId: tab.id,
+          windowId: tab.windowId,
+          title: tab.title,
+          url: tab.url,
+        };
+        if (tab.active) {
+          tabInfo.active = true;
+        }
+        result.push(tabInfo);
       }
     } else if (action == 'current_tab') {
       let tabId = await getTabId(context);
@@ -49,14 +64,20 @@ export class TabManagement implements Tool {
     } else if (action == 'close_tab') {
       let closedTabId = await getTabId(context);
       await chrome.tabs.remove(closedTabId);
+      await sleep(100);
       let currentTabId = null;
-      let tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-      if (tabs.length > 0) {
-        currentTabId = tabs[0].id;
-        context.variables.set('tabId', tabs[0].id);
-        context.variables.set('windowId', tabs[0].windowId);
+      let tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tabs.length == 0) {
+        tabs = await chrome.tabs.query({ status: 'complete', currentWindow: true });
       }
-      result = { closedTabId, currentTabId };
+      let tab = tabs[tabs.length - 1];
+      if (!tab.active) {
+        await chrome.tabs.update(tab.id as number, { active: true });
+      }
+      currentTabId = tab.id;
+      context.variables.set('tabId', tab.id);
+      context.variables.set('windowId', tab.windowId);
+      result = { closedTabId, currentTabId, currentTabTitle: tab.title };
     } else if (action.startsWith('switch_tab')) {
       let tabId = parseInt(action.replace('switch_tab', '').replace('[', '').replace(']', ''));
       let tab = await chrome.tabs.update(tabId, { active: true });

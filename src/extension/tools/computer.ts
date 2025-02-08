@@ -1,4 +1,4 @@
-import { getPageSize, sleep } from './utils';
+import { getPageSize, sleep } from '../utils';
 
 export async function key(tabId: number, key: string, coordinate?: [number, number]) {
   if (!coordinate) {
