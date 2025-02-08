@@ -23,7 +23,7 @@ export class Screenshot implements Tool {
    * Current Page Screenshot
    *
    * @param {*} params {}
-   * @returns > { image: { type: 'base64', media_type: 'image/png', data }
+   * @returns > { image: { type: 'base64', media_type: 'image/png', data } }
    */
   async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
     let windowId = await getWindowId(context);

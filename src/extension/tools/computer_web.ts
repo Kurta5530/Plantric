@@ -1,5 +1,5 @@
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
-import { getWindowId, getTabId } from '../utils';
+import { getWindowId, getTabId, sleep } from '../utils';
 import * as computer from './computer';
 
 /**
@@ -25,11 +25,8 @@ export class ComputerWeb implements Tool {
         action: {
           type: 'string',
           description: `The action to perform. The available actions are:
-* \`key\`: Press a key or key-combination on the keyboard.
-- This supports js KeyboardEvent syntax.
-- Multiple keys are combined using the "+" symbol.
-- Examples: "a", "Enter", "Ctrl+s", "Meta+Shift+a", "Delete", "0".
 * \`type\`: Type a string of text on the keyboard.
+* \`clear_input\`: Clear the value in the input box.
 * \`cursor_position\`: Get the current (x, y) pixel coordinate of the cursor on the screen.
 * \`mouse_move\`: Move the cursor to a specified (x, y) pixel coordinate on the screen.
 * \`left_click\`: Click the left mouse button.
@@ -39,8 +36,8 @@ export class ComputerWeb implements Tool {
 * \`screenshot\`: Take a screenshot of the screen.
 * \`scroll_to\`: Scroll to the specified (x, y) pixel coordinate.`,
           enum: [
-            'key',
             'type',
+            'clear_input',
             'mouse_move',
             'left_click',
             'left_click_drag',
@@ -58,7 +55,7 @@ export class ComputerWeb implements Tool {
         },
         text: {
           type: 'string',
-          description: 'Required only by `action=type` and `action=key`',
+          description: 'Required only by `action=type`',
         },
       },
       required: ['action'],
@@ -86,6 +83,9 @@ export class ComputerWeb implements Tool {
       case 'type':
         result = await computer.type(tabId, text, coordinate);
         break;
+      case 'clear_input':
+        result = await computer.clear_input(tabId, coordinate);
+        break;
       case 'mouse_move':
         result = await computer.mouse_move(tabId, coordinate);
         break;
@@ -109,6 +109,7 @@ export class ComputerWeb implements Tool {
         break;
       case 'scroll_to':
         result = await computer.scroll_to(tabId, coordinate);
+        await sleep(1000);
         break;
       default:
         throw Error(

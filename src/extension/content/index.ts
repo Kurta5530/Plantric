@@ -106,15 +106,19 @@ function key(request: any) {
     cancelable: true,
   });
   let coordinate = request.coordinate as [number, number];
-  (
-    document.activeElement || document.elementFromPoint(coordinate[0], coordinate[1])
-  )?.dispatchEvent(event);
+  let element = (document.activeElement || document.elementFromPoint(coordinate[0], coordinate[1])) as any
+  if (element && element.focus) {
+    element.focus()
+  }
+  let result = element?.dispatchEvent(event);
+  console.log('key', element, request, result);
+  return result;
 }
 
 function type(request: any) {
   let text = request.text as string;
   let coordinate = request.coordinate as [number, number];
-  let element = document.elementFromPoint(coordinate[0], coordinate[1]);
+  let element = document.elementFromPoint(coordinate[0], coordinate[1]) || document.activeElement;
   if (!element) {
     return;
   }
@@ -129,8 +133,14 @@ function type(request: any) {
     input = element.querySelector('input') || element.querySelector('textarea') || element;
   }
   input.focus && input.focus();
-  input.value += text;
-  input.dispatchEvent(new Event('input', { bubbles: true }));
+  if (!text) {
+    input.value = ''
+  } else {
+    input.value += text;
+  }
+  let result = input.dispatchEvent(new Event('input', { bubbles: true }));
+  console.log('type', input, request, result);
+  return result;
 }
 
 function mouse_move(request: any) {
@@ -146,13 +156,16 @@ function mouse_move(request: any) {
     clientX: x,
     clientY: y,
   });
-  return document.body.dispatchEvent(event);
+  let result = document.body.dispatchEvent(event);
+  console.log('mouse_move', document.body, request, result);
+  return result;
 }
 
 function simulateMouseEvent(request: any, eventTypes: Array<string>, button: 0 | 1 | 2) {
   const coordinate = request.coordinate as [number, number];
   const x = coordinate[0];
   const y = coordinate[1];
+  let result = false;
   const element = document.elementFromPoint(x, y) || document.body;
   for (let i = 0; i < eventTypes.length; i++) {
     const event = new MouseEvent(eventTypes[i], {
@@ -163,18 +176,21 @@ function simulateMouseEvent(request: any, eventTypes: Array<string>, button: 0 |
       clientY: y,
       button, // 0 left; 2 right
     });
-    element.dispatchEvent(event);
+    result = element.dispatchEvent(event);
+    console.log('simulateMouse', element, { ...request, eventTypes, button }, result);
   }
+  return result;
 }
 
 function scroll_to(request: any) {
   // const from_coordinate = request.from_coordinate as [number, number];
   const to_coordinate = request.to_coordinate as [number, number];
   window.scrollTo({
-    top: to_coordinate[0],
-    left: to_coordinate[1],
+    left: to_coordinate[0],
+    top: to_coordinate[1],
     behavior: 'smooth',
   });
+  console.log('scroll_to', request);
 }
 
 function left_click_drag(request: any, steps = 10) {
@@ -215,5 +231,6 @@ function left_click_drag(request: any, steps = 10) {
     clientY: endY,
     button: 0,
   });
-  element.dispatchEvent(mouseUpEvent);
+  console.log('left_click_drag', request);
+  return element.dispatchEvent(mouseUpEvent);
 }

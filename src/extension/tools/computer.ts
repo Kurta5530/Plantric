@@ -7,6 +7,7 @@ export async function key(tabId: number, key: string, coordinate?: [number, numb
   await mouse_move(tabId, coordinate);
   let mapping: { [key: string]: string } = {};
   let keys = key.replace(/\s+/g, ' ').split(' ');
+  let result;
   for (let i = 0; i < keys.length; i++) {
     let _key = keys[i];
     let keyEvents = {
@@ -39,13 +40,14 @@ export async function key(tabId: number, key: string, coordinate?: [number, numb
     if (!keyEvents.key) {
       continue;
     }
-    await chrome.tabs.sendMessage(tabId, {
+    result = await chrome.tabs.sendMessage(tabId, {
       type: 'computer:key',
       coordinate,
       ...keyEvents,
     });
     await sleep(100);
   }
+  return result;
 }
 
 export async function type(tabId: number, text: string, coordinate?: [number, number]) {
@@ -56,6 +58,18 @@ export async function type(tabId: number, text: string, coordinate?: [number, nu
   return await chrome.tabs.sendMessage(tabId, {
     type: 'computer:type',
     text,
+    coordinate,
+  });
+}
+
+export async function clear_input(tabId: number, coordinate?: [number, number]) {
+  if (!coordinate) {
+    coordinate = (await cursor_position(tabId)).coordinate;
+  }
+  await mouse_move(tabId, coordinate);
+  return await chrome.tabs.sendMessage(tabId, {
+    type: 'computer:type',
+    text: '',
     coordinate,
   });
 }

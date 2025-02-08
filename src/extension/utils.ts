@@ -24,7 +24,14 @@ export function getCurrentTabId(): Promise<number | undefined> {
         resolve(tabs[0].id);
       } else {
         chrome.tabs.query({ active: true, currentWindow: true }, function (_tabs) {
-          resolve(_tabs.length ? _tabs[0].id : undefined);
+          if (_tabs.length > 0) {
+            resolve(_tabs[0].id);
+            return;
+          } else {
+            chrome.tabs.query({ status: 'complete', currentWindow: true }, function (__tabs) {
+              resolve(__tabs.length ? __tabs[__tabs.length - 1].id : undefined);
+            });
+          }
         });
       }
     });

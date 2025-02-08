@@ -14,6 +14,7 @@ export class ClaudeProvider implements LLMProvider {
   constructor(apiKey: string) {
     this.client = new Anthropic({
       apiKey: apiKey,
+      dangerouslyAllowBrowser: true
     });
   }
 
