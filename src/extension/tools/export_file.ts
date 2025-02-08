@@ -70,6 +70,8 @@ export class ExportFile implements Tool {
     }
     if (!filename) {
       filename = new Date().getTime() + '.' + fileType;
+    } else if (!(filename + '').endsWith(fileType)) {
+      filename += ('.' + fileType);
     }
     let tabId = await getTabId(context);
     try {

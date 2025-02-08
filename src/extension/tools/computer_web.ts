@@ -10,12 +10,11 @@ export class ComputerWeb implements Tool {
   description: string;
   input_schema: InputSchema;
 
-  constructor(window_page_size: [number, number]) {
+  constructor() {
     this.name = 'computer_web';
     this.description = `Use a mouse and keyboard to interact with a computer, and take screenshots.
 * This is a browser GUI interface where you do not have access to the address bar or bookmarks. You must operate the browser using inputs like screenshots, mouse, keyboard, etc.
 * Some operations may take time to process, so you may need to wait and take successive screenshots to see the results of your actions. E.g. if you clicked submit button, but it didn't work, try taking another screenshot.
-* The screen's resolution is ${window_page_size[0]}x${window_page_size[1]}.
 * Whenever you intend to move the cursor to click on an element, you should consult a screenshot to determine the coordinates of the element before moving the cursor.
 * If you tried clicking on a button or link but it failed to load, even after waiting, try adjusting your cursor position so that the tip of the cursor visually falls on the element that you want to click.
 * Make sure to click any buttons, links, icons, etc with the cursor tip in the center of the element.`;
@@ -79,29 +78,37 @@ export class ComputerWeb implements Tool {
     switch (action as string) {
       case 'key':
         result = await computer.key(tabId, text, coordinate);
+        await sleep(500);
         break;
       case 'type':
         result = await computer.type(tabId, text, coordinate);
+        await sleep(500);
         break;
       case 'clear_input':
         result = await computer.clear_input(tabId, coordinate);
+        await sleep(100);
         break;
       case 'mouse_move':
         result = await computer.mouse_move(tabId, coordinate);
         break;
       case 'left_click':
         result = await computer.left_click(tabId, coordinate);
+        await sleep(100);
         break;
       case 'left_click_drag':
         result = await computer.left_click_drag(tabId, coordinate);
+        await sleep(100);
         break;
       case 'right_click':
         result = await computer.right_click(tabId, coordinate);
+        await sleep(100);
         break;
       case 'double_click':
         result = await computer.double_click(tabId, coordinate);
+        await sleep(100);
         break;
       case 'screenshot':
+        await sleep(200);
         result = await computer.screenshot(windowId);
         break;
       case 'cursor_position':
