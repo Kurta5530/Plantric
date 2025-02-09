@@ -13,7 +13,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Mock browser tool base class to avoid duplicate code
-class BrowserTool implements Tool {
+class BrowserTool implements Tool<any, any> {
   constructor(
     public name: string,
     public description: string,
@@ -26,7 +26,7 @@ class BrowserTool implements Tool {
 }
 
 // Create mock browser tools
-function createBrowserTools(): Tool[] {
+function createBrowserTools(): Tool<any, any>[] {
   return [
     new BrowserTool(
       'open_url',

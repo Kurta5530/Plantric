@@ -1,10 +1,11 @@
+import { WebSearchParam, WebSearchResult } from '../../types/tools.types';
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
 import { MsgEvent, CountDownLatch, sleep, injectScript } from '../utils';
 
 /**
  * Web Search
  */
-export class WebSearch implements Tool {
+export class WebSearch implements Tool<WebSearchParam, WebSearchResult[]> {
   name: string;
   description: string;
   input_schema: InputSchema;
@@ -31,22 +32,24 @@ export class WebSearch implements Tool {
   /**
    * search
    *
-   * @param {*} params { url: 'https://google.com', query: 'ai agent', maxResults: 5 }
+   * @param {*} params { url: 'https://www.google.com', query: 'ai agent', maxResults: 5 }
    * @returns > [{ title, url, content }]
    */
-  async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
-    if (typeof params !== 'object' || params === null || !('query' in params)) {
+  async execute(context: ExecutionContext, params: WebSearchParam): Promise<WebSearchResult[]> {
+    if (typeof params !== 'object' || params === null || !params.query) {
       throw new Error('Invalid parameters. Expected an object with a "query" property.');
     }
-    let { url, query, maxResults } = params as any;
+    let url = params.url;
+    let query = params.query;
+    let maxResults = params.maxResults;
     if (!url) {
-      url = 'https://google.com';
+      url = 'https://www.google.com';
     }
     let taskId = new Date().getTime() + '';
     let searchs = [{ url: url as string, keyword: query as string }];
     let searchInfo = await deepSearch(taskId, searchs, maxResults || 5);
     let links = searchInfo.result[0]?.links || [];
-    return links.filter((s: any) => s.content);
+    return links.filter((s: any) => s.content) as WebSearchResult[];
   }
 }
 

@@ -1,11 +1,12 @@
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
-import { screenshot } from './computer';
+import { screenshot } from './browser';
 import { getWindowId } from '../utils';
+import { ScreenshotResult } from '../../types/tools.types';
 
 /**
  * Current Page Screenshot
  */
-export class Screenshot implements Tool {
+export class Screenshot implements Tool<any, ScreenshotResult> {
   name: string;
   description: string;
   input_schema: InputSchema;
@@ -25,7 +26,7 @@ export class Screenshot implements Tool {
    * @param {*} params {}
    * @returns > { image: { type: 'base64', media_type: 'image/png', data } }
    */
-  async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
+  async execute(context: ExecutionContext, params: unknown): Promise<ScreenshotResult> {
     let windowId = await getWindowId(context);
     return await screenshot(windowId);
   }

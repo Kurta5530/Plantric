@@ -1,10 +1,11 @@
+import { ExtractContentResult } from '../../types/tools.types';
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
 import { getTabId, executeScript, injectScript, sleep } from '../utils';
 
 /**
  * Extract Page Content
  */
-export class ExtractContent implements Tool {
+export class ExtractContent implements Tool<any, ExtractContentResult> {
   name: string;
   description: string;
   input_schema: InputSchema;
@@ -24,7 +25,7 @@ export class ExtractContent implements Tool {
    * @param {*} params {}
    * @returns > { tabId, result: { title, url, content }, success: true }
    */
-  async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
+  async execute(context: ExecutionContext, params: any): Promise<ExtractContentResult> {
     let tabId = await getTabId(context);
     let tab = await chrome.tabs.get(tabId);
     await injectScript(tabId);
@@ -36,9 +37,8 @@ export class ExtractContent implements Tool {
         title: tab.title,
         url: tab.url,
         content: content,
-      },
-      success: true,
-    };
+      }
+    } as ExtractContentResult;
   }
 }
 

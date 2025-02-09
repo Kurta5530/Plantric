@@ -1,7 +1,7 @@
 import { ToolRegistry } from '../../src/core/tool-registry';
 import { Tool, InputSchema } from '../../src/types/action.types';
 
-class MockTool implements Tool {
+class MockTool implements Tool<any, any> {
   constructor(
     public name: string,
     public description: string = 'Mock tool description',
@@ -20,7 +20,7 @@ class MockTool implements Tool {
 
 describe('ToolRegistry', () => {
   let registry: ToolRegistry;
-  let mockTool: Tool;
+  let mockTool: Tool<any, any>;
 
   beforeEach(() => {
     registry = new ToolRegistry();

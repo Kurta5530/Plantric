@@ -1,16 +1,17 @@
-import { Tool, InputSchema, ExecutionContext } from "../../types/action.types";
+import { ComputerUseParam, ComputerUseResult } from '../../types/tools.types';
+import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
 
 /**
  * Computer Use for fellou
  */
-export class ComputerUse implements Tool {
+export class ComputerUse implements Tool<ComputerUseParam, ComputerUseResult> {
   name: string;
   description: string;
   input_schema: InputSchema;
 
   constructor(computer_screen_size: [number, number]) {
     // TODO The screenshot is of the screen, but the plugin returns the relative position of the browser, not the screen, there is a problem!
-    this.name = "computer_use";
+    this.name = 'computer_use';
     this.description = `Use a mouse and keyboard to interact with a computer, and take screenshots.
 * This is a browser GUI interface where you do not have access to the address bar or bookmarks. You must operate the browser using inputs like screenshots, mouse, keyboard, etc.
 * Some operations may take time to process, so you may need to wait and take successive screenshots to see the results of your actions. E.g. if you clicked submit button, but it didn't work, try taking another screenshot.
@@ -19,10 +20,10 @@ export class ComputerUse implements Tool {
 * If you tried clicking on a button or link but it failed to load, even after waiting, try adjusting your cursor position so that the tip of the cursor visually falls on the element that you want to click.
 * Make sure to click any buttons, links, icons, etc with the cursor tip in the center of the element.`;
     this.input_schema = {
-      type: "object",
+      type: 'object',
       properties: {
         action: {
-          type: "string",
+          type: 'string',
           description: `The action to perform. The available actions are:
 * \`key\`: Press a key or key-combination on the keyboard.
 - This supports pyautogui hotkey syntax.
@@ -38,29 +39,29 @@ export class ComputerUse implements Tool {
 * \`screenshot\`: Take a screenshot of the screen.
 * \`scroll\`: Performs a scroll of the mouse scroll wheel, The coordinate parameter is ineffective, each time a scroll operation is performed.`,
           enum: [
-            "key",
-            "type",
-            "mouse_move",
-            "left_click",
-            "left_click_drag",
-            "right_click",
-            "double_click",
-            "screenshot",
-            "cursor_position",
-            "scroll",
+            'key',
+            'type',
+            'mouse_move',
+            'left_click',
+            'left_click_drag',
+            'right_click',
+            'double_click',
+            'screenshot',
+            'cursor_position',
+            'scroll',
           ],
         },
         coordinate: {
-          type: "array",
+          type: 'array',
           description:
-            "(x, y): The x (pixels from the left edge) and y (pixels from the top edge) coordinates to move the mouse to.",
+            '(x, y): The x (pixels from the left edge) and y (pixels from the top edge) coordinates to move the mouse to.',
         },
         text: {
-          type: "string",
-          description: "Required only by `action=type` and `action=key`",
+          type: 'string',
+          description: 'Required only by `action=type` and `action=key`',
         },
       },
-      required: ["action"],
+      required: ['action'],
     };
   }
 
@@ -70,168 +71,128 @@ export class ComputerUse implements Tool {
    * @param {*} params { action: 'mouse_move', coordinate: [100, 200] }
    * @returns { success: true, coordinate?: [], image?: { type: 'base64', media_type: 'image/jpeg', data: '/9j...' } }
    */
-  async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
-    if (
-      typeof params !== "object" ||
-      params === null ||
-      !("action" in params)
-    ) {
-      throw new Error(
-        'Invalid parameters. Expected an object with a "action" property.'
-      );
+  async execute(context: ExecutionContext, params: ComputerUseParam): Promise<ComputerUseResult> {
+    if (typeof params !== 'object' || params === null || !params.action) {
+      throw new Error('Invalid parameters. Expected an object with a "action" property.');
     }
-    let { action, coordinate, text } = params as any;
     let result;
-    switch (action as string) {
-      case "key":
-        result = await key(text, coordinate);
+    switch (params.action) {
+      case 'key':
+        result = await key(params.text as string, params.coordinate);
         break;
-      case "type":
-        result = await type(text, coordinate);
+      case 'type':
+        result = await type(params.text as string, params.coordinate);
         break;
-      case "mouse_move":
-        result = await mouse_move(coordinate);
+      case 'mouse_move':
+        result = await mouse_move(params.coordinate as [number, number]);
         break;
-      case "left_click":
-        result = await left_click(coordinate);
+      case 'left_click':
+        result = await left_click(params.coordinate);
         break;
-      case "left_click_drag":
-        result = await left_click_drag(coordinate);
+      case 'left_click_drag':
+        result = await left_click_drag(params.coordinate as [number, number]);
         break;
-      case "right_click":
-        result = await right_click(coordinate);
+      case 'right_click':
+        result = await right_click(params.coordinate);
         break;
-      case "double_click":
-        result = await double_click(coordinate);
+      case 'double_click':
+        result = await double_click(params.coordinate);
         break;
-      case "screenshot":
+      case 'screenshot':
         result = await screenshot();
         break;
-      case "cursor_position":
+      case 'cursor_position':
         result = await cursor_position();
         break;
-      case "scroll":
-        result = await scroll(coordinate);
+      case 'scroll':
+        result = await scroll(params.coordinate);
         break;
       default:
         throw Error(
-          `Invalid parameters. The "${action}" value is not included in the "action" enumeration.`
+          `Invalid parameters. The "${params.action}" value is not included in the "action" enumeration.`
         );
     }
     return { success: true, ...result };
   }
-
 }
 
-export async function key(
-  key: string,
-  coordinate?: [number, number]
-) {
+export async function key(key: string, coordinate?: [number, number]) {
   if (!coordinate) {
     coordinate = (await cursor_position()).coordinate;
   }
   await mouse_move(coordinate);
   let mapping: { [key: string]: string } = {
-    space: " ",
-    escape: "esc",
-    return: "enter",
-    page_up: "pageup",
-    page_down: "pagedown",
-    back_space: "backspace",
+    space: ' ',
+    escape: 'esc',
+    return: 'enter',
+    page_up: 'pageup',
+    page_down: 'pagedown',
+    back_space: 'backspace',
   };
-  let keys = key.replace(/\s+/g, " ").split(" ");
+  let keys = key.replace(/\s+/g, ' ').split(' ');
   for (let i = 0; i < keys.length; i++) {
     let _key = keys[i];
-    if (_key.indexOf("+") > -1) {
-      let mapped_keys = _key.split("+").map((k) => mapping[k] || k);
-      await runComputeruseCommand("hotkey", mapped_keys);
+    if (_key.indexOf('+') > -1) {
+      let mapped_keys = _key.split('+').map((k) => mapping[k] || k);
+      await runComputeruseCommand('hotkey', mapped_keys);
     } else {
       let mapped_key = mapping[_key] || _key;
-      await runComputeruseCommand("press", [mapped_key]);
+      await runComputeruseCommand('press', [mapped_key]);
     }
     await new Promise((resolve: any) => setTimeout(() => resolve(), 100));
   }
 }
 
-export async function type(
-  text: string,
-  coordinate?: [number, number]
-) {
+export async function type(text: string, coordinate?: [number, number]) {
   if (coordinate) {
     await mouse_move(coordinate);
   }
-  await runComputeruseCommand("write", [text]);
+  await runComputeruseCommand('write', [text]);
 }
 
 export async function mouse_move(coordinate: [number, number]) {
-  await runComputeruseCommand("moveTo", coordinate);
+  await runComputeruseCommand('moveTo', coordinate);
 }
 
 export async function left_click(coordinate?: [number, number]) {
   if (!coordinate) {
     coordinate = (await cursor_position()).coordinate;
   }
-  await runComputeruseCommand("click", [
-    coordinate[0],
-    coordinate[1],
-    1,
-    0,
-    "left",
-  ]);
+  await runComputeruseCommand('click', [coordinate[0], coordinate[1], 1, 0, 'left']);
 }
 
-export async function left_click_drag(
-  coordinate: [number, number]
-) {
-  await runComputeruseCommand("dragTo", [coordinate[0], coordinate[1], 0]);
+export async function left_click_drag(coordinate: [number, number]) {
+  await runComputeruseCommand('dragTo', [coordinate[0], coordinate[1], 0]);
 }
 
-export async function right_click(
-  coordinate?: [number, number]
-) {
+export async function right_click(coordinate?: [number, number]) {
   if (!coordinate) {
     coordinate = (await cursor_position()).coordinate;
   }
-  await runComputeruseCommand("click", [
-    coordinate[0],
-    coordinate[1],
-    1,
-    0,
-    "right",
-  ]);
+  await runComputeruseCommand('click', [coordinate[0], coordinate[1], 1, 0, 'right']);
 }
 
-export async function double_click(
-  coordinate?: [number, number]
-) {
+export async function double_click(coordinate?: [number, number]) {
   if (!coordinate) {
     coordinate = (await cursor_position()).coordinate;
   }
-  await runComputeruseCommand("click", [
-    coordinate[0],
-    coordinate[1],
-    2,
-    0,
-    "left",
-  ]);
+  await runComputeruseCommand('click', [coordinate[0], coordinate[1], 2, 0, 'left']);
 }
 
 export async function screenshot(windowId?: number): Promise<{
   image: {
-    type: "base64";
-    media_type: "image/png" | "image/jpeg";
+    type: 'base64';
+    media_type: 'image/png' | 'image/jpeg';
     data: string;
   };
 }> {
-  let screenshot = (await runComputeruseCommand("screenshot")).result;
-  let dataUrl = screenshot.startsWith("data:")
-    ? screenshot
-    : "data:image/png;base64," + screenshot;
-  let data = dataUrl.substring(dataUrl.indexOf("base64,") + 7);
+  let screenshot = (await runComputeruseCommand('screenshot')).result;
+  let dataUrl = screenshot.startsWith('data:') ? screenshot : 'data:image/png;base64,' + screenshot;
+  let data = dataUrl.substring(dataUrl.indexOf('base64,') + 7);
   return {
     image: {
-      type: "base64",
-      media_type: dataUrl.indexOf("png") > -1 ? "image/png" : "image/jpeg",
+      type: 'base64',
+      media_type: dataUrl.indexOf('png') > -1 ? 'image/png' : 'image/jpeg',
       data: data,
     },
   };
@@ -240,17 +201,17 @@ export async function screenshot(windowId?: number): Promise<{
 export async function cursor_position(): Promise<{
   coordinate: [number, number];
 }> {
-  let response = await runComputeruseCommand("position");
+  let response = await runComputeruseCommand('position');
   return response.result;
 }
 
 export async function size(): Promise<[number, number]> {
-  let response = await runComputeruseCommand("size");
+  let response = await runComputeruseCommand('size');
   return response.result;
 }
 
 export async function scroll(coordinate?: [number, number]) {
-  await runComputeruseCommand("scroll", [2]);
+  await runComputeruseCommand('scroll', [2]);
 }
 
 export async function runComputeruseCommand(
