@@ -12,10 +12,10 @@ export interface InputSchema {
 }
 
 export interface Properties {
-  [key: string]: Propertie;
+  [key: string]: Property;
 }
 
-export interface Propertie {
+export interface Property {
   type: 'string' | 'integer' | 'boolean' | 'array' | 'object';
   description?: string;
   items?: InputSchema;
