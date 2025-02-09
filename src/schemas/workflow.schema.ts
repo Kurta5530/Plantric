@@ -36,7 +36,7 @@ export const workflowSchema = {
           },
           action: {
             type: "object",
-            required: ["type", "name"],
+            required: ["type", "name", "description"],
             properties: {
               type: {
                 type: "string",
@@ -44,6 +44,7 @@ export const workflowSchema = {
                 enum: ["prompt"],
               },
               name: { type: "string" },
+              description: { type: "string" },
               params: { type: "object" },
               tools: {
                 type: "array",
