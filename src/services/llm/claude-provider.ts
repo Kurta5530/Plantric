@@ -41,12 +41,42 @@ export class ClaudeProvider implements LLMProvider {
     };
   }
 
+  private extractSystemAndUserMessages(messages: Message[]): {
+    system?: string;
+    userMessages: Anthropic.MessageParam[];
+  } {
+    const systemMessages: string[] = [];
+    const userMessages: Anthropic.MessageParam[] = [];
+
+    for (const message of messages) {
+      if (message.role === 'system') {
+        // For system messages, we only support string content
+        if (typeof message.content !== 'string') {
+          throw new Error('System messages must have string content');
+        }
+        systemMessages.push(message.content);
+      } else {
+        // For user and assistant messages, we support both string and array content
+        userMessages.push({
+          role: message.role as 'user' | 'assistant',
+          content: message.content as any,
+        });
+      }
+  }
+      // Combine all system messages into a single string if any exist
+      const system = systemMessages.length > 0 ? systemMessages.join('\n') : undefined;
+
+      return { system, userMessages };
+    }
+
   async generateText(messages: Message[], params: LLMParameters): Promise<LLMResponse> {
+    const { system, userMessages } = this.extractSystemAndUserMessages(messages);
     const response = await this.client.messages.create({
       model: params.model || this.defaultModel,
       max_tokens: params.maxTokens || 1024,
       temperature: params.temperature,
-      messages: messages as Anthropic.MessageParam[],
+      system,
+      messages: userMessages,
       tools: params.tools as Anthropic.Tool[],
       tool_choice: params.toolChoice as Anthropic.ToolChoice,
     });
@@ -59,11 +89,14 @@ export class ClaudeProvider implements LLMProvider {
     params: LLMParameters,
     handler: LLMStreamHandler
   ): Promise<void> {
+    const { system, userMessages } = this.extractSystemAndUserMessages(messages);
+
     const stream = await this.client.messages.stream({
       model: params.model || this.defaultModel,
       max_tokens: params.maxTokens || 1024,
       temperature: params.temperature,
-      messages: messages as Anthropic.MessageParam[],
+      system,
+      messages: userMessages,
       tools: params.tools as Anthropic.Tool[],
       tool_choice: params.toolChoice as Anthropic.ToolChoice,
     });
