@@ -1,18 +1,18 @@
 import { ComputerUseParam, ComputerUseResult } from '../../types/tools.types';
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
 import { getWindowId, getTabId, sleep } from '../utils';
-import * as computer from './computer';
+import * as computer from './browser';
 
 /**
- * Computer Web for general
+ * Browser Use for general
  */
-export class ComputerWeb implements Tool<ComputerUseParam, ComputerUseResult> {
+export class BrowserUse implements Tool<ComputerUseParam, ComputerUseResult> {
   name: string;
   description: string;
   input_schema: InputSchema;
 
   constructor() {
-    this.name = 'computer_web';
+    this.name = 'browser_use';
     this.description = `Use a mouse and keyboard to interact with a computer, and take screenshots.
 * This is a browser GUI interface where you do not have access to the address bar or bookmarks. You must operate the browser using inputs like screenshots, mouse, keyboard, etc.
 * Some operations may take time to process, so you may need to wait and take successive screenshots to see the results of your actions. E.g. if you clicked submit button, but it didn't work, try taking another screenshot.

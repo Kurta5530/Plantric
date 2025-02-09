@@ -11,8 +11,9 @@ export class ClaudeProvider implements LLMProvider {
   private client: Anthropic;
   private defaultModel = 'claude-3-5-sonnet-20241022';
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, baseURL?: string) {
     this.client = new Anthropic({
+      baseURL,
       apiKey: apiKey,
       dangerouslyAllowBrowser: true
     });

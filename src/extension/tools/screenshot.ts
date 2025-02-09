@@ -1,5 +1,5 @@
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
-import { screenshot } from './computer';
+import { screenshot } from './browser';
 import { getWindowId } from '../utils';
 import { ScreenshotResult } from '../../types/tools.types';
 

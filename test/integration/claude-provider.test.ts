@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const ANTHROPIC_BASE_URL = process.env.ANTHROPIC_BASE_URL;
 if (!ANTHROPIC_API_KEY) {
   throw new Error('ANTHROPIC_API_KEY environment variable is required for integration tests');
 }
@@ -20,7 +21,7 @@ describeIntegration('ClaudeProvider Integration', () => {
   let provider: ClaudeProvider;
 
   beforeAll(() => {
-    provider = new ClaudeProvider(ANTHROPIC_API_KEY);
+    provider = new ClaudeProvider(ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL);
   });
 
   describe('generateText', () => {
