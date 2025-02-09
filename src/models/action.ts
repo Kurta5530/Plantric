@@ -78,6 +78,7 @@ export class ActionImpl implements Action {
   constructor(
     public type: 'prompt', // Only support prompt type
     public name: string,
+    public description: string,
     public tools: Tool<any, any>[],
     private llmProvider: LLMProvider,
     private llmConfig?: LLMParameters,
@@ -388,7 +389,7 @@ export class ActionImpl implements Action {
       .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
       .join('\n');
 
-    return `You are executing the action "${this.name}". You have access to the following context:
+    return `You are executing the action "${this.name}". The specific instructions are: "${this.description}". You have access to the following context:
 
     ${contextDescription || 'No context variables set'}
 
@@ -400,10 +401,11 @@ export class ActionImpl implements Action {
   // Static factory method
   static createPromptAction(
     name: string,
+    description: string,
     tools: Tool<any, any>[],
     llmProvider: LLMProvider,
     llmConfig?: LLMParameters
   ): Action {
-    return new ActionImpl('prompt', name, tools, llmProvider, llmConfig);
+    return new ActionImpl('prompt', name, description, tools, llmProvider, llmConfig);
   }
 }

@@ -37,6 +37,7 @@ export interface ExecutionContext {
 export interface Action {
   type: 'prompt' | 'script' | 'hybrid';
   name: string;
+  description: string;
   execute: (input: unknown, context: ExecutionContext) => Promise<unknown>;
   tools: Tool<any, any>[];
 }

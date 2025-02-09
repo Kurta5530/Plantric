@@ -104,7 +104,7 @@ describe('ActionImpl', () => {
 
   describe('constructor', () => {
     it('should create an action with tools including write_context', () => {
-      const action = ActionImpl.createPromptAction('test_action', [mockTool], mockLLMProvider);
+      const action = ActionImpl.createPromptAction('test_action', 'This is an action for testing purposes', [mockTool], mockLLMProvider);
 
       expect(action.tools).toHaveLength(2); // Original tool + write_context
       expect(action.tools.some((t) => t.name === 'write_context')).toBeTruthy();
@@ -120,7 +120,7 @@ describe('ActionImpl', () => {
         { name: 'return_output', input: { value: 'test return' } },
       ]);
 
-      const action = ActionImpl.createPromptAction('test_action', [mockTool], mockLLMProvider);
+      const action = ActionImpl.createPromptAction('test_action', 'This is an action for testing purposes', [mockTool], mockLLMProvider);
 
       await action.execute('Test input', context);
       // Tool was successful, no errors thrown
@@ -134,7 +134,7 @@ describe('ActionImpl', () => {
         { name: 'return_output', input: { value: 'test return' } },
     ]);
 
-      const action = ActionImpl.createPromptAction('test_action', [mockTool], mockLLMProvider);
+      const action = ActionImpl.createPromptAction('test_action', 'This is an action for testing purposes', [mockTool], mockLLMProvider);
 
       await action.execute('Test input', context);
       // Should handle tool failure gracefully, no error thrown
@@ -143,7 +143,7 @@ describe('ActionImpl', () => {
     it('should handle LLM provider failure', async () => {
       mockLLMProvider = new MockLLMProvider([], true);
 
-      const action = ActionImpl.createPromptAction('test_action', [mockTool], mockLLMProvider);
+      const action = ActionImpl.createPromptAction('test_action', 'This is an action for testing purposes', [mockTool], mockLLMProvider);
 
       await expect(action.execute('Test input', context)).resolves.toBeDefined();
       // Should handle LLM failure gracefully
@@ -159,7 +159,7 @@ describe('ActionImpl', () => {
         { name: 'return_output', input: { value: 'test return' } },
       ]);
 
-      const action = ActionImpl.createPromptAction('test_action', [mockTool], mockLLMProvider);
+      const action = ActionImpl.createPromptAction('test_action', 'This is an action for testing purposes', [mockTool], mockLLMProvider);
 
       await action.execute('Test input', context);
 
@@ -177,7 +177,7 @@ describe('ActionImpl', () => {
         { name: 'return_output', input: { value: 'test return' } },
       ]);
 
-      const action = ActionImpl.createPromptAction('test_action', [mockTool], mockLLMProvider);
+      const action = ActionImpl.createPromptAction('test_action', 'This is an action for testing purposes', [mockTool], mockLLMProvider);
 
       await action.execute('Test input', context);
 
@@ -185,7 +185,7 @@ describe('ActionImpl', () => {
       expect(context.variables.get('test_key')).toBe('plain text value');
     });
 
-    it('should include context variables in system prompt', async () => {
+    it('should include context variables in user prompt', async () => {
       // Setup context with some variables
       context.variables.set('existingVar', 'test value');
 
@@ -199,7 +199,7 @@ describe('ActionImpl', () => {
       };
 
       const action = ActionImpl.createPromptAction(
-        'test_action',
+        'test_action', 'This is an action for testing purposes',
         [mockTool],
         mockLLMProviderWithCapture
       );
@@ -207,9 +207,9 @@ describe('ActionImpl', () => {
       await action.execute('Test input', context);
 
       // Verify system prompt includes context variables
-      const systemPrompt = capturedMessages[0].content as string;
-      expect(systemPrompt).toContain('existingVar');
-      expect(systemPrompt).toContain('test value');
+      const initialPrompt = capturedMessages[1].content as string;
+      expect(initialPrompt).toContain('existingVar');
+      expect(initialPrompt).toContain('test value');
     });
 
     it('should merge action tools with context tools', async () => {
@@ -222,7 +222,7 @@ describe('ActionImpl', () => {
         { name: 'return_output', input: { value: 'test return' } },
       ]);
 
-      const action = ActionImpl.createPromptAction('test_action', [mockTool], mockLLMProvider);
+      const action = ActionImpl.createPromptAction('test_action', 'This is an action for testing purposes', [mockTool], mockLLMProvider);
 
       await action.execute('Test input', context);
       // Both tools should have been accessible

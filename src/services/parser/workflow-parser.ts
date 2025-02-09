@@ -174,6 +174,7 @@ export class WorkflowParser {
         action: {
           type: nodeJson.action.type,
           name: nodeJson.action.name,
+          description: nodeJson.action.description,
           tools: nodeJson.action.tools || [],
           execute: async (input: unknown, context: any) => {
             // Default implementation - should be overridden by specific action types
@@ -207,6 +208,7 @@ export class WorkflowParser {
         action: {
           type: node.action.type,
           name: node.action.name,
+          description: node.action.description,
           tools: node.action.tools,
         },
       })),
