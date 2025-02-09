@@ -115,7 +115,6 @@ export class ActionImpl implements Action {
     const handler: LLMStreamHandler = {
       onContent: (content) => {
         if (content.trim()) {
-          console.log('LLM:', content);
           assistantTextMessage += content;
         }
       },
@@ -373,7 +372,17 @@ export class ActionImpl implements Action {
     return output;
   }
 
-  private formatSystemPrompt(context: ExecutionContext): string {
+  private formatSystemPrompt(): string {
+
+    return `You are a task executor. You need to complete the task specified by the user, using the tools provided. When you need to store results or outputs, use the write_context tool. When you are ready to return the final output, use the return_output tool.
+
+    Remember to:
+    1. Use tools when needed to accomplish the task
+    2. Store important results using write_context, including intermediate and final results
+    3. Think step by step about what needs to be done`;
+  }
+
+  private formatUserPrompt(context: ExecutionContext, input: unknown): string {
     // Create a description of the current context
     const contextDescription = Array.from(context.variables.entries())
       .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
@@ -381,22 +390,11 @@ export class ActionImpl implements Action {
 
     return `You are executing the action "${this.name}". You have access to the following context:
 
-${contextDescription || 'No context variables set'}
+    ${contextDescription || 'No context variables set'}
 
-You can use the provided tools to accomplish your task. When you need to store results or outputs,
-use the write_context tool to save them to the workflow context.
-
-Remember to:
-1. Use tools when needed to accomplish the task
-2. Store important results using write_context
-3. Think step by step about what needs to be done`;
-  }
-
-  private formatUserPrompt(input: unknown): string {
-    if (typeof input === 'string') {
-      return input;
-    }
-    return JSON.stringify(input, null, 2);
+    You have been provided with the following input:
+    ${(typeof input === 'string' ? input : JSON.stringify(input, null, 2)) || 'No additional input provided'}
+    `
   }
 
   // Static factory method

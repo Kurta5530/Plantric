@@ -62,7 +62,36 @@ export class ClaudeProvider implements LLMProvider {
     };
   }
 
+  private extractSystemAndUserMessages(messages: Message[]): {
+    system?: string;
+    userMessages: Anthropic.MessageParam[];
+  } {
+    const systemMessages: string[] = [];
+    const userMessages: Anthropic.MessageParam[] = [];
+
+    for (const message of messages) {
+      if (message.role === 'system') {
+        // For system messages, we only support string content
+        if (typeof message.content !== 'string') {
+          throw new Error('System messages must have string content');
+        }
+        systemMessages.push(message.content);
+      } else {
+        // For user and assistant messages, we support both string and array content
+        userMessages.push({
+          role: message.role as 'user' | 'assistant',
+          content: message.content as any,
+        });
+      }
+  }
+      // Combine all system messages into a single string if any exist
+      const system = systemMessages.length > 0 ? systemMessages.join('\n') : undefined;
+
+      return { system, userMessages };
+    }
+
   async generateText(messages: Message[], params: LLMParameters): Promise<LLMResponse> {
+<<<<<<< HEAD
     let system = messages
       .filter((s) => s.role == 'system')
       .map((s) => {
@@ -72,12 +101,20 @@ export class ClaudeProvider implements LLMProvider {
           return (s.content[0] as any).text as string;
         }
       })[0];
+=======
+    const { system, userMessages } = this.extractSystemAndUserMessages(messages);
+>>>>>>> 76bbffb (refactor(action & llm-provider): streamline message formatting)
     const response = await this.client.messages.create({
       system,
       model: params.model || this.defaultModel,
       max_tokens: params.maxTokens || 1024,
       temperature: params.temperature,
+<<<<<<< HEAD
       messages: messages.filter((s) => s.role != 'system') as Anthropic.MessageParam[],
+=======
+      system,
+      messages: userMessages,
+>>>>>>> 76bbffb (refactor(action & llm-provider): streamline message formatting)
       tools: params.tools as Anthropic.Tool[],
       tool_choice: params.toolChoice as Anthropic.ToolChoice,
     });
