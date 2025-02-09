@@ -39,6 +39,7 @@ class AddTool implements Tool<any, any> {
 
   async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
     const { a, b } = params as { a: number; b: number };
+    await new Promise((resolve) => setTimeout(resolve, 5000));
     return { result: a + b };
   }
 }
@@ -64,6 +65,7 @@ class MultiplyTool implements Tool<any, any> {
 
   async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
     const { a, b } = params as { a: number; b: number };
+    await new Promise((resolve) => setTimeout(resolve, 5000));
     return { result: a * b };
   }
 }
