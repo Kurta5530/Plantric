@@ -3,7 +3,7 @@ import { Tool, ExecutionContext, InputSchema } from '../../src/types/action.type
 import { LLMProvider, Message, LLMParameters, LLMStreamHandler } from '../../src/types/llm.types';
 
 // Mock tool for testing
-class MockTool implements Tool {
+class MockTool implements Tool<any, any> {
   constructor(
     public name: string,
     public description: string = 'Mock tool for testing',
@@ -13,9 +13,9 @@ class MockTool implements Tool {
   input_schema = {
     type: 'object',
     properties: {
-      testParam: { type: 'string' }
+      testParam: { type: 'string' },
     },
-    required: ['testParam']
+    required: ['testParam'],
   } as InputSchema;
 
   async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
@@ -30,7 +30,8 @@ class MockTool implements Tool {
 class MockLLMProvider implements LLMProvider {
   constructor(
     private toolCallResponses: Array<{ name: string; input: any }> = [],
-    public shouldFail: boolean = false
+    public shouldFail: boolean = false,
+    public counter: number = 0
   ) {}
 
   async generateText(): Promise<any> {
@@ -39,7 +40,7 @@ class MockLLMProvider implements LLMProvider {
     }
     return {
       content: 'Test response',
-      toolCalls: this.toolCallResponses
+      toolCalls: this.toolCallResponses,
     };
   }
 
@@ -57,16 +58,32 @@ class MockLLMProvider implements LLMProvider {
     handler.onContent?.('Thinking about the task...');
 
     // Process each tool call
-    for (const toolCall of this.toolCallResponses) {
-      handler.onToolUse?.({
-        id: `tool-${Math.random()}`,
-        name: toolCall.name,
-        input: toolCall.input
-      });
-    }
+    const toolCall = this.toolCallResponses[this.counter++];
+    handler.onToolUse?.({
+      id: `tool-${Math.random()}`,
+      name: toolCall.name,
+      input: toolCall.input,
+    });
 
     // Final response
-    handler.onContent?.('Task completed');
+    handler.onComplete?.({
+        content: [
+          { type: 'text', text: 'Thinking about the task...' },
+          {
+            type: 'tool_use',
+            id: `tool-${Math.random()}`,
+            name: toolCall.name,
+            input: toolCall.input
+          }
+        ],
+        toolCalls: [{
+          id: `tool-${Math.random()}`,
+          name: toolCall.name,
+          input: toolCall.input
+        }],
+        stop_reason: 'tool_use',
+        textContent: null  // No text content when using tools
+      });
   }
 }
 
@@ -79,22 +96,18 @@ describe('ActionImpl', () => {
     mockTool = new MockTool('test_tool');
     mockLLMProvider = new MockLLMProvider();
     context = {
-        variables: new Map<string, unknown>(),
-        tools: new Map<string, Tool>()
+      variables: new Map<string, unknown>(),
+      tools: new Map<string, Tool<any, any>>(),
     };
   });
 
   describe('constructor', () => {
     it('should create an action with tools including write_context', () => {
-      const action = ActionImpl.createPromptAction(
-        'test_action',
-        [mockTool],
-        mockLLMProvider
-      );
+      const action = ActionImpl.createPromptAction('test_action', [mockTool], mockLLMProvider);
 
       expect(action.tools).toHaveLength(2); // Original tool + write_context
-      expect(action.tools.some(t => t.name === 'write_context')).toBeTruthy();
-      expect(action.tools.some(t => t.name === 'test_tool')).toBeTruthy();
+      expect(action.tools.some((t) => t.name === 'write_context')).toBeTruthy();
+      expect(action.tools.some((t) => t.name === 'test_tool')).toBeTruthy();
     });
   });
 
@@ -102,14 +115,11 @@ describe('ActionImpl', () => {
     it('should handle successful tool execution', async () => {
       // Setup LLM to make a tool call
       mockLLMProvider = new MockLLMProvider([
-        { name: 'test_tool', input: { testParam: 'test' } }
+        { name: 'test_tool', input: { testParam: 'test' } },
+        { name: 'return_output', input: { value: 'test return' } },
       ]);
 
-      const action = ActionImpl.createPromptAction(
-        'test_action',
-        [mockTool],
-        mockLLMProvider
-      );
+      const action = ActionImpl.createPromptAction('test_action', [mockTool], mockLLMProvider);
 
       await action.execute('Test input', context);
       // Tool was successful, no errors thrown
@@ -119,14 +129,11 @@ describe('ActionImpl', () => {
       // Setup failing tool
       mockTool = new MockTool('test_tool', 'Mock tool', true);
       mockLLMProvider = new MockLLMProvider([
-        { name: 'test_tool', input: { testParam: 'test' } }
-      ]);
+        { name: 'test_tool', input: { testParam: 'test' } },
+        { name: 'return_output', input: { value: 'test return' } },
+    ]);
 
-      const action = ActionImpl.createPromptAction(
-        'test_action',
-        [mockTool],
-        mockLLMProvider
-      );
+      const action = ActionImpl.createPromptAction('test_action', [mockTool], mockLLMProvider);
 
       await action.execute('Test input', context);
       // Should handle tool failure gracefully, no error thrown
@@ -135,11 +142,7 @@ describe('ActionImpl', () => {
     it('should handle LLM provider failure', async () => {
       mockLLMProvider = new MockLLMProvider([], true);
 
-      const action = ActionImpl.createPromptAction(
-        'test_action',
-        [mockTool],
-        mockLLMProvider
-      );
+      const action = ActionImpl.createPromptAction('test_action', [mockTool], mockLLMProvider);
 
       await expect(action.execute('Test input', context)).resolves.toBeDefined();
       // Should handle LLM failure gracefully
@@ -150,15 +153,12 @@ describe('ActionImpl', () => {
       mockLLMProvider = new MockLLMProvider([
         {
           name: 'write_context',
-          input: { key: 'test_key', value: JSON.stringify({ data: 'test' }) }
-        }
+          input: { key: 'test_key', value: JSON.stringify({ data: 'test' }) },
+        },
+        { name: 'return_output', input: { value: 'test return' } },
       ]);
 
-      const action = ActionImpl.createPromptAction(
-        'test_action',
-        [mockTool],
-        mockLLMProvider
-      );
+      const action = ActionImpl.createPromptAction('test_action', [mockTool], mockLLMProvider);
 
       await action.execute('Test input', context);
 
@@ -171,15 +171,12 @@ describe('ActionImpl', () => {
       mockLLMProvider = new MockLLMProvider([
         {
           name: 'write_context',
-          input: { key: 'test_key', value: 'plain text value' }
-        }
+          input: { key: 'test_key', value: 'plain text value' },
+        },
+        { name: 'return_output', input: { value: 'test return' } },
       ]);
 
-      const action = ActionImpl.createPromptAction(
-        'test_action',
-        [mockTool],
-        mockLLMProvider
-      );
+      const action = ActionImpl.createPromptAction('test_action', [mockTool], mockLLMProvider);
 
       await action.execute('Test input', context);
 
@@ -191,17 +188,27 @@ describe('ActionImpl', () => {
       // Setup context with some variables
       context.variables.set('existingVar', 'test value');
 
+      // Create mock LLM provider that captures messages
+      const capturedMessages: Message[] = [];
+      const mockLLMProviderWithCapture = new MockLLMProvider();
+      mockLLMProviderWithCapture.generateStream = async (messages, params, handler) => {
+        capturedMessages.push(...messages);
+        // Continue with normal stream handling
+        await handler.onContent?.('Test content');
+      };
+
       const action = ActionImpl.createPromptAction(
         'test_action',
         [mockTool],
-        mockLLMProvider
+        mockLLMProviderWithCapture
       );
 
       await action.execute('Test input', context);
 
-      // The system prompt should have included the existing variable
-      // This is a bit tricky to test directly since it's part of the message to LLM
-      // We could add a message capture to MockLLMProvider if needed
+      // Verify system prompt includes context variables
+      const systemPrompt = capturedMessages[0].content as string;
+      expect(systemPrompt).toContain('existingVar');
+      expect(systemPrompt).toContain('test value');
     });
 
     it('should merge action tools with context tools', async () => {
@@ -210,14 +217,11 @@ describe('ActionImpl', () => {
 
       mockLLMProvider = new MockLLMProvider([
         { name: 'context_tool', input: { testParam: 'test' } },
-        { name: 'test_tool', input: { testParam: 'test' } }
+        { name: 'test_tool', input: { testParam: 'test' } },
+        { name: 'return_output', input: { value: 'test return' } },
       ]);
 
-      const action = ActionImpl.createPromptAction(
-        'test_action',
-        [mockTool],
-        mockLLMProvider
-      );
+      const action = ActionImpl.createPromptAction('test_action', [mockTool], mockLLMProvider);
 
       await action.execute('Test input', context);
       // Both tools should have been accessible

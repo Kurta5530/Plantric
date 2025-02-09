@@ -18,7 +18,7 @@ const ENABLE_INTEGRATION_TESTS = process.env.ENABLE_INTEGRATION_TESTS === 'true'
 const describeIntegration = ENABLE_INTEGRATION_TESTS ? describe : describe.skip;
 
 // Addition tool
-class AddTool implements Tool {
+class AddTool implements Tool<any, any> {
   name = 'add';
   description = 'Add two numbers together.';
   input_schema = {
@@ -43,7 +43,7 @@ class AddTool implements Tool {
 }
 
 // Multiplication tool
-class MultiplyTool implements Tool {
+class MultiplyTool implements Tool<any, any> {
   name = 'multiply';
   description = 'Multiply two numbers together.';
   input_schema = {
@@ -68,7 +68,7 @@ class MultiplyTool implements Tool {
 }
 
 // Echo tool to display results
-class EchoTool implements Tool {
+class EchoTool implements Tool<any, any> {
   name = 'echo';
   description = 'Display or print a message or value.';
   input_schema = {
@@ -92,7 +92,7 @@ class EchoTool implements Tool {
 describeIntegration('Minimal Workflow Integration', () => {
   let llmProvider: ClaudeProvider;
   let context: ExecutionContext;
-  let tools: Tool[];
+  let tools: Tool<any, any>[];
 
   beforeAll(() => {
     llmProvider = new ClaudeProvider(ANTHROPIC_API_KEY);
@@ -100,17 +100,12 @@ describeIntegration('Minimal Workflow Integration', () => {
   });
 
   beforeEach(() => {
-    context = {
-      variables: new Map<string, unknown>(),
-      tools: new Map<string, Tool>()
-    };
-    tools.forEach(tool => context.tools.set(tool.name, tool));
   });
 
   it('should calculate 23 * 45 + 67 using tool chain', async () => {
     // Create calculation action
     const calculateAction = ActionImpl.createPromptAction(
-      'calculate_expression',
+      'calculate expression 23 * 45 + 67',
       tools,
       llmProvider,
       { maxTokens: 1000 }
@@ -118,7 +113,7 @@ describeIntegration('Minimal Workflow Integration', () => {
 
     // Create display action
     const displayAction = ActionImpl.createPromptAction(
-      'display_result',
+      'display result',
       tools,
       llmProvider,
       { maxTokens: 1000 }
@@ -138,10 +133,7 @@ describeIntegration('Minimal Workflow Integration', () => {
       input: {
         type: 'object',
         schema: {},
-        value: {
-          expression: '23 * 45 + 67',
-          description: 'First multiply 23 and 45, then add 67 to the result'
-        }
+        value: null
       },
       output: {
         type: 'object',
@@ -174,10 +166,10 @@ describeIntegration('Minimal Workflow Integration', () => {
     await workflow.execute();
 
     // Log all context variables
-    console.log('Context variables:', Object.fromEntries(context.variables));
+    console.log('Context variables:', Object.fromEntries(workflow.variables));
 
     // Find numerical result in context variables
-    const numberResults = Array.from(context.variables.entries())
+    const numberResults = Array.from(workflow.variables.entries())
       .filter(([_, value]) => typeof value === 'number');
 
     expect(numberResults.length).toBeGreaterThan(0);
