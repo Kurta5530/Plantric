@@ -1,6 +1,7 @@
 import { LLMProvider, LLMParameters, Message } from '../../types/llm.types';
 import { Workflow } from '../../types/workflow.types';
 import { WorkflowImpl } from '../../models/workflow';
+import {ActionImpl} from '../../models/action';
 import { ToolRegistry } from '../../core/tool-registry';
 import { createWorkflowPrompts, createWorkflowGenerationTool } from './templates';
 import { v4 as uuidv4 } from 'uuid';
@@ -70,18 +71,23 @@ export class WorkflowGenerator {
     // Add nodes to workflow
     if (Array.isArray(data.nodes)) {
       data.nodes.forEach((nodeData: any) => {
+        const tools = nodeData.action.tools.map((toolName: string) =>
+          this.toolRegistry.getTool(toolName)
+        );
+
+        const action = ActionImpl.createPromptAction(
+          nodeData.action.name,
+          tools,
+          this.llmProvider,
+          { maxTokens: 1000 }
+        );
+
         const node = {
           id: nodeData.id,
           name: nodeData.name || nodeData.id,
           input: nodeData.input || { type: 'any', schema: {}, value: undefined },
           output: nodeData.output || { type: 'any', schema: {}, value: undefined },
-          action: {
-            ...nodeData.action,
-            // Map tool names to actual tool instances
-            tools: nodeData.action.tools.map((toolName: string) =>
-              this.toolRegistry.getTool(toolName)
-            )
-          },
+          action: action,
           dependencies: nodeData.dependencies || []
         };
         workflow.addNode(node);

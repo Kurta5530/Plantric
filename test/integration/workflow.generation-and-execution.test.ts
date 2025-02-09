@@ -1,10 +1,11 @@
-// test/integration/workflow.test.ts
-
 import { Tool, ExecutionContext, InputSchema, Properties } from '../../src/types/action.types';
-import { WorkflowImpl } from '../../src/models/workflow';
-import { ActionImpl } from '../../src/models/action';
+import { WorkflowGenerator } from '../../src/services/workflow/generator';
 import { ClaudeProvider } from '../../src/services/llm/claude-provider';
+import { WorkflowParser } from '../../src/services/parser/workflow-parser';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import dotenv from 'dotenv';
+import { ToolRegistry } from '@/index';
 
 dotenv.config();
 
@@ -26,14 +27,14 @@ class AddTool implements Tool<any, any> {
     properties: {
       a: {
         type: 'number',
-        description: 'First number'
+        description: 'First number',
       } as const,
       b: {
         type: 'number',
-        description: 'Second number'
-      } as const
+        description: 'Second number',
+      } as const,
     } as unknown as Properties,
-    required: ['a', 'b']
+    required: ['a', 'b'],
   } as InputSchema;
 
   async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
@@ -51,14 +52,14 @@ class MultiplyTool implements Tool<any, any> {
     properties: {
       a: {
         type: 'number',
-        description: 'First number'
+        description: 'First number',
       } as const,
       b: {
         type: 'number',
-        description: 'Second number'
-      } as const
+        description: 'Second number',
+      } as const,
     } as unknown as Properties,
-    required: ['a', 'b']
+    required: ['a', 'b'],
   } as InputSchema;
 
   async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
@@ -76,10 +77,10 @@ class EchoTool implements Tool<any, any> {
     properties: {
       message: {
         type: 'string',
-        description: 'Message or value to display'
-      } as const
+        description: 'Message or value to display',
+      } as const,
     } as unknown as Properties,
-    required: ['message']
+    required: ['message'],
   } as InputSchema;
 
   async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
@@ -89,78 +90,43 @@ class EchoTool implements Tool<any, any> {
   }
 }
 
-describeIntegration('Minimal Workflow Integration', () => {
+describeIntegration('Minimal Workflow Integration with Generation', () => {
   let llmProvider: ClaudeProvider;
   let context: ExecutionContext;
   let tools: Tool<any, any>[];
 
+  let toolRegistry: ToolRegistry;
+  let generator: WorkflowGenerator;
+
+    // Helper function to save workflow DSL to file
+    async function saveWorkflowToFile(dsl: string, filename: string) {
+      const testOutputDir = path.join(__dirname, '../fixtures/generated');
+      await fs.mkdir(testOutputDir, { recursive: true });
+      await fs.writeFile(path.join(testOutputDir, filename), dsl, 'utf-8');
+    }
+
   beforeAll(() => {
     llmProvider = new ClaudeProvider(ANTHROPIC_API_KEY);
     tools = [new AddTool(), new MultiplyTool(), new EchoTool()];
+    toolRegistry = new ToolRegistry();
+    tools.forEach((tool) => toolRegistry.registerTool(tool));
+    generator = new WorkflowGenerator(llmProvider, toolRegistry);
   });
 
-  beforeEach(() => {
-  });
+  beforeEach(() => {});
 
   it('should calculate 23 * 45 + 67 using tool chain', async () => {
-    // Create calculation action
-    const calculateAction = ActionImpl.createPromptAction(
-      'calculate expression 23 * 45 + 67',
-      tools,
-      llmProvider,
-      { maxTokens: 1000 }
-    );
+    const prompt =
+      'Calculate 23 * 45 + 67 using the provided calculation tools, and display the result';
 
-    // Create display action
-    const displayAction = ActionImpl.createPromptAction(
-      'display result',
-      tools,
-      llmProvider,
-      { maxTokens: 1000 }
-    );
+    // Generate workflow
+    const workflow = await generator.generateWorkflow(prompt);
 
-    // Create workflow
-    const workflow = new WorkflowImpl(
-      'calc-and-display',
-      'Calculate and Display Workflow'
-    );
+    // Convert to DSL for validation and inspection
+    const dsl = WorkflowParser.serialize(workflow);
 
-    // Add calculation node
-    const calculateNode = {
-      id: 'calculate',
-      name: 'Calculate Expression',
-      dependencies: [],
-      input: {
-        type: 'object',
-        schema: {},
-        value: null
-      },
-      output: {
-        type: 'object',
-        schema: {},
-        value: null
-      },
-      action: calculateAction
-    };
-    workflow.addNode(calculateNode);
-
-    // Add display node
-    workflow.addNode({
-      id: 'display',
-      name: 'Display Result',
-      dependencies: ['calculate'],
-      input: {
-        type: 'object',
-        schema: {},
-        value: null
-      },
-      output: {
-        type: 'object',
-        schema: {},
-        value: null
-      },
-      action: displayAction
-    });
+    // Save DSL for human inspection
+    await saveWorkflowToFile(dsl, 'calculator.json');
 
     // Execute workflow
     await workflow.execute();
@@ -169,8 +135,9 @@ describeIntegration('Minimal Workflow Integration', () => {
     console.log('Context variables:', Object.fromEntries(workflow.variables));
 
     // Find numerical result in context variables
-    const numberResults = Array.from(workflow.variables.entries())
-      .filter(([_, value]) => typeof value === 'number');
+    const numberResults = Array.from(workflow.variables.entries()).filter(
+      ([_, value]) => typeof value === 'number'
+    );
 
     expect(numberResults.length).toBeGreaterThan(0);
 
@@ -178,5 +145,5 @@ describeIntegration('Minimal Workflow Integration', () => {
     const finalResult = numberResults.find(([_, value]) => value === 1102);
     expect(finalResult).toBeDefined();
     console.log('Found result:', finalResult);
-  }, 30000);
+  }, 60000);
 });
