@@ -1,5 +1,5 @@
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
-import { getWindowId, waitForTabComplete } from '../utils';
+import { getWindowId, open_new_tab } from '../utils';
 
 /**
  * Open Url
@@ -31,7 +31,7 @@ export class OpenUrl implements Tool {
   /**
    * Open Url
    *
-   * @param {*} params { url: 'https://google.com', newWindow: true }
+   * @param {*} params { url: 'https://www.google.com', newWindow: true }
    * @returns > { tabId, windowId, title, success: true }
    */
   async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
@@ -39,38 +39,28 @@ export class OpenUrl implements Tool {
       throw new Error('Invalid parameters. Expected an object with a "url" property.');
     }
     let { url, newWindow } = params as any;
-    let windowId: number;
-    let tabId: number;
-    if (newWindow) {
-      let window = await chrome.windows.create({
-        type: 'normal',
-        state: 'maximized',
-        url: url,
-      } as any as chrome.windows.CreateData);
-      windowId = window.id as number;
-      let tabs = window.tabs || [
-        await chrome.tabs.create({
-          url: url,
-          windowId: windowId,
-        }),
-      ];
-      tabId = tabs[0].id as number;
-    } else {
-      windowId = await getWindowId(context);
-      let tab = await chrome.tabs.create({
-        url: url,
-        windowId: windowId,
-      });
-      tabId = tab.id as number;
+    if (!newWindow && !context.variables.get('windowId') && !context.variables.get('tabId')) {
+      // First mandatory opening of a new window
+      newWindow = true;
     }
-    let tab = await waitForTabComplete(tabId);
+    let tab: chrome.tabs.Tab;
+    if (newWindow) {
+      tab = await open_new_tab(url, true);
+    } else {
+      let windowId = await getWindowId(context);
+      tab = await open_new_tab(url, false, windowId);
+    }
+    let windowId = tab.windowId as number;
+    let tabId = tab.id as number;
     context.variables.set('windowId', windowId);
     context.variables.set('tabId', tabId);
-    let windowIds = context.variables.get('windowIds') as Array<number>;
-    if (windowIds) {
-      windowIds.push(windowId);
-    } else {
-      context.variables.set('windowIds', [windowId] as Array<number>);
+    if (newWindow) {
+      let windowIds = context.variables.get('windowIds') as Array<number>;
+      if (windowIds) {
+        windowIds.push(windowId);
+      } else {
+        context.variables.set('windowIds', [windowId] as Array<number>);
+      }
     }
     return {
       tabId,

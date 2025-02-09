@@ -1,5 +1,5 @@
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
-import { getTabId, sleep, waitForTabComplete } from '../utils';
+import { getTabId, open_new_tab, sleep } from '../utils';
 
 /**
  * Export file
@@ -71,7 +71,7 @@ export class ExportFile implements Tool {
     if (!filename) {
       filename = new Date().getTime() + '.' + fileType;
     } else if (!(filename + '').endsWith(fileType)) {
-      filename += ('.' + fileType);
+      filename += '.' + fileType;
     }
     let tabId = await getTabId(context);
     try {
@@ -81,7 +81,8 @@ export class ExportFile implements Tool {
         args: [filename, type, content],
       });
     } catch (e) {
-      tabId = await newTabId();
+      let tab = await open_new_tab('https://www.google.com', true);
+      tabId = tab.id as number;
       await chrome.scripting.executeScript({
         target: { tabId: tabId as number },
         func: exportFile,
@@ -92,25 +93,6 @@ export class ExportFile implements Tool {
     }
     return { success: true };
   }
-}
-
-async function newTabId(): Promise<number> {
-  let url = 'https://google.com';
-  let window = await chrome.windows.create({
-    type: 'normal',
-    state: 'maximized',
-    url: url,
-  } as any as chrome.windows.CreateData);
-  let windowId = window.id as number;
-  let tabs = window.tabs || [
-    await chrome.tabs.create({
-      url: url,
-      windowId: windowId,
-    }),
-  ];
-  let tabId = tabs[0].id as number;
-  await waitForTabComplete(tabId);
-  return tabId;
 }
 
 function exportFile(filename: string, type: string, content: string) {

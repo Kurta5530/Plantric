@@ -1,5 +1,5 @@
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
-import { getTabId, getWindowId, sleep } from '../utils';
+import { getTabId, getWindowId, open_new_tab, sleep } from '../utils';
 
 /**
  * Browser tab management
@@ -21,7 +21,8 @@ export class TabManagement implements Tool {
 * \`tab_all\`: View all tabs and return the tabId and title.
 * \`current_tab\`: Get current tab information (tabId, url, title).
 * \`close_tab\`: Close the current tab.
-* \`switch_tab [tabId]\`: Switch to the specified tab using tabId, eg: switch_tab 1000`,
+* \`switch_tab [tabId]\`: Switch to the specified tab using tabId, eg: switch_tab 1000.
+* \`new_tab [url]\`: Open a new tab window and open the URL, eg: new_tab https://www.google.com`,
         },
       },
       required: ['action'],
@@ -84,6 +85,30 @@ export class TabManagement implements Tool {
       context.variables.set('tabId', tab.id);
       context.variables.set('windowId', tab.windowId);
       result = { tabId, windowId: tab.windowId, title: tab.title, url: tab.url };
+    } else if (action.startsWith('new_tab')) {
+      let url = action.replace('new_tab', '').replace('[', '').replace(']', '').replace(/"/g, '');
+      // First mandatory opening of a new window
+      let newWindow = !context.variables.get('windowId') && !context.variables.get('tabId');
+      let tab: chrome.tabs.Tab;
+      if (newWindow) {
+        tab = await open_new_tab(url, true);
+      } else {
+        let windowId = await getWindowId(context);
+        tab = await open_new_tab(url, false, windowId);
+      }
+      let windowId = tab.windowId as number;
+      let tabId = tab.id as number;
+      context.variables.set('windowId', windowId);
+      context.variables.set('tabId', tabId);
+      if (newWindow) {
+        let windowIds = context.variables.get('windowIds') as Array<number>;
+        if (windowIds) {
+          windowIds.push(windowId);
+        } else {
+          context.variables.set('windowIds', [windowId] as Array<number>);
+        }
+      }
+      result = { tabId: tab.id, windowId: tab.windowId, title: tab.title, url: tab.url };
     }
     return {
       result,

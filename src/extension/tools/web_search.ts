@@ -31,7 +31,7 @@ export class WebSearch implements Tool {
   /**
    * search
    *
-   * @param {*} params { url: 'https://google.com', query: 'ai agent', maxResults: 5 }
+   * @param {*} params { url: 'https://www.google.com', query: 'ai agent', maxResults: 5 }
    * @returns > [{ title, url, content }]
    */
   async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
@@ -40,7 +40,7 @@ export class WebSearch implements Tool {
     }
     let { url, query, maxResults } = params as any;
     if (!url) {
-      url = 'https://google.com';
+      url = 'https://www.google.com';
     }
     let taskId = new Date().getTime() + '';
     let searchs = [{ url: url as string, keyword: query as string }];

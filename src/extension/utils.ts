@@ -2,6 +2,23 @@ import { ExecutionContext } from '../types/action.types';
 
 export async function getWindowId(context: ExecutionContext): Promise<number> {
   let windowId = context.variables.get('windowId') as any;
+  if (windowId) {
+    try {
+      await chrome.windows.get(windowId);
+    } catch (e) {
+      windowId = null;
+      context.variables.delete('windowId');
+      let tabId = context.variables.get('tabId') as any;
+      if (tabId) {
+        try {
+          let tab = await chrome.tabs.get(tabId);
+          windowId = tab.windowId;
+        } catch (e) {
+          context.variables.delete('tabId');
+        }
+      }
+    }
+  }
   if (!windowId) {
     const window = await chrome.windows.getCurrent();
     windowId = window.id;
@@ -11,6 +28,14 @@ export async function getWindowId(context: ExecutionContext): Promise<number> {
 
 export async function getTabId(context: ExecutionContext): Promise<number> {
   let tabId = context.variables.get('tabId') as any;
+  if (tabId) {
+    try {
+      await chrome.tabs.get(tabId);
+    } catch (e) {
+      tabId = null;
+      context.variables.delete('tabId');
+    }
+  }
   if (!tabId) {
     tabId = await getCurrentTabId();
   }
@@ -38,16 +63,53 @@ export function getCurrentTabId(): Promise<number | undefined> {
   });
 }
 
+export async function open_new_tab(
+  url: string,
+  newWindow: boolean,
+  windowId?: number
+): Promise<chrome.tabs.Tab> {
+  let tabId;
+  if (newWindow) {
+    let window = await chrome.windows.create({
+      type: 'normal',
+      state: 'maximized',
+      url: url,
+    } as any as chrome.windows.CreateData);
+    windowId = window.id as number;
+    let tabs = window.tabs || [
+      await chrome.tabs.create({
+        url: url,
+        windowId: windowId,
+      }),
+    ];
+    tabId = tabs[0].id as number;
+  } else {
+    if (!windowId) {
+      const window = await chrome.windows.getCurrent();
+      windowId = window.id;
+    }
+    let tab = await chrome.tabs.create({
+      url: url,
+      windowId: windowId,
+    });
+    tabId = tab.id as number;
+  }
+  return await waitForTabComplete(tabId);
+}
+
 export async function executeScript(tabId: number, func: any, args: any): Promise<any> {
   let frameResults = await chrome.scripting.executeScript({
     target: { tabId: tabId as number },
     func: func,
     args: args,
   });
-  return frameResults[0].result
+  return frameResults[0].result;
 }
 
-export async function waitForTabComplete(tabId: number, timeout: number = 30_000): Promise<any> {
+export async function waitForTabComplete(
+  tabId: number,
+  timeout: number = 30_000
+): Promise<chrome.tabs.Tab> {
   return new Promise(async (resolve, reject) => {
     let tab = await chrome.tabs.get(tabId);
     if (tab.status === 'complete') {
@@ -56,9 +118,9 @@ export async function waitForTabComplete(tabId: number, timeout: number = 30_000
     }
     const time = setTimeout(() => {
       chrome.tabs.onUpdated.removeListener(listener);
-      reject()
+      reject();
     }, timeout);
-    const listener = async (updatedTabId: any, changeInfo: any, tab: any) => {
+    const listener = async (updatedTabId: number, changeInfo: any, tab: chrome.tabs.Tab) => {
       if (updatedTabId === tabId && changeInfo.status === 'complete') {
         chrome.tabs.onUpdated.removeListener(listener);
         clearTimeout(time);
