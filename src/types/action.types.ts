@@ -1,3 +1,5 @@
+import { LLMProvider } from "./llm.types";
+
 export interface Tool<T, R> {
   name: string;
   description: string;
@@ -24,6 +26,7 @@ export interface Property {
 }
 
 export interface ExecutionContext {
+  llmProvider: LLMProvider;
   variables: Map<string, unknown>;
   tools: Map<string, Tool<any, any>>;
 }

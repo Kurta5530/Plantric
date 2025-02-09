@@ -1,6 +1,7 @@
 import { ExportFileParam } from '../../types/tools.types';
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
 import { getTabId, open_new_tab, sleep } from '../utils';
+import { exportFile } from './html_script';
 
 /**
  * Export file
@@ -93,15 +94,4 @@ export class ExportFile implements Tool<ExportFileParam, unknown> {
     }
     return { success: true };
   }
-}
-
-function exportFile(filename: string, type: string, content: string) {
-  const blob = new Blob([content], { type: type });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
 }

@@ -30,7 +30,9 @@ export class ExtractContent implements Tool<any, ExtractContentResult> {
     let tab = await chrome.tabs.get(tabId);
     await injectScript(tabId);
     await sleep(500);
-    let content = await executeScript(tabId, getContent, []);
+    let content = await executeScript(tabId, () => {
+      return lyvo.extractHtmlContent();
+    }, []);
     return {
       tabId,
       result: {
@@ -40,8 +42,4 @@ export class ExtractContent implements Tool<any, ExtractContentResult> {
       }
     } as ExtractContentResult;
   }
-}
-
-function getContent() {
-  return lyvo.extractHtmlContent();
 }

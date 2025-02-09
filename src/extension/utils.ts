@@ -97,7 +97,7 @@ export async function open_new_tab(
   return await waitForTabComplete(tabId);
 }
 
-export async function executeScript(tabId: number, func: any, args: any): Promise<any> {
+export async function executeScript(tabId: number, func: any, args: any[]): Promise<any> {
   let frameResults = await chrome.scripting.executeScript({
     target: { tabId: tabId as number },
     func: func,
