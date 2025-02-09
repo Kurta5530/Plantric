@@ -147,11 +147,17 @@ export class ActionImpl implements Action {
             const resultMessage: Message = {
               role: 'user',
               content: [
-                {
-                  type: 'tool_result',
-                  tool_use_id: toolCall.id,
-                  content: [{ type: 'text', text: JSON.stringify(result) }],
-                },
+                result.image && result.image.type === 'base64'
+                  ? {
+                      type: 'tool_result',
+                      tool_use_id: toolCall.id,
+                      content: [{ type: 'image', source: result.image }],
+                    }
+                  : {
+                      type: 'tool_result',
+                      tool_use_id: toolCall.id,
+                      content: [{ type: 'text', text: JSON.stringify(result) }],
+                    },
               ],
             };
             toolResultMessage = resultMessage;
