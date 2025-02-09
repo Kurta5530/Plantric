@@ -1,6 +1,7 @@
+import { ScreenshotResult } from '../../types/tools.types';
 import { getPageSize, sleep } from '../utils';
 
-export async function key(tabId: number, key: string, coordinate?: [number, number]) {
+export async function key(tabId: number, key: string, coordinate?: [number, number]): Promise<any> {
   if (!coordinate) {
     coordinate = (await cursor_position(tabId)).coordinate;
   }
@@ -50,7 +51,7 @@ export async function key(tabId: number, key: string, coordinate?: [number, numb
   return result;
 }
 
-export async function type(tabId: number, text: string, coordinate?: [number, number]) {
+export async function type(tabId: number, text: string, coordinate?: [number, number]): Promise<any> {
   if (!coordinate) {
     coordinate = (await cursor_position(tabId)).coordinate;
   }
@@ -62,7 +63,7 @@ export async function type(tabId: number, text: string, coordinate?: [number, nu
   });
 }
 
-export async function clear_input(tabId: number, coordinate?: [number, number]) {
+export async function clear_input(tabId: number, coordinate?: [number, number]): Promise<any> {
   if (!coordinate) {
     coordinate = (await cursor_position(tabId)).coordinate;
   }
@@ -74,14 +75,14 @@ export async function clear_input(tabId: number, coordinate?: [number, number]) 
   });
 }
 
-export async function mouse_move(tabId: number, coordinate: [number, number]) {
+export async function mouse_move(tabId: number, coordinate: [number, number]): Promise<any> {
   return await chrome.tabs.sendMessage(tabId, {
     type: 'computer:mouse_move',
     coordinate,
   });
 }
 
-export async function left_click(tabId: number, coordinate?: [number, number]) {
+export async function left_click(tabId: number, coordinate?: [number, number]): Promise<any> {
   if (!coordinate) {
     coordinate = (await cursor_position(tabId)).coordinate;
   }
@@ -91,7 +92,7 @@ export async function left_click(tabId: number, coordinate?: [number, number]) {
   });
 }
 
-export async function left_click_drag(tabId: number, coordinate: [number, number]) {
+export async function left_click_drag(tabId: number, coordinate: [number, number]): Promise<any> {
   let from_coordinate = (await cursor_position(tabId)).coordinate;
   return await chrome.tabs.sendMessage(tabId, {
     type: 'computer:left_click_drag',
@@ -100,7 +101,7 @@ export async function left_click_drag(tabId: number, coordinate: [number, number
   });
 }
 
-export async function right_click(tabId: number, coordinate?: [number, number]) {
+export async function right_click(tabId: number, coordinate?: [number, number]): Promise<any> {
   if (!coordinate) {
     coordinate = (await cursor_position(tabId)).coordinate;
   }
@@ -110,7 +111,7 @@ export async function right_click(tabId: number, coordinate?: [number, number]) 
   });
 }
 
-export async function double_click(tabId: number, coordinate?: [number, number]) {
+export async function double_click(tabId: number, coordinate?: [number, number]): Promise<any> {
   if (!coordinate) {
     coordinate = (await cursor_position(tabId)).coordinate;
   }
@@ -120,13 +121,7 @@ export async function double_click(tabId: number, coordinate?: [number, number])
   });
 }
 
-export async function screenshot(windowId: number): Promise<{
-  image: {
-    type: 'base64';
-    media_type: 'image/png' | 'image/jpeg';
-    data: string;
-  };
-}> {
+export async function screenshot(windowId: number): Promise<ScreenshotResult> {
   let dataUrl = await chrome.tabs.captureVisibleTab(windowId as number, {
     format: 'jpeg', // jpeg / png
     quality: 80, // 0-100
@@ -141,7 +136,7 @@ export async function screenshot(windowId: number): Promise<{
   };
 }
 
-export async function scroll_to(tabId: number, coordinate: [number, number]) {
+export async function scroll_to(tabId: number, coordinate: [number, number]): Promise<any> {
   let from_coordinate = (await cursor_position(tabId)).coordinate;
   return await chrome.tabs.sendMessage(tabId, {
     type: 'computer:scroll_to',

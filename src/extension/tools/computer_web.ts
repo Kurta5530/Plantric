@@ -1,3 +1,4 @@
+import { ComputerUseParam, ComputerUseResult } from '../../types/tools.types';
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
 import { getWindowId, getTabId, sleep } from '../utils';
 import * as computer from './computer';
@@ -5,7 +6,7 @@ import * as computer from './computer';
 /**
  * Computer Web for general
  */
-export class ComputerWeb implements Tool {
+export class ComputerWeb implements Tool<ComputerUseParam, ComputerUseResult> {
   name: string;
   description: string;
   input_schema: InputSchema;
@@ -67,44 +68,43 @@ export class ComputerWeb implements Tool {
    * @param {*} params { action: 'mouse_move', coordinate: [100, 200] }
    * @returns > { success: true, coordinate?: [], image?: { type: 'base64', media_type: 'image/jpeg', data: '/9j...' } }
    */
-  async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
-    if (typeof params !== 'object' || params === null || !('action' in params)) {
+  async execute(context: ExecutionContext, params: ComputerUseParam): Promise<ComputerUseResult> {
+    if (typeof params !== 'object' || params === null || !params.action) {
       throw new Error('Invalid parameters. Expected an object with a "action" property.');
     }
-    let { action, coordinate, text } = params as any;
     let tabId = await getTabId(context);
     let windowId = await getWindowId(context);
     let result;
-    switch (action as string) {
+    switch (params.action) {
       case 'key':
-        result = await computer.key(tabId, text, coordinate);
+        result = await computer.key(tabId, params.text as string, params.coordinate);
         await sleep(500);
         break;
       case 'type':
-        result = await computer.type(tabId, text, coordinate);
+        result = await computer.type(tabId, params.text as string, params.coordinate);
         await sleep(500);
         break;
       case 'clear_input':
-        result = await computer.clear_input(tabId, coordinate);
+        result = await computer.clear_input(tabId, params.coordinate);
         await sleep(100);
         break;
       case 'mouse_move':
-        result = await computer.mouse_move(tabId, coordinate);
+        result = await computer.mouse_move(tabId, params.coordinate as [number, number]);
         break;
       case 'left_click':
-        result = await computer.left_click(tabId, coordinate);
+        result = await computer.left_click(tabId, params.coordinate);
         await sleep(100);
         break;
       case 'left_click_drag':
-        result = await computer.left_click_drag(tabId, coordinate);
+        result = await computer.left_click_drag(tabId, params.coordinate as [number, number]);
         await sleep(100);
         break;
       case 'right_click':
-        result = await computer.right_click(tabId, coordinate);
+        result = await computer.right_click(tabId, params.coordinate);
         await sleep(100);
         break;
       case 'double_click':
-        result = await computer.double_click(tabId, coordinate);
+        result = await computer.double_click(tabId, params.coordinate);
         await sleep(100);
         break;
       case 'screenshot':
@@ -115,12 +115,12 @@ export class ComputerWeb implements Tool {
         result = await computer.cursor_position(tabId);
         break;
       case 'scroll_to':
-        result = await computer.scroll_to(tabId, coordinate);
+        result = await computer.scroll_to(tabId, params.coordinate as [number, number]);
         await sleep(1000);
         break;
       default:
         throw Error(
-          `Invalid parameters. The "${action}" value is not included in the "action" enumeration.`
+          `Invalid parameters. The "${params.action}" value is not included in the "action" enumeration.`
         );
     }
     return { success: true, ...result };

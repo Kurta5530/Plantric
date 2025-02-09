@@ -3,7 +3,7 @@ import { Tool, InputSchema, ExecutionContext } from "../../types/action.types";
 /**
  * Element click
  */
-export class ElementClick implements Tool {
+export class ElementClick implements Tool<any, any> {
   name: string;
   description: string;
   input_schema: InputSchema;
@@ -23,7 +23,7 @@ export class ElementClick implements Tool {
     };
   }
 
-  async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
+  async execute(context: ExecutionContext, params: any): Promise<any> {
       if (
         typeof params !== "object" ||
         params === null ||

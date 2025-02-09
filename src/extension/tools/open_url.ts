@@ -1,10 +1,11 @@
+import { OpenUrlParam, OpenUrlResult } from '../../types/tools.types';
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
 import { getWindowId, open_new_tab } from '../utils';
 
 /**
  * Open Url
  */
-export class OpenUrl implements Tool {
+export class OpenUrl implements Tool<OpenUrlParam, OpenUrlResult> {
   name: string;
   description: string;
   input_schema: InputSchema;
@@ -34,11 +35,12 @@ export class OpenUrl implements Tool {
    * @param {*} params { url: 'https://www.google.com', newWindow: true }
    * @returns > { tabId, windowId, title, success: true }
    */
-  async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
-    if (typeof params !== 'object' || params === null || !('url' in params)) {
+  async execute(context: ExecutionContext, params: OpenUrlParam): Promise<OpenUrlResult> {
+    if (typeof params !== 'object' || params === null || !params.url) {
       throw new Error('Invalid parameters. Expected an object with a "url" property.');
     }
-    let { url, newWindow } = params as any;
+    let url = params.url;
+    let newWindow = params.newWindow;
     if (!newWindow && !context.variables.get('windowId') && !context.variables.get('tabId')) {
       // First mandatory opening of a new window
       newWindow = true;
@@ -66,7 +68,6 @@ export class OpenUrl implements Tool {
       tabId,
       windowId,
       title: tab.title,
-      success: true,
     };
   }
 }

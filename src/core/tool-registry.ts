@@ -5,9 +5,9 @@ import { ToolDefinition } from '../types/llm.types';
 import { workflowSchema } from '../schemas/workflow.schema';
 
 export class ToolRegistry {
-  private tools: Map<string, Tool> = new Map();
+  private tools: Map<string, Tool<any, any>> = new Map();
 
-  registerTool(tool: Tool): void {
+  registerTool(tool: Tool<any, any>): void {
     if (this.tools.has(tool.name)) {
       throw new Error(`Tool with name ${tool.name} already registered`);
     }
@@ -21,7 +21,7 @@ export class ToolRegistry {
     this.tools.delete(toolName);
   }
 
-  getTool(toolName: string): Tool {
+  getTool(toolName: string): Tool<any, any> {
     const tool = this.tools.get(toolName);
     if (!tool) {
       throw new Error(`Tool with name ${toolName} not found`);
@@ -33,7 +33,7 @@ export class ToolRegistry {
     return toolNames.every(name => this.tools.has(name));
   }
 
-  getAllTools(): Tool[] {
+  getAllTools(): Tool<any, any>[] {
     return Array.from(this.tools.values());
   }
 

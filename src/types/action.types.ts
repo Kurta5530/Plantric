@@ -1,8 +1,8 @@
-export interface Tool {
+export interface Tool<T, R> {
   name: string;
   description: string;
   input_schema: InputSchema;
-  execute: (context: ExecutionContext, params: unknown) => Promise<unknown>;
+  execute: (context: ExecutionContext, params: T) => Promise<R>;
 }
 
 export interface InputSchema {
@@ -25,12 +25,12 @@ export interface Propertie {
 
 export interface ExecutionContext {
   variables: Map<string, unknown>;
-  tools: Map<string, Tool>;
+  tools: Map<string, Tool<any, any>>;
 }
 
 export interface Action {
   type: 'prompt' | 'script' | 'hybrid';
   name: string;
   execute: (input: unknown, context: ExecutionContext) => Promise<unknown>;
-  tools: Tool[];
+  tools: Tool<any, any>[];
 }
