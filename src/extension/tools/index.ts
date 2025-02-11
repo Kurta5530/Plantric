@@ -1,3 +1,4 @@
+import * as browser from './browser';
 import { BrowserUse } from './browser_use';
 import { ElementClick } from './element_click';
 import { ExportFile } from './export_file';
@@ -10,6 +11,7 @@ import { TabManagement } from './tab_management';
 import { WebSearch } from './web_search';
 
 export {
+  browser,
   BrowserUse,
   ElementClick,
   ExportFile,

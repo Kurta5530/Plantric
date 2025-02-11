@@ -63,9 +63,10 @@ export class WorkflowGenerator {
     const workflow = new WorkflowImpl(
       data.id,
       data.name,
-      data.description,
+      data.description || '',
       [],
-      new Map(Object.entries(data.variables || {}))
+      new Map(Object.entries(data.variables || {})),
+      this.llmProvider,
     );
 
     // Add nodes to workflow

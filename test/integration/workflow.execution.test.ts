@@ -123,6 +123,8 @@ describeIntegration('Minimal Workflow Integration', () => {
       'Calculate and Display Workflow'
     );
 
+    workflow.llmProvider = llmProvider;
+
     // Add calculation node
     const calculateNode = {
       id: 'calculate',

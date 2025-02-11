@@ -192,7 +192,7 @@ export async function screenshot(windowId?: number): Promise<{
   return {
     image: {
       type: 'base64',
-      media_type: dataUrl.indexOf('png') > -1 ? 'image/png' : 'image/jpeg',
+      media_type: dataUrl.indexOf('image/png') > -1 ? 'image/png' : 'image/jpeg',
       data: data,
     },
   };

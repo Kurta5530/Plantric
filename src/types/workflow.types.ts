@@ -1,4 +1,5 @@
 import { Action } from "./action.types";
+import { LLMProvider } from "./llm.types";
 
 export interface WorkflowNode {
   id: string;
@@ -22,6 +23,7 @@ export interface Workflow {
   description?: string;
   nodes: WorkflowNode[];
   variables: Map<string, any>;
+  llmProvider?: LLMProvider;
 
   execute(): Promise<void>;
   addNode(node: WorkflowNode): void;

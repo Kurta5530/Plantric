@@ -10,24 +10,16 @@ export class FormAutofill implements Tool<any, any> {
 
   constructor() {
     this.name = 'form_autofill';
-    this.description = 'Form autofill';
+    this.description = 'Automatically fill in form data on web pages';
     this.input_schema = {
       type: 'object',
-      properties: {
-        task_prompt: {
-          type: 'string',
-          description: 'Task prompt',
-        },
-      },
-      required: ['task_prompt'],
+      properties: {}
     };
   }
 
   async execute(context: ExecutionContext, params: any): Promise<any> {
-    if (typeof params !== 'object' || params === null || !params.task_prompt) {
-      throw new Error('Invalid parameters. Expected an object with a "task_prompt" property.');
-    }
     // form -> input, textarea, select ...
     throw new Error('Not implemented');
   }
+
 }

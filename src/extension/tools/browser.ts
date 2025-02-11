@@ -124,13 +124,13 @@ export async function double_click(tabId: number, coordinate?: [number, number])
 export async function screenshot(windowId: number): Promise<ScreenshotResult> {
   let dataUrl = await chrome.tabs.captureVisibleTab(windowId as number, {
     format: 'jpeg', // jpeg / png
-    quality: 80, // 0-100
+    quality: 50, // 0-100
   });
   let data = dataUrl.substring(dataUrl.indexOf('base64,') + 7);
   return {
     image: {
       type: 'base64',
-      media_type: dataUrl.indexOf('png') > -1 ? 'image/png' : 'image/jpeg',
+      media_type: dataUrl.indexOf('image/png') > -1 ? 'image/png' : 'image/jpeg',
       data: data,
     },
   };

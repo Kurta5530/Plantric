@@ -3,31 +3,32 @@ import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
 import { executeScript, getTabId, getWindowId } from '../utils';
 import { extractOperableElements, clickOperableElement } from './html_script';
 import { left_click, screenshot } from './browser';
+import { TaskPrompt } from '../../types/tools.types';
 
 /**
  * Element click
  */
-export class ElementClick implements Tool<any, any> {
+export class ElementClick implements Tool<TaskPrompt, any> {
   name: string;
   description: string;
   input_schema: InputSchema;
 
   constructor() {
     this.name = 'element_click';
-    this.description = 'click element';
+    this.description = 'Click the element through task prompts';
     this.input_schema = {
       type: 'object',
       properties: {
         task_prompt: {
           type: 'string',
-          description: 'Task prompt',
+          description: 'Task prompt, eg: click search button',
         },
       },
       required: ['task_prompt'],
     };
   }
 
-  async execute(context: ExecutionContext, params: any): Promise<any> {
+  async execute(context: ExecutionContext, params: TaskPrompt): Promise<any> {
     if (typeof params !== 'object' || params === null || !params.task_prompt) {
       throw new Error('Invalid parameters. Expected an object with a "task_prompt" property.');
     }
@@ -36,6 +37,10 @@ export class ElementClick implements Tool<any, any> {
     try {
       result = await executeWithHtmlElement(context, task_prompt);
     } catch (e) {
+      console.log(e);
+      result = false;
+    }
+    if (!result) {
       result = await executeWithBrowserUse(context, task_prompt);
     }
     return result;
@@ -53,6 +58,7 @@ async function executeWithHtmlElement(
       role: 'user',
       content: `# Task
 Determine the operation intent based on user input, find the element ID that the user needs to operate on in the webpage HTML, and if the element does not exist, do nothing.
+Output JSON format, no explanation required.
 
 # User input
 ${task_prompt}
@@ -61,7 +67,7 @@ ${task_prompt}
 {"elementId": "1", "operationType": "click"}
 
 # Output example (when the element does not exist)
-{"operationType": "unknown"}
+{"elementId": null, "operationType": "unknown"}
 
 # HTML
 ${pseudoHtml}
@@ -70,7 +76,9 @@ ${pseudoHtml}
   ];
   let llm_params: LLMParameters = { maxTokens: 1024 };
   let response = await context.llmProvider.generateText(messages, llm_params);
-  let elementId = JSON.parse(response.content as string).elementId;
+  let content = typeof response.content == 'string' ? response.content : (response.content as any[])[0].text;
+  let json = content.substring(content.indexOf('{'), content.indexOf('}') + 1);
+  let elementId = JSON.parse(json).elementId;
   if (elementId) {
     return await executeScript(tabId, clickOperableElement, [elementId]);
   }

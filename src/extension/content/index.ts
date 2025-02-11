@@ -57,22 +57,21 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           break;
         }
         case 'computer:left_click': {
-          simulateMouseEvent(request, ['mousedown', 'mouseup', 'click'], 0);
-          sendResponse();
+          sendResponse(simulateMouseEvent(request, ['mousedown', 'mouseup', 'click'], 0));
           break;
         }
         case 'computer:right_click': {
-          simulateMouseEvent(request, ['mousedown', 'mouseup', 'contextmenu'], 2);
-          sendResponse();
+          sendResponse(simulateMouseEvent(request, ['mousedown', 'mouseup', 'contextmenu'], 2));
           break;
         }
         case 'computer:double_click': {
-          simulateMouseEvent(
-            request,
-            ['mousedown', 'mouseup', 'click', 'mousedown', 'mouseup', 'click', 'dblclick'],
-            0
+          sendResponse(
+            simulateMouseEvent(
+              request,
+              ['mousedown', 'mouseup', 'click', 'mousedown', 'mouseup', 'click', 'dblclick'],
+              0
+            )
           );
-          sendResponse();
           break;
         }
         case 'computer:left_click_drag': {

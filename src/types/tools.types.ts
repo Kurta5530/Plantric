@@ -77,4 +77,16 @@ export interface WebSearchResult {
   url: string;
   content: string;
 }
-  
+
+export interface TaskPrompt {
+  task_prompt: string;
+}
+
+export interface ElementRect {
+  left: number;
+  top: number;
+  right?: number;
+  bottom?: number;
+  width?: number;
+  height?: number;
+}

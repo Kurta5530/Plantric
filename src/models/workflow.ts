@@ -1,4 +1,4 @@
-import { Workflow, WorkflowNode, NodeIO } from "../types";
+import { Workflow, WorkflowNode, NodeIO, ExecutionContext, LLMProvider } from "../types";
 
 export class WorkflowImpl implements Workflow {
   constructor(
@@ -6,7 +6,8 @@ export class WorkflowImpl implements Workflow {
     public name: string,
     public description?: string,
     public nodes: WorkflowNode[] = [],
-    public variables: Map<string, unknown> = new Map()
+    public variables: Map<string, unknown> = new Map(),
+    public llmProvider?: LLMProvider,
   ) {}
 
   async execute(): Promise<void> {
@@ -45,6 +46,7 @@ export class WorkflowImpl implements Workflow {
       // Execute the node's action
       const context = {
         variables: this.variables,
+        llmProvider: this.llmProvider as LLMProvider,
         tools: new Map(node.action.tools.map(tool => [tool.name, tool]))
       };
       node.output.value = await node.action.execute(node.input.value, context);
