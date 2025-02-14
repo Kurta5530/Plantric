@@ -1,5 +1,12 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { LLMProvider, LLMParameters, LLMResponse, Message, LLMStreamHandler, ToolCall } from '../../types/llm.types';
+import Anthropic, { ClientOptions } from '@anthropic-ai/sdk';
+import {
+  LLMProvider,
+  LLMParameters,
+  LLMResponse,
+  Message,
+  LLMStreamHandler,
+  ToolCall,
+} from '../../types/llm.types';
 
 interface PartialToolUse {
   id: string;
@@ -11,11 +18,14 @@ export class ClaudeProvider implements LLMProvider {
   private client: Anthropic;
   private defaultModel = 'claude-3-5-sonnet-20241022';
 
-  constructor(apiKey: string, baseURL?: string) {
+  constructor(apiKey: string, defaultModel?: string | null, options?: ClientOptions) {
+    if (defaultModel) {
+      this.defaultModel = defaultModel;
+    }
     this.client = new Anthropic({
-      baseURL,
       apiKey: apiKey,
       dangerouslyAllowBrowser: true,
+      ...options,
     });
   }
 
@@ -81,7 +91,7 @@ export class ClaudeProvider implements LLMProvider {
     const stream = await this.client.messages.stream({
       system,
       model: params.model || this.defaultModel,
-      max_tokens: params.maxTokens || 1024,
+      max_tokens: params.maxTokens || 4096,
       temperature: params.temperature,
       messages: messages.filter((s) => s.role != 'system') as Anthropic.MessageParam[],
       tools: params.tools as Anthropic.Tool[],

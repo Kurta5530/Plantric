@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import OpenAI, { ClientOptions } from 'openai';
 import {
   LLMProvider,
   LLMParameters,
@@ -26,13 +26,16 @@ interface PartialToolUse {
 
 export class OpenaiProvider implements LLMProvider {
   private client: OpenAI;
-  private defaultModel = 'gpt-4o-mini';
+  private defaultModel = 'gpt-4o';
 
-  constructor(apiKey: string, baseURL?: string) {
+  constructor(apiKey: string, defaultModel?: string | null, options?: ClientOptions) {
+    if (defaultModel) {
+      this.defaultModel = defaultModel;
+    }
     this.client = new OpenAI({
-      baseURL,
       apiKey,
       dangerouslyAllowBrowser: true,
+      ...options,
     });
   }
 
@@ -41,8 +44,9 @@ export class OpenaiProvider implements LLMProvider {
     params: LLMParameters,
     stream: boolean
   ): ChatCompletionCreateParamsBase {
-    let tools: Array<ChatCompletionTool> = [];
-    if (params.tools) {
+    let tools: Array<ChatCompletionTool> | undefined = undefined;
+    if (params.tools && params.tools.length > 0) {
+      tools = [];
       for (let i = 0; i < params.tools.length; i++) {
         let tool = params.tools[i];
         tools.push({
@@ -55,7 +59,7 @@ export class OpenaiProvider implements LLMProvider {
         });
       }
     }
-    let tool_choice: ChatCompletionToolChoiceOption = 'none';
+    let tool_choice: ChatCompletionToolChoiceOption | undefined = undefined;
     if (params.toolChoice) {
       if (params.toolChoice.type == 'auto') {
         tool_choice = 'auto';
@@ -74,17 +78,17 @@ export class OpenaiProvider implements LLMProvider {
     for (let i = 0; i < messages.length; i++) {
       let message = messages[i];
       if (message.role == 'assistant' && typeof message.content !== 'string') {
-        let _content = null;
-        let _tool_calls = null;
+        let _content = undefined;
+        let _tool_calls = undefined;
         for (let j = 0; j < message.content.length; j++) {
           let content = message.content[j] as any;
           if (content.type == 'text') {
-            if (_content == null) {
+            if (!_content) {
               _content = [];
             }
             _content.push(content);
           } else if (content.type == 'tool_use') {
-            if (_tool_calls == null) {
+            if (!_tool_calls) {
               _tool_calls = [];
             }
             _tool_calls.push({
@@ -126,7 +130,7 @@ export class OpenaiProvider implements LLMProvider {
     return {
       stream: stream,
       model: params.model || this.defaultModel,
-      max_tokens: params.maxTokens || 1024,
+      max_tokens: params.maxTokens || 4096,
       temperature: params.temperature,
       messages: _messages,
       tools: tools,

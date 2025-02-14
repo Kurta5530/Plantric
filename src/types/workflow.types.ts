@@ -31,3 +31,7 @@ export interface Workflow {
   getNode(nodeId: string): WorkflowNode;
   validateDAG(): boolean;
 }
+
+export interface WorkflowCallback {
+
+}

@@ -56,7 +56,7 @@ function createReturnTool(outputSchema: unknown): Tool<any, any> {
       properties: {
         value: outputSchema || {
           // Default to accepting any JSON value
-          type: ['string', 'number', 'boolean', 'object', 'array', 'null'],
+          type: ['string', 'number', 'boolean', 'object', 'null'],
           description: 'The output value',
         },
       } as unknown,
@@ -230,10 +230,13 @@ export class ActionImpl implements Action {
     toolMap.set(returnTool.name, returnTool);
 
     // Prepare initial messages
-    const messages: Message[] = [
-      { role: 'system', content: this.formatSystemPrompt(context) },
-      { role: 'user', content: this.formatUserPrompt(input) },
-    ];
+    const messages: Message[] =
+      input && Object.keys(input).length > 0
+        ? [
+            { role: 'system', content: this.formatSystemPrompt(context) },
+            { role: 'user', content: this.formatUserPrompt(input) },
+          ]
+        : [{ role: 'user', content: this.formatSystemPrompt(context) }];
 
     console.log('Starting LLM conversation...');
     console.log('Initial messages:', messages);

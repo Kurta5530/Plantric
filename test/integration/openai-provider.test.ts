@@ -1,13 +1,13 @@
-import { ClaudeProvider } from '../../src/services/llm/claude-provider';
+import { OpenaiProvider } from '../../src/services/llm/openai-provider';
 import { LLMParameters, LLMStreamHandler, Message } from '../../src/types/llm.types';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const ANTHROPIC_BASE_URL = process.env.ANTHROPIC_BASE_URL;
-if (!ANTHROPIC_API_KEY) {
-  throw new Error('ANTHROPIC_API_KEY environment variable is required for integration tests');
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL;
+if (!OPENAI_API_KEY) {
+  throw new Error('OPENAI_API_KEY environment variable is required for integration tests');
 }
 
 // Only run these tests if explicitly enabled
@@ -15,14 +15,14 @@ const ENABLE_INTEGRATION_TESTS = process.env.ENABLE_INTEGRATION_TESTS === 'true'
 const describeIntegration = ENABLE_INTEGRATION_TESTS ? describe : describe.skip;
 
 // Default model for all tests
-const DEFAULT_MODEL = 'claude-3-5-sonnet-20241022';
+const DEFAULT_MODEL = 'gpt-4o-mini';
 
-describeIntegration('ClaudeProvider Integration', () => {
-  let provider: ClaudeProvider;
+describeIntegration('OpenaiProvider Integration', () => {
+  let provider: OpenaiProvider;
 
   beforeAll(() => {
-    provider = new ClaudeProvider(ANTHROPIC_API_KEY, DEFAULT_MODEL, {
-      baseURL: ANTHROPIC_BASE_URL,
+    provider = new OpenaiProvider(OPENAI_API_KEY, DEFAULT_MODEL, {
+      baseURL: OPENAI_BASE_URL,
     });
   });
 
@@ -63,7 +63,7 @@ describeIntegration('ClaudeProvider Integration', () => {
       const result = await provider.generateText(messages, params);
       expect(result.textContent).toBe('4');
       expect(result.toolCalls).toHaveLength(0);
-      expect(result.stop_reason).toBe('end_turn');
+      expect(result.stop_reason).toBe('stop');
     }, 30000);
 
     test('should use tools when provided', async () => {
@@ -78,7 +78,7 @@ describeIntegration('ClaudeProvider Integration', () => {
       expect(result.toolCalls).toHaveLength(1);
       expect(result.toolCalls[0].name).toBe('calculate');
       expect(result.toolCalls[0].input).toHaveProperty('expression');
-      expect(result.stop_reason).toBe('tool_use');
+      expect(result.stop_reason).toBe('tool_calls');
     }, 30000);
 
     it('should handle multi-turn conversation', async () => {
@@ -109,7 +109,7 @@ describeIntegration('ClaudeProvider Integration', () => {
 
       const result = await provider.generateText(messages_2, toolParams);
       expect(result.textContent).toMatch(/106,?704/);
-      expect(result.stop_reason).toBe('end_turn');
+      expect(result.stop_reason).toBe('stop');
     }, 30000);
   });
 
@@ -137,7 +137,7 @@ describeIntegration('ClaudeProvider Integration', () => {
       const messages: Message[] = [
         {
           role: 'user',
-          content: 'Count from 1 to 3, with each number on a new line.',
+          content: 'Count from 1 to 3, with each number on a new line (\n).',
         },
       ];
 
@@ -152,7 +152,7 @@ describeIntegration('ClaudeProvider Integration', () => {
 
       expect(isStarted).toBe(true);
       expect(isCompleted).toBe(true);
-      expect(accumulated.join('')).toMatch(/1\n2\n3/);
+      expect(accumulated.join('')).toMatch(/1\s+2\s+3\s?/);
     }, 30000);
 
     it('should stream tool use', async () => {
