@@ -51,7 +51,11 @@ export async function key(tabId: number, key: string, coordinate?: [number, numb
   return result;
 }
 
-export async function type(tabId: number, text: string, coordinate?: [number, number]): Promise<any> {
+export async function type(
+  tabId: number,
+  text: string,
+  coordinate?: [number, number]
+): Promise<any> {
   if (!coordinate) {
     coordinate = (await cursor_position(tabId)).coordinate;
   }
@@ -60,6 +64,14 @@ export async function type(tabId: number, text: string, coordinate?: [number, nu
     type: 'computer:type',
     text,
     coordinate,
+  });
+}
+
+export async function type_by_xpath(tabId: number, text: string, xpath: string): Promise<any> {
+  return await chrome.tabs.sendMessage(tabId, {
+    type: 'computer:type',
+    text,
+    xpath,
   });
 }
 
@@ -72,6 +84,14 @@ export async function clear_input(tabId: number, coordinate?: [number, number]):
     type: 'computer:type',
     text: '',
     coordinate,
+  });
+}
+
+export async function clear_input_by_xpath(tabId: number, xpath: string): Promise<any> {
+  return await chrome.tabs.sendMessage(tabId, {
+    type: 'computer:type',
+    text: '',
+    xpath,
   });
 }
 
@@ -89,6 +109,13 @@ export async function left_click(tabId: number, coordinate?: [number, number]): 
   return await chrome.tabs.sendMessage(tabId, {
     type: 'computer:left_click',
     coordinate,
+  });
+}
+
+export async function left_click_by_xpath(tabId: number, xpath: string): Promise<any> {
+  return await chrome.tabs.sendMessage(tabId, {
+    type: 'computer:left_click',
+    xpath,
   });
 }
 
@@ -111,6 +138,13 @@ export async function right_click(tabId: number, coordinate?: [number, number]):
   });
 }
 
+export async function right_click_by_xpath(tabId: number, xpath: string): Promise<any> {
+  return await chrome.tabs.sendMessage(tabId, {
+    type: 'computer:right_click',
+    xpath,
+  });
+}
+
 export async function double_click(tabId: number, coordinate?: [number, number]): Promise<any> {
   if (!coordinate) {
     coordinate = (await cursor_position(tabId)).coordinate;
@@ -118,6 +152,13 @@ export async function double_click(tabId: number, coordinate?: [number, number])
   return await chrome.tabs.sendMessage(tabId, {
     type: 'computer:double_click',
     coordinate,
+  });
+}
+
+export async function double_click_by_xpath(tabId: number, xpath: string): Promise<any> {
+  return await chrome.tabs.sendMessage(tabId, {
+    type: 'computer:double_click',
+    xpath,
   });
 }
 
@@ -142,6 +183,13 @@ export async function scroll_to(tabId: number, coordinate: [number, number]): Pr
     type: 'computer:scroll_to',
     from_coordinate,
     to_coordinate: coordinate,
+  });
+}
+
+export async function scroll_to_xpath(tabId: number, xpath: string): Promise<any> {
+  return await chrome.tabs.sendMessage(tabId, {
+    type: 'computer:scroll_to',
+    xpath,
   });
 }
 

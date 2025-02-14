@@ -5,7 +5,14 @@ import {
   TabManagementResult,
 } from '../../types/tools.types';
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
-import { getTabId, getWindowId, open_new_tab, sleep } from '../utils';
+import {
+  executeScript,
+  getTabId,
+  getWindowId,
+  open_new_tab,
+  sleep,
+  waitForTabComplete,
+} from '../utils';
 
 /**
  * Browser tab management
@@ -21,37 +28,45 @@ export class TabManagement implements Tool<TabManagementParam, TabManagementResu
     this.input_schema = {
       type: 'object',
       properties: {
-        action: {
+        commond: {
           type: 'string',
-          description: `The action to perform. The available actions are:
+          description: `The commond to perform. The available commonds are:
 * \`tab_all\`: View all tabs and return the tabId and title.
 * \`current_tab\`: Get current tab information (tabId, url, title).
+* \`go_back\`: Go back to the previous page in the current tab.
+* \`change_url [url]\`: open URL in the current tab, eg: \`change_url https://www.google.com\`.
 * \`close_tab\`: Close the current tab.
-* \`switch_tab [tabId]\`: Switch to the specified tab using tabId, eg: switch_tab 1000.
-* \`new_tab [url]\`: Open a new tab window and open the URL, eg: new_tab https://www.google.com`,
+* \`switch_tab [tabId]\`: Switch to the specified tab using tabId, eg: \`switch_tab 1000\`.
+* \`new_tab [url]\`: Open a new tab window and open the URL, eg: \`new_tab https://www.google.com\``,
         },
       },
-      required: ['action'],
+      required: ['commond'],
     };
   }
 
   /**
    * Tab management
    *
-   * @param {*} params { action: 'tab_all' | 'current_tab' | 'close_tab' | 'switch_tab [tabId]' | `new_tab [url]` }
+   * @param {*} params { commond: `new_tab [url]` | 'tab_all' | 'current_tab' | 'go_back' | 'close_tab' | 'switch_tab [tabId]' | `change_url [url]` }
    * @returns > { result, success: true }
    */
   async execute(
     context: ExecutionContext,
     params: TabManagementParam
   ): Promise<TabManagementResult> {
-    if (typeof params !== 'object' || params === null || !('action' in params)) {
-      throw new Error('Invalid parameters. Expected an object with a "action" property.');
+    if (params === null || !params.commond) {
+      throw new Error('Invalid parameters. Expected an object with a "commond" property.');
     }
-    let action = params.action;
     let windowId = await getWindowId(context);
+    let commond = params.commond.trim();
+    if (commond.startsWith('`')) {
+      commond = commond.substring(1);
+    }
+    if (commond.endsWith('`')) {
+      commond = commond.substring(0, commond.length - 1);
+    }
     let result: TabManagementResult;
-    if (action == 'tab_all') {
+    if (commond == 'tab_all') {
       result = [];
       let tabs = await chrome.tabs.query({ windowId: windowId });
       for (let i = 0; i < tabs.length; i++) {
@@ -67,12 +82,18 @@ export class TabManagement implements Tool<TabManagementParam, TabManagementResu
         }
         result.push(tabInfo);
       }
-    } else if (action == 'current_tab') {
+    } else if (commond == 'current_tab') {
       let tabId = await getTabId(context);
       let tab = await chrome.tabs.get(tabId);
       let tabInfo: TabInfo = { tabId, windowId: tab.windowId, title: tab.title, url: tab.url };
       result = tabInfo;
-    } else if (action == 'close_tab') {
+    } else if (commond == 'go_back') {
+      let tabId = await getTabId(context);
+      await chrome.tabs.goBack(tabId);
+      let tab = await chrome.tabs.get(tabId);
+      let tabInfo: TabInfo = { tabId, windowId: tab.windowId, title: tab.title, url: tab.url };
+      result = tabInfo;
+    } else if (commond == 'close_tab') {
       let closedTabId = await getTabId(context);
       await chrome.tabs.remove(closedTabId);
       await sleep(100);
@@ -89,15 +110,25 @@ export class TabManagement implements Tool<TabManagementParam, TabManagementResu
       context.variables.set('windowId', tab.windowId);
       let closeTabInfo: CloseTabInfo = { closedTabId, newTabId, newTabTitle: tab.title };
       result = closeTabInfo;
-    } else if (action.startsWith('switch_tab')) {
-      let tabId = parseInt(action.replace('switch_tab', '').replace('[', '').replace(']', ''));
+    } else if (commond.startsWith('switch_tab')) {
+      let tabId = parseInt(commond.replace('switch_tab', '').replace('[', '').replace(']', ''));
       let tab = await chrome.tabs.update(tabId, { active: true });
       context.variables.set('tabId', tab.id);
       context.variables.set('windowId', tab.windowId);
       let tabInfo: TabInfo = { tabId, windowId: tab.windowId, title: tab.title, url: tab.url };
       result = tabInfo;
-    } else if (action.startsWith('new_tab')) {
-      let url = action.replace('new_tab', '').replace('[', '').replace(']', '').replace(/"/g, '');
+    } else if (commond.startsWith('change_url')) {
+      let url = commond.substring('change_url'.length).replace('[', '').replace(']', '').trim();
+      let tabId = await getTabId(context);
+      // await chrome.tabs.update(tabId, { url: url });
+      await executeScript(tabId, () => {
+        location.href = url;
+      }, []);
+      let tab = await waitForTabComplete(tabId);
+      let tabInfo: TabInfo = { tabId, windowId: tab.windowId, title: tab.title, url: tab.url };
+      result = tabInfo;
+    } else if (commond.startsWith('new_tab')) {
+      let url = commond.replace('new_tab', '').replace('[', '').replace(']', '').replace(/"/g, '');
       // First mandatory opening of a new window
       let newWindow = !context.variables.get('windowId') && !context.variables.get('tabId');
       let tab: chrome.tabs.Tab;
@@ -127,8 +158,17 @@ export class TabManagement implements Tool<TabManagementParam, TabManagementResu
       };
       result = tabInfo;
     } else {
-      throw Error('Unknown action: ' + action);
+      throw Error('Unknown commond: ' + commond);
     }
     return result;
+  }
+
+  destroy(context: ExecutionContext): void {
+    let windowIds = context.variables.get('windowIds') as Array<number>;
+    if (windowIds) {
+      for (let i = 0; i < windowIds.length; i++) {
+        chrome.windows.remove(windowIds[i]);
+      }
+    }
   }
 }

@@ -5,6 +5,7 @@ export interface Tool<T, R> {
   description: string;
   input_schema: InputSchema;
   execute: (context: ExecutionContext, params: T) => Promise<R>;
+  destroy?: (context: ExecutionContext) => void;
 }
 
 export interface InputSchema {

@@ -15,7 +15,7 @@ export class ClaudeProvider implements LLMProvider {
     this.client = new Anthropic({
       baseURL,
       apiKey: apiKey,
-      dangerouslyAllowBrowser: true
+      dangerouslyAllowBrowser: true,
     });
   }
 
@@ -42,11 +42,21 @@ export class ClaudeProvider implements LLMProvider {
   }
 
   async generateText(messages: Message[], params: LLMParameters): Promise<LLMResponse> {
+    let system = messages
+      .filter((s) => s.role == 'system')
+      .map((s) => {
+        if (typeof s.content == 'string') {
+          return s.content;
+        } else {
+          return (s.content[0] as any).text as string;
+        }
+      })[0];
     const response = await this.client.messages.create({
+      system,
       model: params.model || this.defaultModel,
       max_tokens: params.maxTokens || 1024,
       temperature: params.temperature,
-      messages: messages as Anthropic.MessageParam[],
+      messages: messages.filter((s) => s.role != 'system') as Anthropic.MessageParam[],
       tools: params.tools as Anthropic.Tool[],
       tool_choice: params.toolChoice as Anthropic.ToolChoice,
     });
@@ -59,11 +69,21 @@ export class ClaudeProvider implements LLMProvider {
     params: LLMParameters,
     handler: LLMStreamHandler
   ): Promise<void> {
+    let system = messages
+      .filter((s) => s.role == 'system')
+      .map((s) => {
+        if (typeof s.content == 'string') {
+          return s.content;
+        } else {
+          return (s.content[0] as any).text as string;
+        }
+      })[0];
     const stream = await this.client.messages.stream({
+      system,
       model: params.model || this.defaultModel,
       max_tokens: params.maxTokens || 1024,
       temperature: params.temperature,
-      messages: messages as Anthropic.MessageParam[],
+      messages: messages.filter((s) => s.role != 'system') as Anthropic.MessageParam[],
       tools: params.tools as Anthropic.Tool[],
       tool_choice: params.toolChoice as Anthropic.ToolChoice,
     });

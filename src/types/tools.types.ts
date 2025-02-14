@@ -10,6 +10,19 @@ export interface ComputerUseResult {
   [key: string]: any;
 }
 
+export interface BrowserUseParam {
+  action: string;
+  index?: number;
+  text?: string;
+}
+
+export interface BrowserUseResult {
+  success: boolean;
+  image?: ScreenshotImage;
+  text?: string;
+  [key: string]: any;
+}
+
 export interface ExportFileParam {
   content: string;
   fileType: 'txt' | 'csv' | 'md' | 'html' | 'js' | 'xml' | 'json' | 'yml' | 'sql';
@@ -47,7 +60,7 @@ export interface ScreenshotImage {
 }
 
 export interface TabManagementParam {
-  action: string;
+  commond: string;
 }
 
 export type TabManagementResult = TabInfo | CloseTabInfo | TabInfo[];

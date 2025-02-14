@@ -1,5 +1,5 @@
 export interface Message {
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system'; // openai role: system == developer
   content: string | unknown[];
 }
 

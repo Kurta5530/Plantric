@@ -72,7 +72,7 @@ function clickable_elements_to_string(element_tree, includeAttributes) {
 
   let formatted_text = [];
   function process_node(node, depth) {
-    if (node.tagName) {
+    if (node.text == null) {
       if (node.highlightIndex != null) {
         let attributes_str = '';
         if (includeAttributes) {
@@ -87,7 +87,7 @@ function clickable_elements_to_string(element_tree, includeAttributes) {
         }
         let text = get_all_text_till_next_clickable_element(node);
         formatted_text.push(
-          `${node.highlightIndex}[:]<${node.tagName}${attributes_str}>${text}</${node.tagName}>`
+          `[${node.highlightIndex}]:<${node.tagName}${attributes_str}>${text}</${node.tagName}>`
         );
       }
       for (let i = 0; i < node.children.length; i++) {
@@ -95,7 +95,7 @@ function clickable_elements_to_string(element_tree, includeAttributes) {
         process_node(child, depth + 1);
       }
     } else if (!has_parent_with_highlight_index(node)) {
-      formatted_text.push(`_[:]${node.text}`);
+      formatted_text.push(`[]:${node.text}`);
     }
   }
   process_node(element_tree, 0);
@@ -124,7 +124,7 @@ function parse_node(node_data, parent) {
   }
   if (node_data.type == 'TEXT_NODE') {
     return {
-      text: node_data.text,
+      text: node_data.text || '',
       isVisible: node_data.isVisible || false,
       parent: parent,
     };
@@ -652,3 +652,6 @@ function build_dom_tree(doHighlightElements) {
   }
   return buildDomTree(document.body);
 }
+
+window.get_clickable_elements = get_clickable_elements;
+window.remove_highlight = remove_highlight;

@@ -147,11 +147,16 @@ export class ActionImpl implements Action {
             const resultMessage: Message = {
               role: 'user',
               content: [
-                result.image && result.image.type === 'base64'
+                result.image && result.image.type
                   ? {
                       type: 'tool_result',
                       tool_use_id: toolCall.id,
-                      content: [{ type: 'image', source: result.image }],
+                      content: result.text
+                        ? [
+                            { type: 'image', source: result.image },
+                            { type: 'text', text: result.text },
+                          ]
+                        : [{ type: 'image', source: result.image }],
                     }
                   : {
                       type: 'tool_result',
@@ -226,7 +231,7 @@ export class ActionImpl implements Action {
 
     // Prepare initial messages
     const messages: Message[] = [
-      { role: 'user', content: this.formatSystemPrompt(context) },
+      { role: 'system', content: this.formatSystemPrompt(context) },
       { role: 'user', content: this.formatUserPrompt(input) },
     ];
 

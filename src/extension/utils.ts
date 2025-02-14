@@ -94,7 +94,9 @@ export async function open_new_tab(
     });
     tabId = tab.id as number;
   }
-  return await waitForTabComplete(tabId);
+  let tab = await waitForTabComplete(tabId);
+  await sleep(200);
+  return tab;
 }
 
 export async function executeScript(tabId: number, func: any, args: any[]): Promise<any> {

@@ -9,8 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 export class WorkflowGenerator {
   constructor(
     private llmProvider: LLMProvider,
-    private toolRegistry: ToolRegistry,
-    private defaultModel: string = 'claude-3-5-sonnet-20241022'
+    private toolRegistry: ToolRegistry
   ) {}
 
   async generateWorkflow(prompt: string): Promise<Workflow> {
@@ -19,7 +18,7 @@ export class WorkflowGenerator {
 
     const messages: Message[] = [
       {
-        role: 'user',
+        role: 'system',
         content: prompts.formatSystemPrompt()
       },
       {
@@ -29,7 +28,6 @@ export class WorkflowGenerator {
     ];
 
     const params: LLMParameters = {
-      model: this.defaultModel,
       temperature: 0.7,
       maxTokens: 8192,
       tools: [createWorkflowGenerationTool(this.toolRegistry)],

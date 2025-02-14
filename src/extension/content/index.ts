@@ -89,6 +89,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       }
     } catch (e) {
       console.log('onMessage error', e);
+      sendResponse(false);
     }
   })();
   return true;
@@ -105,9 +106,10 @@ function key(request: any) {
     cancelable: true,
   });
   let coordinate = request.coordinate as [number, number];
-  let element = (document.activeElement || document.elementFromPoint(coordinate[0], coordinate[1])) as any
+  let element = (document.activeElement ||
+    document.elementFromPoint(coordinate[0], coordinate[1])) as any;
   if (element && element.focus) {
-    element.focus()
+    element.focus();
   }
   let result = element?.dispatchEvent(event);
   console.log('key', element, request, result);
@@ -116,8 +118,21 @@ function key(request: any) {
 
 function type(request: any) {
   let text = request.text as string;
-  let coordinate = request.coordinate as [number, number];
-  let element = document.elementFromPoint(coordinate[0], coordinate[1]) || document.activeElement;
+  let element: any;
+  if (request.xpath) {
+    let xpath = request.xpath as string;
+    let result = document.evaluate(
+      xpath,
+      document,
+      null,
+      XPathResult.FIRST_ORDERED_NODE_TYPE,
+      null
+    );
+    element = result.singleNodeValue;
+  } else {
+    let coordinate = request.coordinate as [number, number];
+    element = document.elementFromPoint(coordinate[0], coordinate[1]) || document.activeElement;
+  }
   if (!element) {
     return;
   }
@@ -133,7 +148,7 @@ function type(request: any) {
   }
   input.focus && input.focus();
   if (!text) {
-    input.value = ''
+    input.value = '';
   } else {
     input.value += text;
   }
@@ -161,11 +176,25 @@ function mouse_move(request: any) {
 }
 
 function simulateMouseEvent(request: any, eventTypes: Array<string>, button: 0 | 1 | 2) {
-  const coordinate = request.coordinate as [number, number];
-  const x = coordinate[0];
-  const y = coordinate[1];
+  let element: any;
+  let coordinate;
+  if (request.xpath) {
+    let xpath = request.xpath as string;
+    let result = document.evaluate(
+      xpath,
+      document,
+      null,
+      XPathResult.FIRST_ORDERED_NODE_TYPE,
+      null
+    );
+    element = result.singleNodeValue;
+  } else {
+    let coordinate = request.coordinate as [number, number];
+    element = document.elementFromPoint(coordinate[0], coordinate[1]) || document.body;
+  }
+  const x = coordinate ? coordinate[0] : undefined;
+  const y = coordinate ? coordinate[1] : undefined;
   let result = false;
-  const element = document.elementFromPoint(x, y) || document.body;
   for (let i = 0; i < eventTypes.length; i++) {
     const event = new MouseEvent(eventTypes[i], {
       view: window,
@@ -182,13 +211,27 @@ function simulateMouseEvent(request: any, eventTypes: Array<string>, button: 0 |
 }
 
 function scroll_to(request: any) {
-  // const from_coordinate = request.from_coordinate as [number, number];
-  const to_coordinate = request.to_coordinate as [number, number];
-  window.scrollTo({
-    left: to_coordinate[0],
-    top: to_coordinate[1],
-    behavior: 'smooth',
-  });
+  if (request.xpath) {
+    let xpath = request.xpath as string;
+    let result = document.evaluate(
+      xpath,
+      document,
+      null,
+      XPathResult.FIRST_ORDERED_NODE_TYPE,
+      null
+    );
+    let element = result.singleNodeValue as any;
+    element.scrollIntoView({
+      behavior: 'smooth'
+    });
+  } else {
+    const to_coordinate = request.to_coordinate as [number, number];
+    window.scrollTo({
+      left: to_coordinate[0],
+      top: to_coordinate[1],
+      behavior: 'smooth',
+    });
+  }
   console.log('scroll_to', request);
 }
 
