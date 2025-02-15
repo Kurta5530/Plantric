@@ -1,4 +1,4 @@
-import { Workflow, WorkflowNode, NodeIO, ExecutionContext, LLMProvider } from "../types";
+import { Workflow, WorkflowNode, NodeIO, ExecutionContext, LLMProvider, WorkflowCallback } from "../types";
 
 export class WorkflowImpl implements Workflow {
   constructor(
@@ -10,7 +10,7 @@ export class WorkflowImpl implements Workflow {
     public llmProvider?: LLMProvider,
   ) {}
 
-  async execute(): Promise<void> {
+  async execute(callback?: WorkflowCallback): Promise<void> {
     if (!this.validateDAG()) {
       throw new Error("Invalid workflow: Contains circular dependencies");
     }
@@ -28,6 +28,16 @@ export class WorkflowImpl implements Workflow {
       }
 
       const node = this.getNode(nodeId);
+
+      callback && await callback(
+        {
+          task: node,
+          isTask: () => true,
+          isToolCall: () => false,
+        },
+        'task_start'
+      );
+
       executing.add(nodeId);
 
       // Execute dependencies first
@@ -47,12 +57,23 @@ export class WorkflowImpl implements Workflow {
       const context = {
         variables: this.variables,
         llmProvider: this.llmProvider as LLMProvider,
-        tools: new Map(node.action.tools.map(tool => [tool.name, tool]))
+        tools: new Map(node.action.tools.map(tool => [tool.name, tool])),
+        callback
       };
+
       node.output.value = await node.action.execute(node.input.value, context);
 
       executing.delete(nodeId);
       executed.add(nodeId);
+
+      callback && await callback(
+        {
+          task: node,
+          isTask: () => true,
+          isToolCall: () => false,
+        },
+        'task_end'
+      );
     };
 
     // Execute all terminal nodes (nodes with no dependents)

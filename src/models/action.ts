@@ -143,7 +143,36 @@ export class ActionImpl implements Action {
         // Store the promise of tool execution
         toolExecutionPromise = (async () => {
           try {
-            const result = await tool.execute(context, toolCall.input);
+            const toolCallParam = {
+              tool,
+              name: toolCall.name,
+              input: toolCall.input,
+              output: undefined as any,
+            };
+            if (context.callback) {
+              await context.callback(
+                {
+                  toolCall: toolCallParam,
+                  isTask: () => false,
+                  isToolCall: () => true,
+                },
+                'tool_start'
+              );
+              toolCall.input = toolCallParam.input;
+            }
+            let result = await tool.execute(context, toolCall.input);
+            if (context.callback) {
+              toolCallParam.output = result;
+              await context.callback(
+                {
+                  toolCall: toolCallParam,
+                  isTask: () => false,
+                  isToolCall: () => true,
+                },
+                'tool_end'
+              );
+              result = toolCallParam.output;
+            }
             const resultMessage: Message = {
               role: 'user',
               content: [

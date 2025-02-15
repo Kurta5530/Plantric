@@ -11,9 +11,9 @@ export async function pub(tabId: number, event: string, params: any): Promise<an
 
 export async function getLLMConfig(name: string = 'llmConfig'): Promise<{
   llm?: string;
-  baseURL?: string;
-  modelName?: string;
   apiKey?: string;
+  modelName?: string;
+  options?: {[key:string]:any};
 } | undefined> {
   let result = await chrome.storage.sync.get([name]);
   return result[name];

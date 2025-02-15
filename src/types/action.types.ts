@@ -1,4 +1,5 @@
 import { LLMProvider } from "./llm.types";
+import { WorkflowCallback } from "./workflow.types";
 
 export interface Tool<T, R> {
   name: string;
@@ -30,6 +31,7 @@ export interface ExecutionContext {
   llmProvider: LLMProvider;
   variables: Map<string, unknown>;
   tools: Map<string, Tool<any, any>>;
+  callback?: WorkflowCallback;
 }
 
 export interface Action {
