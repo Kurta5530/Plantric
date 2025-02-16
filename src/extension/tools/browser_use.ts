@@ -1,0 +1,210 @@
+import { BrowserUseParam, BrowserUseResult } from '../../types/tools.types';
+import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
+import { getWindowId, getTabId, sleep, injectScript, executeScript } from '../utils';
+import * as computer from './browser';
+import { getDropdownOptions, selectDropdownOption } from './html_script';
+
+/**
+ * Browser Use for general
+ */
+export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
+  name: string;
+  description: string;
+  input_schema: InputSchema;
+
+  constructor() {
+    this.name = 'browser_use';
+    this.description = `Use structured commands to interact with the browser, manipulating page elements through screenshots and webpage element extraction.
+* This is a browser GUI interface where you need to analyze webpages by taking screenshots and extracting page element structures, and specify action sequences to complete designated tasks.
+* Some operations may need time to process, so you might need to wait and continuously take screenshots and extract element structures to check the operation results.
+* Before any operation, you must first call the \`screenshot_extract_element\` command, which will return the browser page screenshot and structured element information, both specially processed.
+* ELEMENT INTERACTION:
+   - Only use indexes that exist in the provided element list
+   - Each element has a unique index number (e.g., "[33]:<button>")
+   - Elements marked with "[]:" are non-interactive (for context only)
+* NAVIGATION & ERROR HANDLING:
+   - If no suitable elements exist, use other functions to complete the task
+   - If stuck, try alternative approaches
+   - Handle popups/cookies by accepting or closing them
+   - Use scroll to find elements you are looking for
+* Form filling:
+   - If you fill a input field and your action sequence is interrupted, most often a list with suggestions poped up under the field and you need to first select the right element from the suggestion list.
+* ACTION SEQUENCING:
+   - Actions are executed in the order they appear in the list 
+   - Each action should logically follow from the previous one
+   - If the page changes after an action, the sequence is interrupted and you get the new state.
+   - If content only disappears the sequence continues.
+   - Only provide the action sequence until you think the page will change.
+   - Try to be efficient, e.g. fill forms at once, or chain actions where nothing changes on the page like saving, extracting, checkboxes...
+   - only use multiple actions if it makes sense.`;
+    this.input_schema = {
+      type: 'object',
+      properties: {
+        action: {
+          type: 'string',
+          description: `The action to perform. The available actions are:
+* \`screenshot_extract_element\`: Take a screenshot of the web page and extract operable elements.
+  - Screenshots are used to understand page layouts, with labeled bounding boxes corresponding to element indexes. Each bounding box and its label share the same color, with labels typically positioned in the top-right corner of the box.
+  - Screenshots help verify element positions and relationships. Labels may sometimes overlap, so extracted elements are used to verify the correct elements.
+  - In addition to screenshots, simplified information about interactive elements is returned, with element indexes corresponding to those in the screenshots.
+* \`input_text\`: Enter a string in the interactive element.
+* \`clear_text\`: Clear the text in the input/textarea element.
+* \`click\`: Click to element.
+* \`right_click\`: Right-click on the element.
+* \`double_click\`: Double-click on the element.
+* \`scroll_to\`: Scroll to the specified element.
+* \`extract_content\`: Extract the text content of the current webpage.
+* \`get_dropdown_options\`: Get all options from a native dropdown element.
+* \`select_dropdown_option\`: Select dropdown option for interactive element index by the text of the option you want to select.`,
+          enum: [
+            'screenshot_extract_element',
+            'input_text',
+            'clear_text',
+            'click',
+            'right_click',
+            'double_click',
+            'scroll_to',
+            'extract_content',
+            'get_dropdown_options',
+            'select_dropdown_option',
+          ],
+        },
+        index: {
+          type: 'integer',
+          description:
+            'index of element, Operation elements must pass the corresponding index of the element',
+        },
+        text: {
+          type: 'string',
+          description: 'Required by `action=input_text` and `action=select_dropdown_option`',
+        },
+      },
+      required: ['action'],
+    };
+  }
+
+  /**
+   * browser
+   *
+   * @param {*} params { action: 'input_text', index: 1, text: 'string' }
+   * @returns > { success: true, image?: { type: 'base64', media_type: 'image/jpeg', data: '/9j...' }, text?: string }
+   */
+  async execute(context: ExecutionContext, params: BrowserUseParam): Promise<BrowserUseResult> {
+    try {
+      if (params === null || !params.action) {
+        throw new Error('Invalid parameters. Expected an object with a "action" property.');
+      }
+      let tabId = await getTabId(context);
+      let windowId = await getWindowId(context);
+      let selector_map = context.variables.get('selector_map') as any;
+      let selector_xpath;
+      if (params.index != null && selector_map) {
+        selector_xpath = selector_map[params.index]?.xpath;
+        if (!selector_xpath) {
+          throw new Error('Element does not exist');
+        }
+      }
+      let result;
+      switch (params.action) {
+        case 'input_text':
+          if (params.index == null) {
+            throw new Error('index parameter is required');
+          }
+          if (params.text == null) {
+            throw new Error('text parameter is required');
+          }
+          result = await computer.type_by_xpath(tabId, params.text, selector_xpath);
+          await sleep(200);
+          break;
+        case 'clear_text':
+          if (params.index == null) {
+            throw new Error('index parameter is required');
+          }
+          result = await computer.clear_input_by_xpath(tabId, selector_xpath);
+          await sleep(100);
+          break;
+        case 'click':
+          if (params.index == null) {
+            throw new Error('index parameter is required');
+          }
+          result = await computer.left_click_by_xpath(tabId, selector_xpath);
+          await sleep(100);
+          break;
+        case 'right_click':
+          if (params.index == null) {
+            throw new Error('index parameter is required');
+          }
+          result = await computer.right_click_by_xpath(tabId, selector_xpath);
+          await sleep(100);
+          break;
+        case 'double_click':
+          if (params.index == null) {
+            throw new Error('index parameter is required');
+          }
+          result = await computer.double_click_by_xpath(tabId, selector_xpath);
+          await sleep(100);
+          break;
+        case 'scroll_to':
+          if (params.index == null) {
+            throw new Error('index parameter is required');
+          }
+          result = await computer.scroll_to_xpath(tabId, selector_xpath);
+          await sleep(500);
+          break;
+        case 'extract_content':
+          let tab = await chrome.tabs.get(tabId);
+          await injectScript(tabId);
+          await sleep(200);
+          let content = await executeScript(tabId, () => {
+            return lyvo.extractHtmlContent();
+          }, []);
+          result = {
+            title: tab.title,
+            url: tab.url,
+            content: content,
+          };
+          break;
+        case 'get_dropdown_options':
+          if (params.index == null) {
+            throw new Error('index parameter is required');
+          }
+          result = await executeScript(tabId, getDropdownOptions, [selector_xpath]);
+          break;
+        case 'select_dropdown_option':
+          if (params.index == null) {
+            throw new Error('index parameter is required');
+          }
+          if (params.text == null) {
+            throw new Error('text parameter is required');
+          }
+          result = await executeScript(tabId, selectDropdownOption, [selector_xpath, params.text]);
+          break;
+        case 'screenshot_extract_element':
+          await sleep(100);
+          await injectScript(tabId, 'build_dom_tree.js');
+          await sleep(100);
+          let element_result = await executeScript(tabId, () => {
+            return (window as any).get_clickable_elements(true);
+          }, []);
+          context.variables.set('selector_map', element_result.selector_map);
+          let screenshot = await computer.screenshot(windowId);
+          await executeScript(tabId, () => {
+            return (window as any).remove_highlight();
+          }, []);
+          result = { image: screenshot.image, text: element_result.element_str };
+          break;
+        default:
+          throw Error(
+            `Invalid parameters. The "${params.action}" value is not included in the "action" enumeration.`
+          );
+      }
+      if (result) {
+        return { success: true, ...result };
+      } else {
+        return { success: false };
+      }
+    } catch (e: any) {
+      return { success: false, error: e?.message };
+    }
+  }
+}

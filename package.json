@@ -1,38 +1,92 @@
 {
-  "name": "lyvo",
+  "name": "@lyvo-ai/lyvo",
   "version": "1.0.0",
   "description": "Empowering language to transform human words into action.",
-  "main": "src/lyvo.js",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
   "type": "module",
+  "files": [
+    "dist/",
+    "LICENSE",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "require": "./dist/index.cjs.js",
+      "import": "./dist/index.esm.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts"
+    },
+    "./extension": {
+      "require": "./dist/extension.cjs.js",
+      "import": "./dist/extension.esm.js",
+      "types": "./dist/extension/index.d.ts"
+    }
+  },
   "directories": {
-    "test": "test"
+    "test": "test",
+    "doc": "docs"
   },
   "scripts": {
-    "test": "node test/index.js"
+    "build": "rollup -c",
+    "build:dev": "npm run build && npm link",
+    "dev": "tsc --watch",
+    "clean": "rimraf dist",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "prepublishOnly": "npm run build",
+    "docs": "typedoc src/index.ts"
+  },
+  "author": "LyvoAI",
+  "license": "MIT",
+  "keywords": [
+    "fellou",
+    "lyvo"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/LyvoAI/lyvo.git"
   },
-  "keywords": [
-    "agent",
-    "rpa",
-    "browser",
-    "computer-use",
-    "AI",
-    "automation",
-    "natural language programming",
-    "propmt engineering"
-  ],
-  "author": "Fellou AI Browser",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/LyvoAI/lyvo/issues"
-  },
-  "homepage": "https://github.com/LyvoAI/lyvo#readme",
   "dependencies": {
-    "@langchain/anthropic": "^0.3.8",
-    "@langchain/core": "^0.3.18",
-    "langchain": "^0.3.6"
-  }
+    "@anthropic-ai/sdk": "^0.33.0",
+    "dotenv": "^16.0.0",
+    "openai": "^4.77.0",
+    "uuid": "^11.0.3",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.2",
+    "@rollup/plugin-node-resolve": "^16.0.0",
+    "@rollup/plugin-typescript": "^12.1.2",
+    "@types/chrome": "0.0.158",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.24",
+    "@types/uuid": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.1.0",
+    "@typescript-eslint/parser": "^7.1.0",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.2.5",
+    "rimraf": "^5.0.5",
+    "rollup": "^4.28.1",
+    "rollup-plugin-copy": "^3.5.0",
+    "ts-jest": "^29.1.2",
+    "tslib": "^2.8.1",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
