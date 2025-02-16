@@ -47,7 +47,8 @@
   "author": "LyvoAI",
   "license": "MIT",
   "keywords": [
-    "fellou-agent"
+    "fellou",
+    "lyvo"
   ],
   "publishConfig": {
     "access": "public",
