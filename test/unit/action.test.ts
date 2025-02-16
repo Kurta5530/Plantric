@@ -96,6 +96,7 @@ describe('ActionImpl', () => {
     mockTool = new MockTool('test_tool');
     mockLLMProvider = new MockLLMProvider();
     context = {
+      llmProvider: mockLLMProvider,
       variables: new Map<string, unknown>(),
       tools: new Map<string, Tool<any, any>>(),
     };

@@ -50,7 +50,7 @@
 ### **Using npm**
 
 ```bash
-npm install fellou-lyvo
+npm install @lyvo-ai/lyvo
 ```
 
 ## Contributing
