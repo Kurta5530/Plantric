@@ -15,6 +15,8 @@ export class WorkflowImpl implements Workflow {
       throw new Error("Invalid workflow: Contains circular dependencies");
     }
 
+    callback && await callback.hooks.beforeWorkflow?.(this);
+
     const executed = new Set<string>();
     const executing = new Set<string>();
 
@@ -29,14 +31,15 @@ export class WorkflowImpl implements Workflow {
 
       const node = this.getNode(nodeId);
 
-      callback && await callback(
-        {
-          task: node,
-          isTask: () => true,
-          isToolCall: () => false,
-        },
-        'task_start'
-      );
+      // Execute the node's action
+      const context = {
+        variables: this.variables,
+        llmProvider: this.llmProvider as LLMProvider,
+        tools: new Map(node.action.tools.map(tool => [tool.name, tool])),
+        callback
+      };
+
+      callback && await callback.hooks.beforeSubtask?.(node, context);
 
       executing.add(nodeId);
 
@@ -53,27 +56,12 @@ export class WorkflowImpl implements Workflow {
       }
       node.input.value = input;
 
-      // Execute the node's action
-      const context = {
-        variables: this.variables,
-        llmProvider: this.llmProvider as LLMProvider,
-        tools: new Map(node.action.tools.map(tool => [tool.name, tool])),
-        callback
-      };
-
       node.output.value = await node.action.execute(node.input.value, context);
 
       executing.delete(nodeId);
       executed.add(nodeId);
 
-      callback && await callback(
-        {
-          task: node,
-          isTask: () => true,
-          isToolCall: () => false,
-        },
-        'task_end'
-      );
+      callback && await callback.hooks.afterSubtask?.(node, context, node.output?.value);
     };
 
     // Execute all terminal nodes (nodes with no dependents)
@@ -82,6 +70,8 @@ export class WorkflowImpl implements Workflow {
     );
 
     await Promise.all(terminalNodes.map(node => executeNode(node.id)));
+
+    callback && await callback.hooks.afterWorkflow?.(this, this.variables);
   }
 
   addNode(node: WorkflowNode): void {

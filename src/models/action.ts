@@ -143,35 +143,29 @@ export class ActionImpl implements Action {
         // Store the promise of tool execution
         toolExecutionPromise = (async () => {
           try {
-            const toolCallParam = {
-              tool,
-              name: toolCall.name,
-              input: toolCall.input,
-              output: undefined as any,
-            };
-            if (context.callback) {
-              await context.callback(
-                {
-                  toolCall: toolCallParam,
-                  isTask: () => false,
-                  isToolCall: () => true,
-                },
-                'tool_start'
+            // beforeToolUse
+            if (context.callback && context.callback.hooks.beforeToolUse) {
+              let modified_input = await context.callback.hooks.beforeToolUse(
+                tool,
+                context,
+                toolCall.input
               );
-              toolCall.input = toolCallParam.input;
+              if (modified_input) {
+                toolCall.input = modified_input;
+              }
             }
+            // Execute the tool
             let result = await tool.execute(context, toolCall.input);
-            if (context.callback) {
-              toolCallParam.output = result;
-              await context.callback(
-                {
-                  toolCall: toolCallParam,
-                  isTask: () => false,
-                  isToolCall: () => true,
-                },
-                'tool_end'
+            // afterToolUse
+            if (context.callback && context.callback.hooks.afterToolUse) {
+              let modified_result = await context.callback.hooks.afterToolUse(
+                tool,
+                context,
+                result
               );
-              result = toolCallParam.output;
+              if (modified_result) {
+                result = modified_result;
+              }
             }
             const resultMessage: Message = {
               role: 'user',
@@ -255,7 +249,7 @@ export class ActionImpl implements Action {
     // Create tool map combining context tools, action tools, and return tool
     const toolMap = new Map<string, Tool<any, any>>();
     this.tools.forEach((tool) => toolMap.set(tool.name, tool));
-    context.tools.forEach((tool) => toolMap.set(tool.name, tool));
+    context.tools?.forEach((tool) => toolMap.set(tool.name, tool));
     toolMap.set(returnTool.name, returnTool);
 
     // Prepare initial messages

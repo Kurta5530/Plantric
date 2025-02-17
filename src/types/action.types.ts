@@ -30,7 +30,7 @@ export interface Property {
 export interface ExecutionContext {
   llmProvider: LLMProvider;
   variables: Map<string, unknown>;
-  tools: Map<string, Tool<any, any>>;
+  tools?: Map<string, Tool<any, any>>;
   callback?: WorkflowCallback;
 }
 

@@ -214,7 +214,7 @@ describe('ActionImpl', () => {
 
     it('should merge action tools with context tools', async () => {
       const contextTool = new MockTool('context_tool');
-      context.tools.set(contextTool.name, contextTool);
+      context.tools?.set(contextTool.name, contextTool);
 
       mockLLMProvider = new MockLLMProvider([
         { name: 'context_tool', input: { testParam: 'test' } },

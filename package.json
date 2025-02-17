@@ -24,6 +24,21 @@
       "require": "./dist/extension.cjs.js",
       "import": "./dist/extension.esm.js",
       "types": "./dist/extension/index.d.ts"
+    },
+    "./web": {
+      "require": "./dist/web.cjs.js",
+      "import": "./dist/web.esm.js",
+      "types": "./dist/web/index.d.ts"
+    },
+    "./nodejs": {
+      "require": "./dist/nodejs.cjs.js",
+      "import": "./dist/nodejs.esm.js",
+      "types": "./dist/nodejs/index.d.ts"
+    },
+    "./fellou": {
+      "require": "./dist/fellou.cjs.js",
+      "import": "./dist/fellou.esm.js",
+      "types": "./dist/fellou/index.d.ts"
     }
   },
   "directories": {

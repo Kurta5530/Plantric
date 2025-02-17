@@ -1,4 +1,4 @@
-import * as fellou from './fellou';
+import * as computer from '../computer';
 import { ComputerUseParam, ComputerUseResult } from '../../types/tools.types';
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
 
@@ -77,34 +77,34 @@ export class ComputerUse implements Tool<ComputerUseParam, ComputerUseResult> {
     let result;
     switch (params.action) {
       case 'key':
-        result = await fellou.key(params.text as string, params.coordinate);
+        result = await computer.key(params.text as string, params.coordinate);
         break;
       case 'type':
-        result = await fellou.type(params.text as string, params.coordinate);
+        result = await computer.type(params.text as string, params.coordinate);
         break;
       case 'mouse_move':
-        result = await fellou.mouse_move(params.coordinate as [number, number]);
+        result = await computer.mouse_move(params.coordinate as [number, number]);
         break;
       case 'left_click':
-        result = await fellou.left_click(params.coordinate);
+        result = await computer.left_click(params.coordinate);
         break;
       case 'left_click_drag':
-        result = await fellou.left_click_drag(params.coordinate as [number, number]);
+        result = await computer.left_click_drag(params.coordinate as [number, number]);
         break;
       case 'right_click':
-        result = await fellou.right_click(params.coordinate);
+        result = await computer.right_click(params.coordinate);
         break;
       case 'double_click':
-        result = await fellou.double_click(params.coordinate);
+        result = await computer.double_click(params.coordinate);
         break;
       case 'screenshot':
-        result = await fellou.screenshot();
+        result = await computer.screenshot();
         break;
       case 'cursor_position':
-        result = await fellou.cursor_position();
+        result = await computer.cursor_position();
         break;
       case 'scroll':
-        result = await fellou.scroll(params.coordinate as [number, number]);
+        result = await computer.scroll(params.coordinate as [number, number]);
         break;
       default:
         throw Error(

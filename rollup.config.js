@@ -24,7 +24,7 @@ export default [
         declaration: true,
         declarationDir: 'dist',
         include: ['src/**/*'],
-        exclude: ['node_modules', 'dist', 'src/extension/**/*']
+        exclude: ['node_modules', 'dist', 'src/extension/**/*', 'src/web/**/*', 'src/nodejs/**/*', 'src/fellou/**/*']
       })
     ]
   },
@@ -71,6 +71,75 @@ export default [
         declaration: false,
         include: ['src/extension/content/*'],
         declarationDir: 'dist'
+      })
+    ]
+  },
+  {
+    input: 'src/web/index.ts',
+    output: [
+      {
+        file: 'dist/web.cjs.js',
+        format: 'cjs'
+      },
+      {
+        file: 'dist/web.esm.js',
+        format: 'esm'
+      }
+    ],
+    plugins: [
+      resolve(),
+      commonjs(),
+      typescript({ 
+        tsconfig: './tsconfig.json',
+        declaration: true,
+        declarationDir: 'dist',
+        include: ['src/types/*', 'src/web/**/*']
+      })
+    ]
+  },
+  {
+    input: 'src/nodejs/index.ts',
+    output: [
+      {
+        file: 'dist/nodejs.cjs.js',
+        format: 'cjs'
+      },
+      {
+        file: 'dist/nodejs.esm.js',
+        format: 'esm'
+      }
+    ],
+    plugins: [
+      resolve(),
+      commonjs(),
+      typescript({ 
+        tsconfig: './tsconfig.json',
+        declaration: true,
+        declarationDir: 'dist',
+        include: ['src/types/*', 'src/nodejs/**/*']
+      })
+    ]
+  },
+  {
+    input: 'src/fellou/index.ts',
+    output: [
+      {
+        file: 'dist/fellou.cjs.js',
+        format: 'cjs'
+      },
+      {
+        file: 'dist/fellou.esm.js',
+        format: 'esm'
+      }
+    ],
+    plugins: [
+      resolve(),
+      commonjs(),
+      typescript({ 
+        tsconfig: './tsconfig.json',
+        declaration: true,
+        declarationDir: 'dist',
+        include: ['src/types/*', 'src/fellou/**/*']
       })
     ]
   }
