@@ -253,13 +253,10 @@ export class ActionImpl implements Action {
     toolMap.set(returnTool.name, returnTool);
 
     // Prepare initial messages
-    const messages: Message[] =
-      input && Object.keys(input).length > 0
-        ? [
-            { role: 'system', content: this.formatSystemPrompt(context) },
-            { role: 'user', content: this.formatUserPrompt(input) },
-          ]
-        : [{ role: 'user', content: this.formatSystemPrompt(context) }];
+    const messages: Message[] = [
+      { role: 'system', content: this.formatSystemPrompt() },
+      { role: 'user', content: this.formatUserPrompt(context, input) },
+    ];
 
     console.log('Starting LLM conversation...');
     console.log('Initial messages:', messages);
@@ -299,6 +296,7 @@ export class ActionImpl implements Action {
       if (!hasToolUse && response) {
         // LLM sent a message without using tools - request explicit return
         console.log('No tool use detected, requesting explicit return');
+        console.log('Response:', response);
         const returnOnlyParams = {
           ...params,
           tools: [
