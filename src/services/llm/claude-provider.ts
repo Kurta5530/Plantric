@@ -18,15 +18,26 @@ export class ClaudeProvider implements LLMProvider {
   private client: Anthropic;
   private defaultModel = 'claude-3-5-sonnet-20241022';
 
-  constructor(apiKey: string, defaultModel?: string | null, options?: ClientOptions) {
+  constructor(options: ClientOptions, defaultModel?: string);
+  constructor(apiKey: string, defaultModel?: string | null, options?: ClientOptions);
+
+  constructor(
+    param: string | ClientOptions,
+    defaultModel?: string | null,
+    options?: ClientOptions
+  ) {
     if (defaultModel) {
       this.defaultModel = defaultModel;
     }
-    this.client = new Anthropic({
-      apiKey: apiKey,
-      dangerouslyAllowBrowser: true,
-      ...options,
-    });
+    if (typeof param == 'string') {
+      this.client = new Anthropic({
+        apiKey: param,
+        dangerouslyAllowBrowser: true,
+        ...options,
+      });
+    } else {
+      this.client = new Anthropic(param);
+    }
   }
 
   private processResponse(response: Anthropic.Message): LLMResponse {

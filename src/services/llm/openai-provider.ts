@@ -28,15 +28,26 @@ export class OpenaiProvider implements LLMProvider {
   private client: OpenAI;
   private defaultModel = 'gpt-4o';
 
-  constructor(apiKey: string, defaultModel?: string | null, options?: ClientOptions) {
+  constructor(options: ClientOptions, defaultModel?: string);
+  constructor(apiKey: string, defaultModel?: string | null, options?: ClientOptions);
+
+  constructor(
+    param: string | ClientOptions,
+    defaultModel?: string | null,
+    options?: ClientOptions
+  ) {
     if (defaultModel) {
       this.defaultModel = defaultModel;
     }
-    this.client = new OpenAI({
-      apiKey,
-      dangerouslyAllowBrowser: true,
-      ...options,
-    });
+    if (typeof param == 'string') {
+      this.client = new OpenAI({
+        apiKey: param,
+        dangerouslyAllowBrowser: true,
+        ...options,
+      });
+    } else {
+      this.client = new OpenAI(param);
+    }
   }
 
   private buildParams(
