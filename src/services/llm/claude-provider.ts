@@ -141,7 +141,7 @@ export class ClaudeProvider implements LLMProvider {
               const toolCall: ToolCall = {
                 id: currentToolUse.id,
                 name: currentToolUse.name,
-                input: JSON.parse(currentToolUse.accumulatedJson),
+                input: JSON.parse(currentToolUse.accumulatedJson || '{}'),
               };
               handler.onToolUse?.(toolCall);
               currentToolUse = null;

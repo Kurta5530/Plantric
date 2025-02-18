@@ -17,6 +17,8 @@ import { ToolRegistry } from './tool-registry';
  * Lyvo core
  */
 export class Lyvo {
+  public static tools: Map<string, Tool<any, any>> = new Map();
+
   private llmProvider: LLMProvider;
   private toolRegistry = new ToolRegistry();
 
@@ -44,6 +46,7 @@ export class Lyvo {
     } else {
       this.llmProvider = config as LLMProvider;
     }
+    Lyvo.tools.forEach((tool) => this.toolRegistry.registerTool(tool));
   }
 
   public async generateWorkflow(prompt: string, param?: LyvoInvokeParam): Promise<Workflow> {
@@ -71,6 +74,8 @@ export class Lyvo {
     let tool: Tool<any, any>;
     if (this.toolRegistry.hasTools([toolName])) {
       tool = this.toolRegistry.getTool(toolName);
+    } else if (Lyvo.tools.has(toolName)) {
+      tool = Lyvo.tools.get(toolName) as Tool<any, any>;
     } else {
       throw new Error(`Tool with name ${toolName} not found`);
     }
@@ -78,9 +83,17 @@ export class Lyvo {
   }
 
   public async callTool(toolName: string, input: object, callback?: WorkflowCallback): Promise<any>;
-  public async callTool(tool: Tool<any, any>, input: object, callback?: WorkflowCallback): Promise<any>;
+  public async callTool(
+    tool: Tool<any, any>,
+    input: object,
+    callback?: WorkflowCallback
+  ): Promise<any>;
 
-  public async callTool(tool: Tool<any, any> | string, input: object, callback?: WorkflowCallback): Promise<any> {
+  public async callTool(
+    tool: Tool<any, any> | string,
+    input: object,
+    callback?: WorkflowCallback
+  ): Promise<any> {
     if (typeof tool === 'string') {
       tool = this.getTool(tool);
     }
