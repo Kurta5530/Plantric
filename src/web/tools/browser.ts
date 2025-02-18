@@ -26,9 +26,22 @@ export function double_click(xpath: string): any {
 }
 
 export async function screenshot(): Promise<ScreenshotResult> {
+  const [width, height] = size();
+  const scrollX = window.scrollX || window.pageXOffset;
+  const scrollY = window.scrollY || window.pageYOffset;
   const canvas = await html2canvas(document.body, {
-    scrollY: -window.scrollY,
-    scrollX: -window.scrollX,
+    width,
+    height,
+    windowWidth: width,
+    windowHeight: height,
+    x: scrollX,
+    y: scrollY,
+    scrollX: -scrollX,
+    scrollY: -scrollY,
+    useCORS: true,
+    foreignObjectRendering: true,
+    // backgroundColor: 'white',
+    // scale: window.devicePixelRatio || 1,
   });
   const dataUrl = canvas.toDataURL('image/png');
   let data = dataUrl.substring(dataUrl.indexOf('base64,') + 7);
