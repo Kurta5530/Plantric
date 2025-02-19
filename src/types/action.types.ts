@@ -32,6 +32,7 @@ export interface ExecutionContext {
   variables: Map<string, unknown>;
   tools?: Map<string, Tool<any, any>>;
   callback?: WorkflowCallback;
+  [key: string]: any;
 }
 
 export interface Action {

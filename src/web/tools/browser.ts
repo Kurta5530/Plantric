@@ -1,27 +1,28 @@
 import html2canvas from 'html2canvas';
 import { ScreenshotResult } from '../../types/tools.types';
 
-export function type(xpath: string, text: string): any {
-  return do_input(xpath, text);
+export function type(text: string, xpath?: string, highlightIndex?: number): boolean {
+  return do_input(text, xpath, highlightIndex);
 }
 
-export function clear_input(xpath: string): any {
-  return do_input(xpath, '');
+export function clear_input(xpath?: string, highlightIndex?: number): boolean {
+  return do_input('', xpath, highlightIndex);
 }
 
-export function left_click(xpath: string): any {
-  return simulateMouseEvent(xpath, ['mousedown', 'mouseup', 'click'], 0);
+export function left_click(xpath?: string, highlightIndex?: number): boolean {
+  return simulateMouseEvent(['mousedown', 'mouseup', 'click'], 0, xpath, highlightIndex);
 }
 
-export function right_click(xpath: string): any {
-  return simulateMouseEvent(xpath, ['mousedown', 'mouseup', 'contextmenu'], 2);
+export function right_click(xpath?: string, highlightIndex?: number): boolean {
+  return simulateMouseEvent(['mousedown', 'mouseup', 'contextmenu'], 2, xpath, highlightIndex);
 }
 
-export function double_click(xpath: string): any {
+export function double_click(xpath?: string, highlightIndex?: number): boolean {
   return simulateMouseEvent(
-    xpath,
     ['mousedown', 'mouseup', 'click', 'mousedown', 'mouseup', 'click', 'dblclick'],
-    0
+    0,
+    xpath,
+    highlightIndex
   );
 }
 
@@ -54,12 +55,82 @@ export async function screenshot(): Promise<ScreenshotResult> {
   };
 }
 
-export function scroll_to(xpath: string): any {
-  let result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-  let element = result.singleNodeValue as any;
-  return element.scrollIntoView({
+export function scroll_to(xpath?: string, highlightIndex?: number): boolean {
+  let element = null;
+  if (highlightIndex != null) {
+    element = (window as any).get_highlight_element(highlightIndex);
+  } else if (xpath) {
+    element = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
+      .singleNodeValue as any;
+  }
+  if (!element) {
+    return false;
+  }
+  element.scrollIntoView({
     behavior: 'smooth',
   });
+  return true;
+}
+
+export function get_dropdown_options(
+  xpath?: string,
+  highlightIndex?: number
+): {
+  options: Array<{
+    index: number;
+    text: string;
+    value?: string;
+  }>;
+  id?: string;
+  name?: string;
+} | null {
+  let select = null;
+  if (highlightIndex != null) {
+    select = (window as any).get_highlight_element(highlightIndex);
+  } else if (xpath) {
+    select = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
+      .singleNodeValue as any;
+  }
+  if (!select) {
+    return null;
+  }
+  return {
+    options: Array.from(select.options).map((opt: any) => ({
+      index: opt.index,
+      text: opt.text.trim(),
+      value: opt.value,
+    })),
+    id: select.id,
+    name: select.name,
+  };
+}
+
+export function select_dropdown_option(text: string, xpath?: string, highlightIndex?: number): any {
+  let select = null;
+  if (highlightIndex != null) {
+    select = (window as any).get_highlight_element(highlightIndex);
+  } else if (xpath) {
+    select = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
+      .singleNodeValue as any;
+  }
+  if (!select || select.tagName.toUpperCase() !== 'SELECT') {
+    return { success: false, error: 'Select not found or invalid element type' };
+  }
+  const option = Array.from(select.options).find((opt: any) => opt.text.trim() === text) as any;
+  if (!option) {
+    return {
+      success: false,
+      error: 'Option not found',
+      availableOptions: Array.from(select.options).map((o: any) => o.text.trim()),
+    };
+  }
+  select.value = option.value;
+  select.dispatchEvent(new Event('change'));
+  return {
+    success: true,
+    selectedValue: option.value,
+    selectedText: option.text.trim(),
+  };
 }
 
 export function extractHtmlContent(): string {
@@ -97,17 +168,24 @@ export function size(): [number, number] {
   ];
 }
 
-function do_input(xpath: string, text: string) {
-  let query_result = document.evaluate(
-    xpath,
-    document,
-    null,
-    XPathResult.FIRST_ORDERED_NODE_TYPE,
-    null
-  );
-  let element = query_result.singleNodeValue as any;
+function do_input(text: string, xpath?: string, highlightIndex?: number): boolean {
+  let element = null;
+  if (highlightIndex != null) {
+    element = (window as any).get_highlight_element(highlightIndex);
+  } else if (xpath) {
+    element = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
+      .singleNodeValue as any;
+  }
   if (!element) {
-    return;
+    return false;
+  }
+  let enter = false;
+  if (text.endsWith('\\n')) {
+    enter = true;
+    text = text.substring(0, text.length - 2);
+  } else if (text.endsWith('\n')) {
+    enter = true;
+    text = text.substring(0, text.length - 1);
   }
   let input: any;
   if (
@@ -126,20 +204,38 @@ function do_input(xpath: string, text: string) {
     input.value += text;
   }
   let result = input.dispatchEvent(new Event('input', { bubbles: true }));
+  if (enter) {
+    ['keydown', 'keypress', 'keyup'].forEach((eventType) => {
+      const event = new KeyboardEvent(eventType, {
+        key: 'Enter',
+        code: 'Enter',
+        keyCode: 13,
+        bubbles: true,
+        cancelable: true,
+      });
+      input.dispatchEvent(event);
+    });
+  }
   console.log('type', input, result);
-  return result;
+  return true;
 }
 
-function simulateMouseEvent(xpath: string, eventTypes: Array<string>, button: 0 | 1 | 2) {
-  let query_result = document.evaluate(
-    xpath,
-    document,
-    null,
-    XPathResult.FIRST_ORDERED_NODE_TYPE,
-    null
-  );
-  let element = query_result.singleNodeValue as any;
-  let result = false;
+function simulateMouseEvent(
+  eventTypes: Array<string>,
+  button: 0 | 1 | 2,
+  xpath?: string,
+  highlightIndex?: number
+): boolean {
+  let element = null;
+  if (highlightIndex != null) {
+    element = (window as any).get_highlight_element(highlightIndex);
+  } else if (xpath) {
+    element = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
+      .singleNodeValue as any;
+  }
+  if (!element) {
+    return false;
+  }
   for (let i = 0; i < eventTypes.length; i++) {
     const event = new MouseEvent(eventTypes[i], {
       view: window,
@@ -147,8 +243,8 @@ function simulateMouseEvent(xpath: string, eventTypes: Array<string>, button: 0 
       cancelable: true,
       button, // 0 left; 2 right
     });
-    result = element.dispatchEvent(event);
+    let result = element.dispatchEvent(event);
     console.log('simulateMouse', element, { xpath, eventTypes, button }, result);
   }
-  return result;
+  return true;
 }

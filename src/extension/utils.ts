@@ -110,7 +110,7 @@ export async function executeScript(tabId: number, func: any, args: any[]): Prom
 
 export async function waitForTabComplete(
   tabId: number,
-  timeout: number = 30_000
+  timeout: number = 15_000
 ): Promise<chrome.tabs.Tab> {
   return new Promise(async (resolve, reject) => {
     let tab = await chrome.tabs.get(tabId);

@@ -12,91 +12,96 @@ export function exportFile(filename: string, type: string, content: string) {
 }
 
 export function xpath(element: any): string {
-  if (element.id !== '') {
-    return '//*[@id=\"' + element.id + '\"]';
-  }
   if (element == document.body) {
     return '/html/' + element.tagName.toLowerCase();
   }
-  var ix = 1,
-    siblings = element.parentNode.childNodes;
-  for (var i = 0, l = siblings.length; i < l; i++) {
-    var sibling = siblings[i];
-    if (sibling == element) {
-      return xpath(element.parentNode) + '/' + element.tagName.toLowerCase() + '[' + ix + ']';
-    } else if (sibling.nodeType == 1 && sibling.tagName == element.tagName) {
-      ix++;
+  if (element.parentNode instanceof ShadowRoot) {
+    let shadowRoot = element.parentNode as ShadowRoot;
+    let parent = (shadowRoot.getRootNode() as any).host;
+    return xpath(parent) + '//' + element.tagName.toLowerCase();
+  } else {
+    let sp;
+    let parent;
+    if (element.parentNode instanceof ShadowRoot) {
+      sp = '//';
+      let shadowRoot = element.parentNode as ShadowRoot;
+      parent = (shadowRoot.getRootNode() as any).host;
+    } else {
+      sp = '/';
+      parent = element.parentNode;
+    }
+    let siblings = parent.childNodes;
+    if (siblings.length == 1) {
+      return xpath(parent) + sp + element.tagName.toLowerCase();
+    } else {
+      let ix = 1;
+      for (let i = 0, l = siblings.length; i < l; i++) {
+        let sibling = siblings[i];
+        if (sibling == element) {
+          return xpath(parent) + sp + element.tagName.toLowerCase() + '[' + ix + ']';
+        } else if (sibling.nodeType == 1 && sibling.tagName == element.tagName) {
+          ix++;
+        }
+      }
+      return '';
     }
   }
-  return '';
 }
 
 export function queryWithXpath(xpath: string) {
-  let result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-  return result.singleNodeValue;
-}
-
-export function queryAllWithXpath(xpath: string): Array<any> {
-  let result = document.evaluate(
-    xpath,
-    document,
-    null,
-    XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
-    null
-  );
-  let elements = [];
-  for (let i = 0; i < result.snapshotLength; i++) {
-    elements.push(result.snapshotItem(i));
+  let xpaths = xpath.split('//');
+  if (xpaths.length == 1) {
+    return document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
+      .singleNodeValue;
   }
-  return elements;
-}
-
-export function getDropdownOptions(xpath: string): {
-  options: Array<{
-    index: number;
-    text: string;
-    value?: string;
-  }>;
-  id?: string;
-  name?: string;
-} | null {
-  const select = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
-    .singleNodeValue as any;
-  if (!select) {
-    return null;
+  let element: any = document;
+  for (let i = 0; i < xpaths.length; i++) {
+    let _element = null;
+    if (element instanceof ShadowRoot) {
+      let _xpaths = xpaths[i].split('/');
+      let current = _xpaths[0].toLowerCase();
+      let ix = 1;
+      for (let j = 0; j < element.childNodes.length; j++) {
+        let tagName = (element.childNodes[j] as any).tagName;
+        if (!tagName) {
+          ix++;
+          continue;
+        }
+        tagName = tagName.toLowerCase();
+        if (current == tagName || current == tagName + '[' + ix + ']') {
+          element = element.childNodes[j];
+          let _xpath = _xpaths.slice(1).join('/');
+          _element = document.evaluate(
+            _xpath,
+            element,
+            null,
+            XPathResult.FIRST_ORDERED_NODE_TYPE,
+            null
+          ).singleNodeValue as any;
+          break;
+        } else {
+          ix++;
+        }
+      }
+    } else {
+      _element = document.evaluate(
+        xpaths[i],
+        element,
+        null,
+        XPathResult.FIRST_ORDERED_NODE_TYPE,
+        null
+      ).singleNodeValue as any;
+    }
+    if (!_element) {
+      return null;
+    }
+    if (_element.shadowRoot) {
+      element = _element.shadowRoot;
+    } else {
+      element = _element;
+    }
   }
-  return {
-    options: Array.from(select.options).map((opt: any) => ({
-      index: opt.index,
-      text: opt.text.trim(),
-      value: opt.value,
-    })),
-    id: select.id,
-    name: select.name,
-  };
-}
-
-export function selectDropdownOption(xpath: string, text: string): any {
-  const select = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
-    .singleNodeValue as any;
-  if (!select || select.tagName.toUpperCase() !== 'SELECT') {
-    return { success: false, error: 'Select not found or invalid element type' };
-  }
-  const option = Array.from(select.options).find((opt: any) => opt.text.trim() === text) as any;
-  if (!option) {
-    return {
-      success: false,
-      error: 'Option not found',
-      availableOptions: Array.from(select.options).map((o: any) => o.text.trim()),
-    };
-  }
-  select.value = option.value;
-  select.dispatchEvent(new Event('change'));
-  return {
-    success: true,
-    selectedValue: option.value,
-    selectedText: option.text.trim(),
-  };
+  return element != document ? element : null;
 }
 
 /**

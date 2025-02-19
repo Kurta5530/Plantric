@@ -6,6 +6,7 @@
  * @returns { element_str, selector_map }
  */
 function get_clickable_elements(doHighlightElements = true, includeAttributes) {
+  window.clickable_elements = {};
   let page_tree = build_dom_tree(doHighlightElements);
   let element_tree = parse_node(page_tree);
   let selector_map = create_selector_map(element_tree);
@@ -13,9 +14,10 @@ function get_clickable_elements(doHighlightElements = true, includeAttributes) {
   return { element_str, selector_map };
 }
 
-/**
- * Remove highlight
- */
+function get_highlight_element(highlightIndex) {
+  return window.clickable_elements[highlightIndex];
+}
+
 function remove_highlight() {
   let highlight = document.getElementById('playwright-highlight-container');
   if (highlight) {
@@ -604,6 +606,7 @@ function build_dom_tree(doHighlightElements) {
       // Highlight if element meets all criteria and highlighting is enabled
       if (isInteractive && isVisible && isTop) {
         nodeData.highlightIndex = highlightIndex++;
+        window.clickable_elements[nodeData.highlightIndex] = node;
         if (doHighlightElements) {
           highlightElement(node, nodeData.highlightIndex, parentIframe);
         }
@@ -654,4 +657,5 @@ function build_dom_tree(doHighlightElements) {
 }
 
 window.get_clickable_elements = get_clickable_elements;
+window.get_highlight_element = get_highlight_element;
 window.remove_highlight = remove_highlight;
