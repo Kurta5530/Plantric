@@ -3,10 +3,7 @@ import { ElementClick } from './element_click';
 import { ExportFile } from './export_file';
 import { ExtractContent } from './extract_content';
 import { FindElementPosition } from './find_element_position';
-import { OpenUrl } from './open_url';
 import { Screenshot } from './screenshot';
-import { TabManagement } from './tab_management';
-import { WebSearch } from './web_search';
 
 export {
   BrowserUse,
@@ -14,8 +11,5 @@ export {
   ExportFile,
   ExtractContent,
   FindElementPosition,
-  OpenUrl,
   Screenshot,
-  TabManagement,
-  WebSearch,
 };

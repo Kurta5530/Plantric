@@ -30,13 +30,15 @@ export interface Property {
 export interface ExecutionContext {
   llmProvider: LLMProvider;
   variables: Map<string, unknown>;
-  tools: Map<string, Tool<any, any>>;
+  tools?: Map<string, Tool<any, any>>;
   callback?: WorkflowCallback;
+  [key: string]: any;
 }
 
 export interface Action {
   type: 'prompt' | 'script' | 'hybrid';
   name: string;
+  description: string;
   execute: (input: unknown, context: ExecutionContext) => Promise<unknown>;
   tools: Tool<any, any>[];
 }

@@ -78,6 +78,7 @@ export class ActionImpl implements Action {
   constructor(
     public type: 'prompt', // Only support prompt type
     public name: string,
+    public description: string,
     public tools: Tool<any, any>[],
     private llmProvider: LLMProvider,
     private llmConfig?: LLMParameters,
@@ -115,7 +116,6 @@ export class ActionImpl implements Action {
     const handler: LLMStreamHandler = {
       onContent: (content) => {
         if (content.trim()) {
-          console.log('LLM:', content);
           assistantTextMessage += content;
         }
       },
@@ -143,35 +143,33 @@ export class ActionImpl implements Action {
         // Store the promise of tool execution
         toolExecutionPromise = (async () => {
           try {
-            const toolCallParam = {
-              tool,
-              name: toolCall.name,
-              input: toolCall.input,
-              output: undefined as any,
-            };
-            if (context.callback) {
-              await context.callback(
-                {
-                  toolCall: toolCallParam,
-                  isTask: () => false,
-                  isToolCall: () => true,
-                },
-                'tool_start'
+            // beforeToolUse
+            context.__skip = false;
+            if (context.callback && context.callback.hooks.beforeToolUse) {
+              let modified_input = await context.callback.hooks.beforeToolUse(
+                tool,
+                context,
+                toolCall.input
               );
-              toolCall.input = toolCallParam.input;
+              if (modified_input) {
+                toolCall.input = modified_input;
+              }
             }
+            if (context.__skip || context.__abort) {
+              return;
+            }
+            // Execute the tool
             let result = await tool.execute(context, toolCall.input);
-            if (context.callback) {
-              toolCallParam.output = result;
-              await context.callback(
-                {
-                  toolCall: toolCallParam,
-                  isTask: () => false,
-                  isToolCall: () => true,
-                },
-                'tool_end'
+            // afterToolUse
+            if (context.callback && context.callback.hooks.afterToolUse) {
+              let modified_result = await context.callback.hooks.afterToolUse(
+                tool,
+                context,
+                result
               );
-              result = toolCallParam.output;
+              if (modified_result) {
+                result = modified_result;
+              }
             }
             const resultMessage: Message = {
               role: 'user',
@@ -229,6 +227,10 @@ export class ActionImpl implements Action {
     if (toolExecutionPromise) {
       await toolExecutionPromise;
     }
+    
+    if (context.__abort) {
+      throw new Error("Abort");
+    }
 
     // Add messages in the correct order after everything is complete
     if (assistantTextMessage) {
@@ -255,17 +257,14 @@ export class ActionImpl implements Action {
     // Create tool map combining context tools, action tools, and return tool
     const toolMap = new Map<string, Tool<any, any>>();
     this.tools.forEach((tool) => toolMap.set(tool.name, tool));
-    context.tools.forEach((tool) => toolMap.set(tool.name, tool));
+    context.tools?.forEach((tool) => toolMap.set(tool.name, tool));
     toolMap.set(returnTool.name, returnTool);
 
     // Prepare initial messages
-    const messages: Message[] =
-      input && Object.keys(input).length > 0
-        ? [
-            { role: 'system', content: this.formatSystemPrompt(context) },
-            { role: 'user', content: this.formatUserPrompt(input) },
-          ]
-        : [{ role: 'user', content: this.formatSystemPrompt(context) }];
+    const messages: Message[] = [
+      { role: 'system', content: this.formatSystemPrompt() },
+      { role: 'user', content: this.formatUserPrompt(context, input) },
+    ];
 
     console.log('Starting LLM conversation...');
     console.log('Initial messages:', messages);
@@ -305,6 +304,7 @@ export class ActionImpl implements Action {
       if (!hasToolUse && response) {
         // LLM sent a message without using tools - request explicit return
         console.log('No tool use detected, requesting explicit return');
+        console.log('Response:', response);
         const returnOnlyParams = {
           ...params,
           tools: [
@@ -379,39 +379,39 @@ export class ActionImpl implements Action {
     return output;
   }
 
-  private formatSystemPrompt(context: ExecutionContext): string {
+  private formatSystemPrompt(): string {
+
+    return `You are a task executor. You need to complete the task specified by the user, using the tools provided. When you need to store results or outputs, use the write_context tool. When you are ready to return the final output, use the return_output tool.
+
+    Remember to:
+    1. Use tools when needed to accomplish the task
+    2. Store important results using write_context, including intermediate and final results
+    3. Think step by step about what needs to be done`;
+  }
+
+  private formatUserPrompt(context: ExecutionContext, input: unknown): string {
     // Create a description of the current context
     const contextDescription = Array.from(context.variables.entries())
       .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
       .join('\n');
 
-    return `You are executing the action "${this.name}". You have access to the following context:
+    return `You are executing the action "${this.name}". The specific instructions are: "${this.description}". You have access to the following context:
 
-${contextDescription || 'No context variables set'}
+    ${contextDescription || 'No context variables set'}
 
-You can use the provided tools to accomplish your task. When you need to store results or outputs,
-use the write_context tool to save them to the workflow context.
-
-Remember to:
-1. Use tools when needed to accomplish the task
-2. Store important results using write_context
-3. Think step by step about what needs to be done`;
-  }
-
-  private formatUserPrompt(input: unknown): string {
-    if (typeof input === 'string') {
-      return input;
-    }
-    return JSON.stringify(input, null, 2);
+    You have been provided with the following input:
+    ${(typeof input === 'string' ? input : JSON.stringify(input, null, 2)) || 'No additional input provided'}
+    `
   }
 
   // Static factory method
   static createPromptAction(
     name: string,
+    description: string,
     tools: Tool<any, any>[],
     llmProvider: LLMProvider,
     llmConfig?: LLMParameters
   ): Action {
-    return new ActionImpl('prompt', name, tools, llmProvider, llmConfig);
+    return new ActionImpl('prompt', name, description, tools, llmProvider, llmConfig);
   }
 }

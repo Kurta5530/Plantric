@@ -44,10 +44,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           sendResponse(result);
           break;
         }
-        case 'computer:key': {
-          sendResponse(key(request));
-          break;
-        }
         case 'computer:type': {
           sendResponse(type(request));
           break;
@@ -74,16 +70,20 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           );
           break;
         }
-        case 'computer:left_click_drag': {
-          sendResponse(left_click_drag(request));
-          break;
-        }
         case 'computer:scroll_to': {
           sendResponse(scroll_to(request));
           break;
         }
         case 'computer:cursor_position': {
           sendResponse({ coordinate: [lyvo.lastMouseX, lyvo.lastMouseY] });
+          break;
+        }
+        case 'computer:get_dropdown_options': {
+          sendResponse(get_dropdown_options(request));
+          break;
+        }
+        case 'computer:select_dropdown_option': {
+          sendResponse(select_dropdown_option(request));
           break;
         }
       }
@@ -95,31 +95,20 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   return true;
 });
 
-function key(request: any) {
-  const event = new KeyboardEvent(request.keyEventType || 'keydown', {
-    key: request.key,
-    ctrlKey: request.ctrlKey,
-    altKey: request.altKey,
-    shiftKey: request.shiftKey,
-    metaKey: request.metaKey,
-    bubbles: true,
-    cancelable: true,
-  });
-  let coordinate = request.coordinate as [number, number];
-  let element = (document.activeElement ||
-    document.elementFromPoint(coordinate[0], coordinate[1])) as any;
-  if (element && element.focus) {
-    element.focus();
-  }
-  let result = element?.dispatchEvent(event);
-  console.log('key', element, request, result);
-  return result;
-}
-
-function type(request: any) {
+function type(request: any): boolean {
   let text = request.text as string;
+  let enter = false;
+  if (text.endsWith('\\n')) {
+    enter = true;
+    text = text.substring(0, text.length - 2);
+  } else if (text.endsWith('\n')) {
+    enter = true;
+    text = text.substring(0, text.length - 1);
+  }
   let element: any;
-  if (request.xpath) {
+  if (request.highlightIndex != null) {
+    element = window.get_highlight_element(request.highlightIndex);
+  } else if (request.xpath) {
     let xpath = request.xpath as string;
     let result = document.evaluate(
       xpath,
@@ -134,7 +123,7 @@ function type(request: any) {
     element = document.elementFromPoint(coordinate[0], coordinate[1]) || document.activeElement;
   }
   if (!element) {
-    return;
+    return false;
   }
   let input: any;
   if (
@@ -153,11 +142,23 @@ function type(request: any) {
     input.value += text;
   }
   let result = input.dispatchEvent(new Event('input', { bubbles: true }));
+  if (enter) {
+    ['keydown', 'keypress', 'keyup'].forEach((eventType) => {
+      const event = new KeyboardEvent(eventType, {
+        key: 'Enter',
+        code: 'Enter',
+        keyCode: 13,
+        bubbles: true,
+        cancelable: true,
+      });
+      input.dispatchEvent(event);
+    });
+  }
   console.log('type', input, request, result);
-  return result;
+  return true;
 }
 
-function mouse_move(request: any) {
+function mouse_move(request: any): boolean {
   let coordinate = request.coordinate as [number, number];
   let x = coordinate[0];
   let y = coordinate[1];
@@ -172,13 +173,15 @@ function mouse_move(request: any) {
   });
   let result = document.body.dispatchEvent(event);
   console.log('mouse_move', document.body, request, result);
-  return result;
+  return true;
 }
 
-function simulateMouseEvent(request: any, eventTypes: Array<string>, button: 0 | 1 | 2) {
+function simulateMouseEvent(request: any, eventTypes: Array<string>, button: 0 | 1 | 2): boolean {
   let element: any;
   let coordinate;
-  if (request.xpath) {
+  if (request.highlightIndex != null) {
+    element = window.get_highlight_element(request.highlightIndex);
+  } else if (request.xpath) {
     let xpath = request.xpath as string;
     let result = document.evaluate(
       xpath,
@@ -192,9 +195,11 @@ function simulateMouseEvent(request: any, eventTypes: Array<string>, button: 0 |
     let coordinate = request.coordinate as [number, number];
     element = document.elementFromPoint(coordinate[0], coordinate[1]) || document.body;
   }
+  if (!element) {
+    return false;
+  }
   const x = coordinate ? coordinate[0] : undefined;
   const y = coordinate ? coordinate[1] : undefined;
-  let result = false;
   for (let i = 0; i < eventTypes.length; i++) {
     const event = new MouseEvent(eventTypes[i], {
       view: window,
@@ -204,14 +209,22 @@ function simulateMouseEvent(request: any, eventTypes: Array<string>, button: 0 |
       clientY: y,
       button, // 0 left; 2 right
     });
-    result = element.dispatchEvent(event);
+    let result = element.dispatchEvent(event);
     console.log('simulateMouse', element, { ...request, eventTypes, button }, result);
   }
-  return result;
+  return true;
 }
 
-function scroll_to(request: any) {
-  if (request.xpath) {
+function scroll_to(request: any): boolean {
+  if (request.highlightIndex != null) {
+    let element = window.get_highlight_element(request.highlightIndex);
+    if (!element) {
+      return false;
+    }
+    element.scrollIntoView({
+      behavior: 'smooth'
+    });
+  } else if (request.xpath) {
     let xpath = request.xpath as string;
     let result = document.evaluate(
       xpath,
@@ -221,6 +234,9 @@ function scroll_to(request: any) {
       null
     );
     let element = result.singleNodeValue as any;
+    if (!element) {
+      return false;
+    }
     element.scrollIntoView({
       behavior: 'smooth'
     });
@@ -233,46 +249,65 @@ function scroll_to(request: any) {
     });
   }
   console.log('scroll_to', request);
+  return true;
 }
 
-function left_click_drag(request: any, steps = 10) {
-  const from_coordinate = request.from_coordinate as [number, number];
-  const to_coordinate = request.to_coordinate as [number, number];
-  let startX = from_coordinate[0];
-  let startY = from_coordinate[1];
-  let endX = to_coordinate[0];
-  let endY = to_coordinate[1];
-  let element = document.elementFromPoint(startX, startY) || document.body;
-  const mouseDownEvent = new MouseEvent('mousedown', {
-    bubbles: true,
-    cancelable: true,
-    view: window,
-    clientX: startX,
-    clientY: startY,
-    button: 0,
-  });
-  element.dispatchEvent(mouseDownEvent);
-  for (let i = 1; i <= steps; i++) {
-    const intermediateX = startX + (endX - startX) * (i / steps);
-    const intermediateY = startY + (endY - startY) * (i / steps);
-    const dragEvent = new MouseEvent('mousemove', {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      clientX: intermediateX,
-      clientY: intermediateY,
-      button: 0,
-    });
-    element.dispatchEvent(dragEvent);
+function get_dropdown_options(request: any) {
+  let select;
+  if (request.highlightIndex != null) {
+    select = window.get_highlight_element(request.highlightIndex);
+  } else if (request.xpath) {
+    select = document.evaluate(
+      request.xpath,
+      document,
+      null,
+      XPathResult.FIRST_ORDERED_NODE_TYPE,
+      null
+    ).singleNodeValue as any;
   }
-  const mouseUpEvent = new MouseEvent('mouseup', {
-    bubbles: true,
-    cancelable: true,
-    view: window,
-    clientX: endX,
-    clientY: endY,
-    button: 0,
-  });
-  console.log('left_click_drag', request);
-  return element.dispatchEvent(mouseUpEvent);
+  if (!select) {
+    return null;
+  }
+  return {
+    options: Array.from(select.options).map((opt: any) => ({
+      index: opt.index,
+      text: opt.text.trim(),
+      value: opt.value,
+    })),
+    id: select.id,
+    name: select.name,
+  };
+}
+
+function select_dropdown_option(request: any): any {
+  let select;
+  if (request.highlightIndex != null) {
+    select = window.get_highlight_element(request.highlightIndex);
+  } else if (request.xpath) {
+    select = document.evaluate(
+      request.xpath,
+      document,
+      null,
+      XPathResult.FIRST_ORDERED_NODE_TYPE,
+      null
+    ).singleNodeValue as any;
+  }
+  if (!select || select.tagName.toUpperCase() !== 'SELECT') {
+    return { success: false, error: 'Select not found or invalid element type' };
+  }
+  const option = Array.from(select.options).find((opt: any) => opt.text.trim() === request.text) as any;
+  if (!option) {
+    return {
+      success: false,
+      error: 'Option not found',
+      availableOptions: Array.from(select.options).map((o: any) => o.text.trim()),
+    };
+  }
+  select.value = option.value;
+  select.dispatchEvent(new Event('change'));
+  return {
+    success: true,
+    selectedValue: option.value,
+    selectedText: option.text.trim(),
+  };
 }

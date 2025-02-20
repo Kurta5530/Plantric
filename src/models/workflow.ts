@@ -1,6 +1,8 @@
 import { Workflow, WorkflowNode, NodeIO, ExecutionContext, LLMProvider, WorkflowCallback } from "../types";
 
 export class WorkflowImpl implements Workflow {
+  abort?: boolean;
+
   constructor(
     public id: string,
     public name: string,
@@ -14,11 +16,17 @@ export class WorkflowImpl implements Workflow {
     if (!this.validateDAG()) {
       throw new Error("Invalid workflow: Contains circular dependencies");
     }
+    this.abort = false;
+
+    callback && await callback.hooks.beforeWorkflow?.(this);
 
     const executed = new Set<string>();
     const executing = new Set<string>();
 
     const executeNode = async (nodeId: string): Promise<void> => {
+      if (this.abort) {
+        throw new Error("Abort");
+      }
       if (executed.has(nodeId)) {
         return;
       }
@@ -29,14 +37,25 @@ export class WorkflowImpl implements Workflow {
 
       const node = this.getNode(nodeId);
 
-      callback && await callback(
-        {
-          task: node,
-          isTask: () => true,
-          isToolCall: () => false,
-        },
-        'task_start'
-      );
+      // Execute the node's action
+      const context = {
+        __skip: false,
+        __abort: false,
+        variables: this.variables,
+        llmProvider: this.llmProvider as LLMProvider,
+        tools: new Map(node.action.tools.map(tool => [tool.name, tool])),
+        callback,
+        next: () => context.__skip = true,
+        abortAll: () => this.abort = context.__abort = true,
+      };
+
+      callback && await callback.hooks.beforeSubtask?.(node, context);
+
+      if (context.__abort) {
+        throw new Error("Abort");
+      } else if (context.__skip) {
+        return;
+      }
 
       executing.add(nodeId);
 
@@ -53,27 +72,12 @@ export class WorkflowImpl implements Workflow {
       }
       node.input.value = input;
 
-      // Execute the node's action
-      const context = {
-        variables: this.variables,
-        llmProvider: this.llmProvider as LLMProvider,
-        tools: new Map(node.action.tools.map(tool => [tool.name, tool])),
-        callback
-      };
-
       node.output.value = await node.action.execute(node.input.value, context);
 
       executing.delete(nodeId);
       executed.add(nodeId);
 
-      callback && await callback(
-        {
-          task: node,
-          isTask: () => true,
-          isToolCall: () => false,
-        },
-        'task_end'
-      );
+      callback && await callback.hooks.afterSubtask?.(node, context, node.output?.value);
     };
 
     // Execute all terminal nodes (nodes with no dependents)
@@ -82,6 +86,8 @@ export class WorkflowImpl implements Workflow {
     );
 
     await Promise.all(terminalNodes.map(node => executeNode(node.id)));
+
+    callback && await callback.hooks.afterWorkflow?.(this, this.variables);
   }
 
   addNode(node: WorkflowNode): void {

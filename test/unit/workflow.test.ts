@@ -17,8 +17,9 @@ describe('WorkflowImpl', () => {
     action: {
       type: 'script',
       name: 'test',
+      description: 'test',
       tools: [],
-      execute: async () => ({ result: `Executed ${id}` })
+      execute: async () => ({ result: `Executed ${id}` }),
     }
   });
 
@@ -85,6 +86,7 @@ describe('WorkflowImpl', () => {
         action: {
           type: 'script',
           name: 'test',
+          description: 'test',
           tools: [],
           execute: async () => {
             executed.push(id);

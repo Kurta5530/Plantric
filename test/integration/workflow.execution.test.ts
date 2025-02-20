@@ -104,6 +104,7 @@ describeIntegration('Minimal Workflow Integration', () => {
     // Create calculation action
     const calculateAction = ActionImpl.createPromptAction(
       'calculate expression 23 * 45 + 67',
+      'calculate expression 23 * 45 + 67',
       tools,
       llmProvider,
       { maxTokens: 1000 }
@@ -111,6 +112,7 @@ describeIntegration('Minimal Workflow Integration', () => {
 
     // Create display action
     const displayAction = ActionImpl.createPromptAction(
+      'display result',
       'display result',
       tools,
       llmProvider,

@@ -76,6 +76,7 @@ export class WorkflowGenerator {
 
         const action = ActionImpl.createPromptAction(
           nodeData.action.name,
+          nodeData.action.description,
           tools,
           this.llmProvider,
           { maxTokens: 1000 }

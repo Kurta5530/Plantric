@@ -1,0 +1,16 @@
+{
+  "name": "EKO API",
+  "entryPoints": [
+    "src/index.ts",
+    "src/types/index.ts",
+    "src/extension/index.ts",
+    "src/web/index.ts",
+    "src/nodejs/index.ts",
+    "src/fellou/index.ts"
+  ],
+  "exclude": ["node_modules", "test/**/*", "src/extension/script", "src/extension/content"],
+  "out": "../lyvo-docs/public/api",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeExternals": true
+}

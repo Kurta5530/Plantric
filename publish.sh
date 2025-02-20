@@ -10,5 +10,7 @@ npm login
 echo "Publish..."
 npm publish
 
+npm run docs
+
 echo -e "\successful\n"
 exit

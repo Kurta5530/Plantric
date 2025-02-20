@@ -231,7 +231,8 @@ describeIntegration('WorkflowGenerator Integration', () => {
       'click_dom_object', // For interaction
       'find_dom_object',  // For finding profile elements
       'copy_dom_object_text', // For extracting profile data
-      'save_file'         // For saving the CSV
+      'save_file',         // For saving the CSV
+      'write_context'      // For storing data in context
     ]);
 
     // Verify reasonable tool usage

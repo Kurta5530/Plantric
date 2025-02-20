@@ -5,7 +5,7 @@
  * @param {*} includeAttributes [attr_names...]
  * @returns { element_str, selector_map }
  */
-function get_clickable_elements(doHighlightElements = true, includeAttributes) {
+export function get_clickable_elements(doHighlightElements = true, includeAttributes) {
   window.clickable_elements = {};
   let page_tree = build_dom_tree(doHighlightElements);
   let element_tree = parse_node(page_tree);
@@ -14,11 +14,11 @@ function get_clickable_elements(doHighlightElements = true, includeAttributes) {
   return { element_str, selector_map };
 }
 
-function get_highlight_element(highlightIndex) {
+export function get_highlight_element(highlightIndex) {
   return window.clickable_elements[highlightIndex];
 }
 
-function remove_highlight() {
+export function remove_highlight() {
   let highlight = document.getElementById('playwright-highlight-container');
   if (highlight) {
     highlight.remove();

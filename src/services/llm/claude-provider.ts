@@ -18,15 +18,41 @@ export class ClaudeProvider implements LLMProvider {
   private client: Anthropic;
   private defaultModel = 'claude-3-5-sonnet-20241022';
 
-  constructor(apiKey: string, defaultModel?: string | null, options?: ClientOptions) {
+  constructor(options: ClientOptions, defaultModel?: string);
+  constructor(apiKey: string, defaultModel?: string | null, options?: ClientOptions);
+
+  constructor(
+    param: string | ClientOptions,
+    defaultModel?: string | null,
+    options?: ClientOptions
+  ) {
     if (defaultModel) {
       this.defaultModel = defaultModel;
     }
-    this.client = new Anthropic({
-      apiKey: apiKey,
-      dangerouslyAllowBrowser: true,
-      ...options,
-    });
+    if (
+      typeof window !== 'undefined' &&
+      typeof document !== 'undefined' &&
+      (typeof param == 'string' || param.apiKey)
+    ) {
+      console.warn(`
+        ⚠️ Security Warning:
+        DO NOT use API Keys in browser/frontend code!
+        This will expose your credentials and may lead to unauthorized usage.
+        
+        Best Practices: Configure backend API proxy request through baseURL and request headers.
+
+        Please refer to the link: https://lyvo.fellou.ai/docs/getting-started/configuration#web-environment
+      `);
+    }
+    if (typeof param == 'string') {
+      this.client = new Anthropic({
+        apiKey: param,
+        dangerouslyAllowBrowser: true,
+        ...options,
+      });
+    } else {
+      this.client = new Anthropic(param);
+    }
   }
 
   private processResponse(response: Anthropic.Message): LLMResponse {
@@ -130,7 +156,7 @@ export class ClaudeProvider implements LLMProvider {
               const toolCall: ToolCall = {
                 id: currentToolUse.id,
                 name: currentToolUse.name,
-                input: JSON.parse(currentToolUse.accumulatedJson),
+                input: JSON.parse(currentToolUse.accumulatedJson || '{}'),
               };
               handler.onToolUse?.(toolCall);
               currentToolUse = null;

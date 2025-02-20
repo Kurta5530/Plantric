@@ -1,6 +1,6 @@
 import { BrowserUseParam, BrowserUseResult } from '../../types/tools.types';
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
-import { getWindowId, getTabId, sleep, injectScript, executeScript } from '../utils';
+import { get_clickable_elements, remove_highlight } from '../script/build_dom_tree';
 import * as browser from './browser';
 
 /**
@@ -93,8 +93,6 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
       if (params === null || !params.action) {
         throw new Error('Invalid parameters. Expected an object with a "action" property.');
       }
-      let tabId = await getTabId(context);
-      let windowId = await getWindowId(context);
       let selector_map = context.selector_map;
       let selector_xpath;
       if (params.index != null && selector_map) {
@@ -112,54 +110,49 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           if (params.text == null) {
             throw new Error('text parameter is required');
           }
-          result = await browser.type_by(tabId, params.text, selector_xpath, params.index);
+          result = await browser.type(params.text, selector_xpath, params.index);
           await sleep(200);
           break;
         case 'clear_text':
           if (params.index == null) {
             throw new Error('index parameter is required');
           }
-          result = await browser.clear_input_by(tabId, selector_xpath, params.index);
+          result = await browser.clear_input(selector_xpath, params.index);
           await sleep(100);
           break;
         case 'click':
           if (params.index == null) {
             throw new Error('index parameter is required');
           }
-          result = await browser.left_click_by(tabId, selector_xpath, params.index);
+          result = await browser.left_click(selector_xpath, params.index);
           await sleep(100);
           break;
         case 'right_click':
           if (params.index == null) {
             throw new Error('index parameter is required');
           }
-          result = await browser.right_click_by(tabId, selector_xpath, params.index);
+          result = await browser.right_click(selector_xpath, params.index);
           await sleep(100);
           break;
         case 'double_click':
           if (params.index == null) {
             throw new Error('index parameter is required');
           }
-          result = await browser.double_click_by(tabId, selector_xpath, params.index);
+          result = await browser.double_click(selector_xpath, params.index);
           await sleep(100);
           break;
         case 'scroll_to':
           if (params.index == null) {
             throw new Error('index parameter is required');
           }
-          result = await browser.scroll_to_by(tabId, selector_xpath, params.index);
+          result = await browser.scroll_to(selector_xpath, params.index);
           await sleep(500);
           break;
         case 'extract_content':
-          let tab = await chrome.tabs.get(tabId);
-          await injectScript(tabId);
           await sleep(200);
-          let content = await executeScript(tabId, () => {
-            return lyvo.extractHtmlContent();
-          }, []);
+          let content = browser.extractHtmlContent();
           result = {
-            title: tab.title,
-            url: tab.url,
+            title: document.title,
             content: content,
           };
           break;
@@ -167,7 +160,7 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           if (params.index == null) {
             throw new Error('index parameter is required');
           }
-          result = await browser.get_dropdown_options(tabId, selector_xpath, params.index);
+          result = browser.get_dropdown_options(selector_xpath, params.index);
           break;
         case 'select_dropdown_option':
           if (params.index == null) {
@@ -176,20 +169,14 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           if (params.text == null) {
             throw new Error('text parameter is required');
           }
-          result = await browser.select_dropdown_option(tabId, params.text, selector_xpath, params.index);
+          result = browser.select_dropdown_option(params.text, selector_xpath, params.index);
           break;
         case 'screenshot_extract_element':
           await sleep(100);
-          await injectScript(tabId, 'build_dom_tree.js');
-          await sleep(100);
-          let element_result = await executeScript(tabId, () => {
-            return (window as any).get_clickable_elements(true);
-          }, []);
+          let element_result = get_clickable_elements(true, null) as any;
           context.selector_map = element_result.selector_map;
-          let screenshot = await browser.screenshot(windowId);
-          await executeScript(tabId, () => {
-            return (window as any).remove_highlight();
-          }, []);
+          let screenshot = await browser.screenshot();
+          remove_highlight();
           result = { image: screenshot.image, text: element_result.element_str };
           break;
         default:
@@ -208,6 +195,10 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
   }
 
   destroy(context: ExecutionContext) {
-    delete context.selector_map
+    delete context.selector_map;
   }
+}
+
+function sleep(time: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(() => resolve(), time));
 }
