@@ -144,6 +144,7 @@ export class ActionImpl implements Action {
         toolExecutionPromise = (async () => {
           try {
             // beforeToolUse
+            context.__skip = false;
             if (context.callback && context.callback.hooks.beforeToolUse) {
               let modified_input = await context.callback.hooks.beforeToolUse(
                 tool,
@@ -153,6 +154,9 @@ export class ActionImpl implements Action {
               if (modified_input) {
                 toolCall.input = modified_input;
               }
+            }
+            if (context.__skip || context.__abort) {
+              return;
             }
             // Execute the tool
             let result = await tool.execute(context, toolCall.input);
@@ -222,6 +226,10 @@ export class ActionImpl implements Action {
     // Wait for tool execution to complete if it was started
     if (toolExecutionPromise) {
       await toolExecutionPromise;
+    }
+    
+    if (context.__abort) {
+      throw new Error("Abort");
     }
 
     // Add messages in the correct order after everything is complete

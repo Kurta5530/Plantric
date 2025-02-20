@@ -1,6 +1,8 @@
 import { Workflow, WorkflowNode, NodeIO, ExecutionContext, LLMProvider, WorkflowCallback } from "../types";
 
 export class WorkflowImpl implements Workflow {
+  abort?: boolean;
+
   constructor(
     public id: string,
     public name: string,
@@ -14,6 +16,7 @@ export class WorkflowImpl implements Workflow {
     if (!this.validateDAG()) {
       throw new Error("Invalid workflow: Contains circular dependencies");
     }
+    this.abort = false;
 
     callback && await callback.hooks.beforeWorkflow?.(this);
 
@@ -21,6 +24,9 @@ export class WorkflowImpl implements Workflow {
     const executing = new Set<string>();
 
     const executeNode = async (nodeId: string): Promise<void> => {
+      if (this.abort) {
+        throw new Error("Abort");
+      }
       if (executed.has(nodeId)) {
         return;
       }
@@ -33,13 +39,23 @@ export class WorkflowImpl implements Workflow {
 
       // Execute the node's action
       const context = {
+        __skip: false,
+        __abort: false,
         variables: this.variables,
         llmProvider: this.llmProvider as LLMProvider,
         tools: new Map(node.action.tools.map(tool => [tool.name, tool])),
-        callback
+        callback,
+        next: () => context.__skip = true,
+        abortAll: () => this.abort = context.__abort = true,
       };
 
       callback && await callback.hooks.beforeSubtask?.(node, context);
+
+      if (context.__abort) {
+        throw new Error("Abort");
+      } else if (context.__skip) {
+        return;
+      }
 
       executing.add(nodeId);
 
