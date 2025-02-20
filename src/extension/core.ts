@@ -19,7 +19,7 @@ export async function getLLMConfig(name: string = 'llmConfig'): Promise<{
   return result[name];
 }
 
-export function getAllTools(): Map<string, Tool<any, any>> {
+export function loadTools(): Map<string, Tool<any, any>> {
   let toolsMap = new Map<string, Tool<any, any>>();
   for (const key in tools) {
     let tool = (tools as any)[key];

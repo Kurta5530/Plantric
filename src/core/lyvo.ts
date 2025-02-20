@@ -49,7 +49,7 @@ export class Lyvo {
     Lyvo.tools.forEach((tool) => this.toolRegistry.registerTool(tool));
   }
 
-  public async generateWorkflow(prompt: string, param?: LyvoInvokeParam): Promise<Workflow> {
+  public async generate(prompt: string, param?: LyvoInvokeParam): Promise<Workflow> {
     let toolRegistry = this.toolRegistry;
     if (param && param.tools && param.tools.length > 0) {
       toolRegistry = new ToolRegistry();

@@ -37,23 +37,33 @@ export async function getTabId(context: ExecutionContext): Promise<number> {
     }
   }
   if (!tabId) {
-    tabId = await getCurrentTabId();
+    let windowId = context.variables.get('windowId') as any;
+    if (windowId) {
+      try {
+        tabId = await getCurrentTabId(windowId);
+      } catch (e) {
+        tabId = await getCurrentTabId();
+        context.variables.delete('windowId');
+      }
+    } else {
+      tabId = await getCurrentTabId();
+    }
   }
   return tabId as number;
 }
 
-export function getCurrentTabId(): Promise<number | undefined> {
+export function getCurrentTabId(windowId?: number | undefined): Promise<number | undefined> {
   return new Promise((resolve) => {
-    chrome.tabs.query({ active: true, lastFocusedWindow: true }, function (tabs) {
+    chrome.tabs.query({ windowId, active: true, lastFocusedWindow: true }, function (tabs) {
       if (tabs.length > 0) {
         resolve(tabs[0].id);
       } else {
-        chrome.tabs.query({ active: true, currentWindow: true }, function (_tabs) {
+        chrome.tabs.query({ windowId, active: true, currentWindow: true }, function (_tabs) {
           if (_tabs.length > 0) {
             resolve(_tabs[0].id);
             return;
           } else {
-            chrome.tabs.query({ status: 'complete', currentWindow: true }, function (__tabs) {
+            chrome.tabs.query({ windowId, status: 'complete', currentWindow: true }, function (__tabs) {
               resolve(__tabs.length ? __tabs[__tabs.length - 1].id : undefined);
             });
           }

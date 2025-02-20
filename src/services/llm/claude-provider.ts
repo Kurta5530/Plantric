@@ -29,6 +29,21 @@ export class ClaudeProvider implements LLMProvider {
     if (defaultModel) {
       this.defaultModel = defaultModel;
     }
+    if (
+      typeof window !== 'undefined' &&
+      typeof document !== 'undefined' &&
+      (typeof param == 'string' || param.apiKey)
+    ) {
+      console.warn(`
+        ⚠️ Security Warning:
+        DO NOT use API Keys in browser/frontend code!
+        This will expose your credentials and may lead to unauthorized usage.
+        
+        Best Practices: Configure backend API proxy request through baseURL and request headers.
+
+        Please refer to the link: https://lyvo.fellou.ai/docs/getting-started/configuration#web-environment
+      `);
+    }
     if (typeof param == 'string') {
       this.client = new Anthropic({
         apiKey: param,

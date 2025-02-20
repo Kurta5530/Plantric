@@ -1,7 +1,7 @@
 import * as tools from './tools';
 import { Tool } from '../types';
 
-export function getAllTools(): Map<string, Tool<any, any>> {
+export function loadTools(): Map<string, Tool<any, any>> {
   let toolsMap = new Map<string, Tool<any, any>>();
   for (const key in tools) {
     let tool = (tools as any)[key];
