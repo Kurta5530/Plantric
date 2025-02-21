@@ -1,8 +1,17 @@
-# Lyvo - Build Production-ready Agent Workflow with Natural Language
+
+
+
+<h1 align="center">
+  <a href="https://github.com/LyvoAI/lyvo" target="_blank">
+    <img src="https://github.com/user-attachments/assets/55dbdd6c-2b08-4e5f-a841-8fea7c2a0b92" alt="单标志" width="200" height="200">
+  </a>
+  <br>
+  <small>Lyvo - Build Production-ready Agent Workflow with Natural Language</small>
+</h1>
+
+
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://example.com/build-status) [![Version](https://img.shields.io/badge/version-1.0.5-yellow.svg)](https://lyvo.fellou.ai/docs/release/versions/)
-
-![深色文字+标志](https://github.com/user-attachments/assets/e1f9a3a7-1239-401f-9ec5-65a3eedbe022)
 
 **Lyvo** is a revolutionary framework designed to empower developers and users alike to program their browser and operating system using natural language. With seamless integration of browser APIs, OS-level capabilities, and cutting-edge AI tools like Claude 3.5, Lyvo redefines how we interact with technology, making it intuitive, powerful, and accessible.
 
