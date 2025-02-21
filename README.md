@@ -1,4 +1,4 @@
-# Lyvo
+# Lyvo - Build Production-ready Agent Workflow Easily with Natural Language
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://example.com/build-status) [![Version](https://img.shields.io/badge/version-1.0.5-yellow.svg)](https://lyvo.fellou.ai/docs/release/versions/)
 
