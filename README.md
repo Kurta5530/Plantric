@@ -6,14 +6,14 @@
 
 # Framework Comparison
 
-| Feature                              | Lyvo   | Langchain  | Browser-use  | Dify.ai  | Coze   | Midscene.js |
-|--------------------------------------|-------|------------|--------------|----------|--------|-------------|
-| **Supported Platform**               | All platform  | Server side  | Browser  | Web  | Web  | Web  |
-| **One sentence to multi-step workflow** | ✅    | ❌          | ✅            | ❌        | ❌      | ❌           |
-| **Intervenability**                  | ✅    | ✅          | ❌            | ❌        | ❌      | ❌           |
-| **Development Efficiency**           | High  | Middle      | Middle        | Middle    | Low    | Middle       |
-| **Open-source**                      | ✅    | ✅          | ✅            | ✅        | ❌      | ✅           |
-| **Access to private web resources** | ✅ (Coming soon) | ❌          | ❌            | ❌        | ❌      | ❌           |
+| Feature                              | Lyvo   | Langchain  | Browser-use  | Dify.ai  | Coze   |
+|--------------------------------------|-------|------------|--------------|----------|--------|
+| **Supported Platform**               | **All platform**  | Server side  | Browser  | Web  | Web  |
+| **One sentence to multi-step workflow** | ✅    | ❌          | ✅            | ❌        | ❌      |
+| **Intervenability**                  | ✅    | ✅          | ❌            | ❌        | ❌      | 
+| **Development Efficiency**           | **High**  | Low      | Middle        | Middle    | Low    | 
+| **Open-source**                      | ✅    | ✅          | ✅            | ✅        | ❌      |
+| **Access to private web resources** | ✅ **(Coming soon)** | ❌          | ❌            | ❌        | ❌      |
 
 ## Why Lyvo?
 
