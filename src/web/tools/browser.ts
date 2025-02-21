@@ -199,6 +199,9 @@ function do_input(text: string, xpath?: string, highlightIndex?: number): boolea
   }
   input.focus && input.focus();
   if (!text) {
+    if (input.value == '') {
+      return true;
+    }
     input.value = '';
   } else {
     input.value += text;

@@ -47,7 +47,6 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
   - Screenshots help verify element positions and relationships. Labels may sometimes overlap, so extracted elements are used to verify the correct elements.
   - In addition to screenshots, simplified information about interactive elements is returned, with element indexes corresponding to those in the screenshots.
 * \`input_text\`: Enter a string in the interactive element.
-* \`clear_text\`: Clear the text in the input/textarea element.
 * \`click\`: Click to element.
 * \`right_click\`: Right-click on the element.
 * \`double_click\`: Double-click on the element.
@@ -58,7 +57,6 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           enum: [
             'screenshot_extract_element',
             'input_text',
-            'clear_text',
             'click',
             'right_click',
             'double_click',
@@ -112,15 +110,9 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           if (params.text == null) {
             throw new Error('text parameter is required');
           }
+          await browser.clear_input_by(tabId, selector_xpath, params.index);
           result = await browser.type_by(tabId, params.text, selector_xpath, params.index);
           await sleep(200);
-          break;
-        case 'clear_text':
-          if (params.index == null) {
-            throw new Error('index parameter is required');
-          }
-          result = await browser.clear_input_by(tabId, selector_xpath, params.index);
-          await sleep(100);
           break;
         case 'click':
           if (params.index == null) {

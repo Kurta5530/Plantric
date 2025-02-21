@@ -137,6 +137,9 @@ function type(request: any): boolean {
   }
   input.focus && input.focus();
   if (!text) {
+    if (input.value == '') {
+      return true;
+    }
     input.value = '';
   } else {
     input.value += text;
