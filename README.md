@@ -42,9 +42,7 @@ await lyvo.execute(sysWorkflow);
 
 **Propmt:** `Open youtube, Search for Elon Musk, click on the first video, extract and summarize the content, and export as md`
 
-<video controls>
-  <source src="https://lyvo.fellou.ai/docs/run_browser_use.mov" />
-</video>
+https://github.com/LyvoAI/lyvo-docs/raw/refs/heads/main/public/load_extension.mov
 
 Click [here](https://lyvo.fellou.ai/docs/browseruse/browser-extension/#example-search-elon-musk-in-youtube-and-summarize) to Learn more.
 
