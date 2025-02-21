@@ -23,6 +23,7 @@
 | **One sentence to multi-step workflow** | ✅    | ❌          | ✅            | ❌        | ❌      |
 | **Intervenability**                  | ✅    | ✅          | ❌            | ❌        | ❌      | 
 | **Development Efficiency**           | **High**  | Low      | Middle        | Middle    | Low    | 
+| **Task Complexity**           | High  | High      | Low        | Middle    | Middle    | Middle       |
 | **Open-source**                      | ✅    | ✅          | ✅            | ✅        | ❌      |
 | **Access to private web resources** | ✅ **(Coming soon)** | ❌          | ❌            | ❌        | ❌      |
 
