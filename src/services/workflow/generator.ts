@@ -1,44 +1,88 @@
 import { LLMProvider, LLMParameters, Message } from '../../types/llm.types';
 import { Workflow } from '../../types/workflow.types';
 import { WorkflowImpl } from '../../models/workflow';
-import {ActionImpl} from '../../models/action';
+import { ActionImpl } from '../../models/action';
 import { ToolRegistry } from '../../core/tool-registry';
 import { createWorkflowPrompts, createWorkflowGenerationTool } from './templates';
 import { v4 as uuidv4 } from 'uuid';
 
 export class WorkflowGenerator {
+  message_history: Message[] = [];
+
   constructor(
     private llmProvider: LLMProvider,
     private toolRegistry: ToolRegistry
   ) {}
 
   async generateWorkflow(prompt: string): Promise<Workflow> {
+    return this.doGenerateWorkflow(prompt, false);
+  }
+
+  async modifyWorkflow(prompt: string): Promise<Workflow> {
+    return this.doGenerateWorkflow(prompt, true);
+  }
+
+  private async doGenerateWorkflow(prompt: string, modify: boolean): Promise<Workflow> {
     // Create prompts with current set of tools
     const prompts = createWorkflowPrompts(this.toolRegistry.getToolDefinitions());
 
-    const messages: Message[] = [
-      {
-        role: 'system',
-        content: prompts.formatSystemPrompt()
-      },
-      {
+    let messages: Message[] = [];
+    if (modify) {
+      messages = this.message_history;
+      messages.push({
         role: 'user',
-        content: prompts.formatUserPrompt(prompt)
-      }
-    ];
+        content: prompts.modifyUserPrompt(prompt),
+      });
+    } else {
+      messages = this.message_history = [
+        {
+          role: 'system',
+          content: prompts.formatSystemPrompt(),
+        },
+        {
+          role: 'user',
+          content: prompts.formatUserPrompt(prompt),
+        },
+      ];
+    }
 
     const params: LLMParameters = {
       temperature: 0.7,
       maxTokens: 8192,
       tools: [createWorkflowGenerationTool(this.toolRegistry)],
-      toolChoice: { type: 'tool', name: 'generate_workflow' }
+      toolChoice: { type: 'tool', name: 'generate_workflow' },
     };
 
     const response = await this.llmProvider.generateText(messages, params);
 
     if (!response.toolCalls.length || !response.toolCalls[0].input.workflow) {
+      messages.pop();
       throw new Error('Failed to generate workflow: Invalid response from LLM');
     }
+
+    messages.push(
+      {
+        role: 'assistant',
+        content: [
+          {
+            type: 'tool_use',
+            id: response.toolCalls[0].id,
+            name: response.toolCalls[0].name,
+            input: response.toolCalls[0].input,
+          },
+        ],
+      },
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'tool_result',
+            tool_use_id: response.toolCalls[0].id,
+            content: 'ok',
+          },
+        ],
+      }
+    );
 
     const workflowData = response.toolCalls[0].input.workflow as any;
 
@@ -64,7 +108,7 @@ export class WorkflowGenerator {
       data.description || '',
       [],
       new Map(Object.entries(data.variables || {})),
-      this.llmProvider,
+      this.llmProvider
     );
 
     // Add nodes to workflow
@@ -88,16 +132,12 @@ export class WorkflowGenerator {
           input: nodeData.input || { type: 'any', schema: {}, value: undefined },
           output: nodeData.output || { type: 'any', schema: {}, value: undefined },
           action: action,
-          dependencies: nodeData.dependencies || []
+          dependencies: nodeData.dependencies || [],
         };
         workflow.addNode(node);
       });
     }
 
     return workflow;
-  }
-
-  async modifyWorkflow(workflow: Workflow, prompt: string): Promise<Workflow> {
-    throw new Error('Not implemented');
   }
 }

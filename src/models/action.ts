@@ -156,6 +156,16 @@ export class ActionImpl implements Action {
               }
             }
             if (context.__skip || context.__abort) {
+              toolResultMessage = {
+                role: 'user',
+                content: [
+                  {
+                    type: 'tool_result',
+                    tool_use_id: toolCall.id,
+                    content: 'skip',
+                  },
+                ],
+              };
               return;
             }
             // Execute the tool
