@@ -31,6 +31,9 @@ Generate a complete workflow that:
 
     formatUserPrompt: (requirement: string) =>
       `Create a workflow for the following requirement: ${requirement}`,
+
+    modifyUserPrompt: (prompt: string) =>
+      `Modify workflow: ${prompt}`,
   };
 }
 
