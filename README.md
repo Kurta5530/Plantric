@@ -118,7 +118,6 @@ Lyvo can be used in multiple environments:
 - Browser Extension
 - Web Applications
 - Node.js Applications
-- [Fellou AI Browser](https://fellou.ai)
 
 ## Community and Support
 
