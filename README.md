@@ -3,17 +3,17 @@
 
 <h1 align="center">
   <a href="https://github.com/LyvoAI/lyvo" target="_blank">
-    <img src="https://github.com/user-attachments/assets/55dbdd6c-2b08-4e5f-a841-8fea7c2a0b92" alt="单标志" width="200" height="200">
+    <img src="https://github.com/user-attachments/assets/55dbdd6c-2b08-4e5f-a841-8fea7c2a0b92" alt="lyvo-logo" width="200" height="200">
   </a>
   <br>
-  <small>Lyvo - Build Production-ready Agent Workflow with Natural Language</small>
+  <small>Lyvo - Build Production-ready Agentic Workflow with Natural Language</small>
 </h1>
 
 
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://example.com/build-status) [![Version](https://img.shields.io/badge/version-1.0.5-yellow.svg)](https://lyvo.fellou.ai/docs/release/versions/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://example.com/build-status) [![Version](https://img.shields.io/badge/version-1.0.6-yellow.svg)](https://lyvo.fellou.ai/docs/release/versions/)
 
-**Lyvo** is a revolutionary framework designed to empower developers and users alike to program their browser and operating system using natural language. With seamless integration of browser APIs, OS-level capabilities, and cutting-edge AI tools like Claude 3.5, Lyvo redefines how we interact with technology, making it intuitive, powerful, and accessible.
+Lyvo (pronounced like ‘echo’) is a production-ready JavaScript framework that enables developers to create reliable agents, **from simple commands to complex workflows**. It provides a unified interface for running agents in both **computer and browser environments**.
 
 # Framework Comparison
 
@@ -26,15 +26,6 @@
 | **Task Complexity**           | High  | High      | Low        | Middle    | Middle    | Middle       |
 | **Open-source**                      | ✅    | ✅          | ✅            | ✅        | ❌      |
 | **Access to private web resources** | ✅ **(Coming soon)** | ❌          | ❌            | ❌        | ❌      |
-
-## Why Lyvo?
-
-- **Natural Language Programming**: Transform human instructions into e- **Natural Language Programming**: Convert natural language task descriptions into executable workflows, making agent development more intuitive
-- **Two-Layer Execution Model**: Separate offline planning from online execution, making agent decisions more structured and explainable
-- **Comprehensive Tooling**: Rich built-in tools for browser automation, computer control, file operations, and web interactions
-- **Hybrid Drive System:** Combine LLM capabilities with developer control, enabling "human in the loop" and allowing interference at multiple levels of granularity
-- **Event-Driven Automation:** Trigger workflows based on browser or system events
-- **Environment Flexibility**: Work across different environments ( [Browser Extension](/docs/browseruse/browser-extension), [Web](/docs/browseruse/browser-web), [Node.js](/docs/computeruse/computer-node), [Next-Gen AI Browser Fellou](/docs/computeruse/computer-fellou) ) with consistent APIs
 
 ## Quickstart
 
@@ -63,31 +54,43 @@ await lyvo.execute(sysWorkflow);
 
 ## Demos
 
-**Propmt:** `Open youtube, Search for Elon Musk, click on the first video, extract and summarize the content, and export as md`
+**Propmt:** `Collect the latest NASDAQ data on Yahoo Finance, including price changes, market capitalization, trading volume of major stocks, analyze the data and generate visualization reports`.
 
-https://github.com/LyvoAI/lyvo-docs/raw/refs/heads/main/public/load_extension.mov
+https://github.com/user-attachments/assets/4087b370-8eb8-4346-a549-c4ce4d1efec3
 
-Click [here](https://lyvo.fellou.ai/docs/browseruse/browser-extension/#example-search-elon-musk-in-youtube-and-summarize) to Learn more.
+Click [here](https://github.com/LyvoAI/lyvo-demos/tree/main/browser-extension-stock) to get the source code.
 
 ---
 
-**Propmt:** `Search Sam Altman's information and summarize it into markdown format for export`
+**Propmt:** `Based on the README of LyvoAI/lyvo on github, search for competitors, highlight the key contributions of Lyvo, write a blog post advertising Lyvo, and post it on Write.as.`
 
-<video controls>
-  <source src="https://lyvo.fellou.ai/docs/load_extension.mov" />
-</video>
+https://github.com/user-attachments/assets/6feaea86-2fb9-4e5c-b510-479c2473d810
 
-Click [here](https://lyvo.fellou.ai/docs/getting-started/quickstart/#creat-your-first-workflow) to Learn more.
+Click [here](https://github.com/LyvoAI/lyvo-demos/tree/main/browser-extension-blog) to get the source code.
 
 ---
 
 **Propmt:** `Clean up all files in the current directory larger than 1MB`
 
-<video controls>
-  <source src="https://lyvo.fellou.ai/docs/nodejs_clean_computer.mov" />
-</video>
+https://github.com/user-attachments/assets/ef7feb58-3ddd-4296-a1de-bb8b6c66e48b
 
 Click [here](https://lyvo.fellou.ai/docs/computeruse/computer-node/#example-file-cleanup-workflow) to Learn more.
+
+---
+
+**Propmt:** Automatic software testing
+```
+    Current login page automation test:
+    1. Correct account and password are: admin / 666666 
+    2. Please randomly combine usernames and passwords for testing to verify if login validation works properly, such as: username cannot be empty, password cannot be empty, incorrect username, incorrect password
+    3. Finally, try to login with the correct account and password to verify if login is successful
+    4. Generate test report and export
+```
+
+https://github.com/user-attachments/assets/7716300a-c51d-41f1-8d4f-e3f593c1b6d5
+
+
+Click [here](https://lyvo.fellou.ai/docs/browseruse/browser-web#example-login-automation-testing) to Learn more.
 
 ## Use Cases
 
@@ -120,19 +123,9 @@ Lyvo can be used in multiple environments:
 ## Community and Support
 
 - Report issues on [GitHub Issues](https://github.com/LyvoAI/lyvo/issues)
+- Join our [slack community discussions](https://join.slack.com/t/lyvo-ai/shared_invite/zt-2xhvkudv9-nHvD1g8Smp227sM51x_Meg)
 - Contribute tools and improvements
 - Share your use cases and feedback
-- Join our community discussions
-
-## Contributing
-
-We welcome contributions! See our [Contributing Guide](CONTRIBUTING.md) for details on:
-
-- Setting up the development environment
-- Code style guidelines
-- Submission process
-- Tool development
-- Use case optimization
 
 ## License
 
