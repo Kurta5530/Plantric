@@ -8,7 +8,7 @@ export class RequestLogin implements Tool<any, any> {
 
   constructor() {
     this.name = 'request_login';
-    this.description = 'request the user to log in to the current website, assist with identity verification when manual intervention is needed, guide users through the login process, and wait for their confirmation of successful login.';
+    this.description = 'Login to this website, assist with identity verification when manual intervention is needed, guide users through the login process, and wait for their confirmation of successful login.';
     this.input_schema = {
       type: 'object',
       properties: {},

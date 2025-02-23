@@ -230,6 +230,8 @@ export class ActionImpl implements Action {
       },
     };
 
+    this.handleHistoryImageMessages(messages);
+
     // Wait for stream to complete
     await this.llmProvider.generateStream(messages, params, handler);
 
@@ -237,9 +239,9 @@ export class ActionImpl implements Action {
     if (toolExecutionPromise) {
       await toolExecutionPromise;
     }
-    
+
     if (context.__abort) {
-      throw new Error("Abort");
+      throw new Error('Abort');
     }
 
     // Add messages in the correct order after everything is complete
@@ -254,6 +256,37 @@ export class ActionImpl implements Action {
     }
 
     return { response, hasToolUse, roundMessages };
+  }
+
+  private handleHistoryImageMessages(messages: Message[]) {
+    // Remove all images of the historical tool call results, except for the last one.
+    let last_user = true;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i];
+      if (message.role === 'user') {
+        if (last_user) {
+          last_user = false;
+          continue;
+        }
+        if (message.content instanceof Array) {
+          let content = message.content as any[];
+          for (let j = 0; j < content.length; j++) {
+            if (content[j].type === 'tool_result' && content[j].content instanceof Array) {
+              let tool_content = content[j].content as any[];
+              if (tool_content.length > 0) {
+                for (let k = tool_content.length - 1; k >= 0; k--) {
+                  if (tool_content[k].type === 'image') {
+                    tool_content.splice(k, 1);
+                  }
+                }
+              } else if (tool_content[0].type === 'image') {
+                tool_content = [{ type: 'text', text: 'ok' }];
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   async execute(
@@ -390,7 +423,6 @@ export class ActionImpl implements Action {
   }
 
   private formatSystemPrompt(): string {
-
     return `You are a task executor. You need to complete the task specified by the user, using the tools provided. When you need to store results or outputs, use the write_context tool. When you are ready to return the final output, use the return_output tool.
 
     Remember to:
@@ -411,7 +443,7 @@ export class ActionImpl implements Action {
 
     You have been provided with the following input:
     ${(typeof input === 'string' ? input : JSON.stringify(input, null, 2)) || 'No additional input provided'}
-    `
+    `;
   }
 
   // Static factory method

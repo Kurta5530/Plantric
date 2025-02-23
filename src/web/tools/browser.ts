@@ -46,7 +46,7 @@ export async function screenshot(compress?: boolean): Promise<ScreenshotResult> 
   });
   let dataUrl = canvas.toDataURL('image/png');
   if (compress) {
-    dataUrl = await compress_image(dataUrl, 0.6, 0.7);
+    dataUrl = await compress_image(dataUrl, 0.7, 0.8);
   }
   let data = dataUrl.substring(dataUrl.indexOf('base64,') + 7);
   return {
@@ -60,7 +60,7 @@ export async function screenshot(compress?: boolean): Promise<ScreenshotResult> 
 
 export function compress_image(
   dataUrl: string,
-  scale: number = 0.6,
+  scale: number = 0.8,
   quality: number = 0.8
 ): Promise<string> {
   return new Promise((resolve) => {

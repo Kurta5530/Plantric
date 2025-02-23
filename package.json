@@ -51,12 +51,6 @@
     "dev": "tsc --watch",
     "clean": "rimraf dist",
     "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "prepublishOnly": "npm run build",
     "docs": "typedoc"
   },
   "author": "LyvoAI",

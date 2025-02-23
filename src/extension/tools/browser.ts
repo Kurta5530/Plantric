@@ -109,12 +109,18 @@ export async function double_click_by(tabId: number, xpath?: string, highlightIn
 }
 
 export async function screenshot(windowId: number, compress?: boolean): Promise<ScreenshotResult> {
-  let dataUrl = await chrome.tabs.captureVisibleTab(windowId as number, {
-    format: 'jpeg', // jpeg / png
-    quality: 50, // 0-100
-  });
+  let dataUrl;
   if (compress) {
-    dataUrl = await compress_image(dataUrl, 0.6, 0.8);
+    dataUrl = await chrome.tabs.captureVisibleTab(windowId as number, {
+      format: 'jpeg',
+      quality: 60, // 0-100
+    });
+    dataUrl = await compress_image(dataUrl, 0.7, 1);
+  } else {
+    dataUrl = await chrome.tabs.captureVisibleTab(windowId as number, {
+      format: 'jpeg',
+      quality: 50,
+    });
   }
   let data = dataUrl.substring(dataUrl.indexOf('base64,') + 7);
   return {
@@ -128,7 +134,7 @@ export async function screenshot(windowId: number, compress?: boolean): Promise<
 
 export async function compress_image(
   dataUrl: string,
-  scale: number = 0.6,
+  scale: number = 0.8,
   quality: number = 0.8
 ): Promise<string> {
   const bitmap = await createImageBitmap(await (await fetch(dataUrl)).blob());
