@@ -143,6 +143,19 @@ export async function waitForTabComplete(
   });
 }
 
+export async function doesTabExists(tabId: number) {
+  const tabExists = await new Promise((resolve) => {
+    chrome.tabs.get(tabId, (tab) => {
+      if (chrome.runtime.lastError) {
+        resolve(false);
+      } else {
+        resolve(true);
+      }
+    });
+  });
+  return tabExists;
+}
+
 export async function getPageSize(tabId?: number): Promise<[number, number]> {
   if (!tabId) {
     tabId = await getCurrentTabId();

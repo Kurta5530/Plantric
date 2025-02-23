@@ -7,6 +7,7 @@ import { OpenUrl } from './open_url';
 import { Screenshot } from './screenshot';
 import { TabManagement } from './tab_management';
 import { WebSearch } from './web_search';
+import { RequestLogin } from './request_login';
 
 export {
   BrowserUse,
@@ -18,4 +19,5 @@ export {
   Screenshot,
   TabManagement,
   WebSearch,
+  RequestLogin,
 };

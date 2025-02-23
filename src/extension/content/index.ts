@@ -44,6 +44,11 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           sendResponse(result);
           break;
         }
+        case 'request_user_help': {
+          request_user_help(request.task_id, request.failure_type, request.failure_message);
+          sendResponse(true);
+          break;
+        }
         case 'computer:type': {
           sendResponse(type(request));
           break;
@@ -225,7 +230,7 @@ function scroll_to(request: any): boolean {
       return false;
     }
     element.scrollIntoView({
-      behavior: 'smooth'
+      behavior: 'smooth',
     });
   } else if (request.xpath) {
     let xpath = request.xpath as string;
@@ -241,7 +246,7 @@ function scroll_to(request: any): boolean {
       return false;
     }
     element.scrollIntoView({
-      behavior: 'smooth'
+      behavior: 'smooth',
     });
   } else {
     const to_coordinate = request.to_coordinate as [number, number];
@@ -298,7 +303,9 @@ function select_dropdown_option(request: any): any {
   if (!select || select.tagName.toUpperCase() !== 'SELECT') {
     return { success: false, error: 'Select not found or invalid element type' };
   }
-  const option = Array.from(select.options).find((opt: any) => opt.text.trim() === request.text) as any;
+  const option = Array.from(select.options).find(
+    (opt: any) => opt.text.trim() === request.text
+  ) as any;
   if (!option) {
     return {
       success: false,
@@ -313,4 +320,139 @@ function select_dropdown_option(request: any): any {
     selectedValue: option.value,
     selectedText: option.text.trim(),
   };
+}
+
+function request_user_help(task_id: string, failure_type: string, failure_message: string) {
+  const domId = 'lyvo-request-user-help';
+  if (document.getElementById(domId)) {
+    return;
+  }
+
+  const failureTitleMap: any = {
+    login_required: 'Login Required',
+    captcha: 'Captcha Detected',
+    blocked: 'Blocked',
+    other: 'Error',
+    rate_limited: 'Rate Limited',
+  };
+
+  const notification = document.createElement('div');
+  notification.id = domId;
+  notification.style.cssText = `
+    position: fixed;
+    top: 5px;
+    left: 18px;
+    z-index: 9999;
+    background-color: #FEF0ED;
+    color: white;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid #FBB8A5;
+    font-family: Arial, sans-serif;
+    width: 350px;
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    cursor: move;
+    user-select: none;
+  `;
+
+  let isDragging = false;
+  let xOffset = 0;
+  let yOffset = 0;
+  let initialX = 0;
+  let initialY = 0;
+
+  notification.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    initialX = e.clientX - xOffset;
+    initialY = e.clientY - yOffset;
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const currentX = e.clientX - initialX;
+    const currentY = e.clientY - initialY;
+    xOffset = currentX;
+    yOffset = currentY;
+    notification.style.transform = `translate(${xOffset}px, ${yOffset}px)`;
+  });
+
+  document.addEventListener('mouseup', () => {
+    isDragging = false;
+  });
+
+  const leftContainer = document.createElement('div');
+  leftContainer.style.cssText = `
+    width: 28px;
+    height: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-radius: 99px;
+    background: #FDCCCC;
+    justify-content: center;
+  `;
+  leftContainer.innerHTML = ``;
+
+  const rightContainer = document.createElement('div');
+  rightContainer.style.cssText = `
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  `;
+
+  const title = document.createElement('div');
+  title.style.cssText = `
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 22px;
+    color: #DD342D;
+    text-align: left;
+  `;
+  title.innerText = failureTitleMap[failure_type] || failure_type;
+
+  const message2 = document.createElement('div');
+  message2.style.cssText = `
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 22px;
+    color: #DD342D;
+    text-align: left;
+  `;
+  message2.innerText = failure_message + '\nWhen you resolve the issue, click the button below.';
+
+  const buttonDiv = document.createElement('div');
+  buttonDiv.style.cssText = `
+    margin-top: 16px;
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+    align-items: center;
+  `;
+
+  const resolvedBut = document.createElement('div');
+  resolvedBut.innerText = 'Resolved';
+  resolvedBut.style.cssText = `
+    border-radius: 8px;
+    background: #DD342D;
+    color: white;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+  `;
+  resolvedBut.onclick = () => {
+    chrome.runtime.sendMessage({ type: 'issue_resolved', task_id, failure_type }, () => {
+      notification.remove();
+    });
+  };
+
+  buttonDiv.appendChild(resolvedBut);
+  rightContainer.appendChild(title);
+  rightContainer.appendChild(message2);
+  rightContainer.appendChild(buttonDiv);
+  notification.appendChild(leftContainer);
+  notification.appendChild(rightContainer);
+  document.body.appendChild(notification);
 }
