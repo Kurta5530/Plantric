@@ -108,11 +108,14 @@ export async function double_click_by(tabId: number, xpath?: string, highlightIn
   });
 }
 
-export async function screenshot(windowId: number): Promise<ScreenshotResult> {
+export async function screenshot(windowId: number, compress?: boolean): Promise<ScreenshotResult> {
   let dataUrl = await chrome.tabs.captureVisibleTab(windowId as number, {
     format: 'jpeg', // jpeg / png
     quality: 50, // 0-100
   });
+  if (compress) {
+    dataUrl = await compress_image(dataUrl, 0.6, 0.8);
+  }
   let data = dataUrl.substring(dataUrl.indexOf('base64,') + 7);
   return {
     image: {
@@ -121,6 +124,28 @@ export async function screenshot(windowId: number): Promise<ScreenshotResult> {
       data: data,
     },
   };
+}
+
+export async function compress_image(
+  dataUrl: string,
+  scale: number = 0.6,
+  quality: number = 0.8
+): Promise<string> {
+  const bitmap = await createImageBitmap(await (await fetch(dataUrl)).blob());
+  let width = bitmap.width * scale;
+  let height = bitmap.height * scale;
+  const canvas = new OffscreenCanvas(width, height);
+  const ctx = canvas.getContext('2d') as any;
+  ctx.drawImage(bitmap, 0, 0, width, height);
+  const blob = await canvas.convertToBlob({
+    type: 'image/jpeg',
+    quality: quality,
+  });
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.readAsDataURL(blob);
+  });
 }
 
 export async function scroll_to(tabId: number, coordinate: [number, number]): Promise<any> {

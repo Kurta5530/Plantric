@@ -26,7 +26,7 @@ export function double_click(xpath?: string, highlightIndex?: number): boolean {
   );
 }
 
-export async function screenshot(): Promise<ScreenshotResult> {
+export async function screenshot(compress?: boolean): Promise<ScreenshotResult> {
   const [width, height] = size();
   const scrollX = window.scrollX || window.pageXOffset;
   const scrollY = window.scrollY || window.pageYOffset;
@@ -44,7 +44,10 @@ export async function screenshot(): Promise<ScreenshotResult> {
     // backgroundColor: 'white',
     // scale: window.devicePixelRatio || 1,
   });
-  const dataUrl = canvas.toDataURL('image/png');
+  let dataUrl = canvas.toDataURL('image/png');
+  if (compress) {
+    dataUrl = await compress_image(dataUrl, 0.6, 0.7);
+  }
   let data = dataUrl.substring(dataUrl.indexOf('base64,') + 7);
   return {
     image: {
@@ -53,6 +56,30 @@ export async function screenshot(): Promise<ScreenshotResult> {
       data: data,
     },
   };
+}
+
+export function compress_image(
+  dataUrl: string,
+  scale: number = 0.6,
+  quality: number = 0.8
+): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = function () {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d') as any;
+      let width = img.width * scale;
+      let height = img.height * scale;
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = function () {
+      resolve(dataUrl);
+    };
+    img.src = dataUrl;
+  });
 }
 
 export function scroll_to(xpath?: string, highlightIndex?: number): boolean {

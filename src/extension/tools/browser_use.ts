@@ -178,7 +178,7 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
             return (window as any).get_clickable_elements(true);
           }, []);
           context.selector_map = element_result.selector_map;
-          let screenshot = await browser.screenshot(windowId);
+          let screenshot = await browser.screenshot(windowId, true);
           await executeScript(tabId, () => {
             return (window as any).remove_highlight();
           }, []);

@@ -167,7 +167,7 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           await sleep(100);
           let element_result = get_clickable_elements(true, null) as any;
           context.selector_map = element_result.selector_map;
-          let screenshot = await browser.screenshot();
+          let screenshot = await browser.screenshot(true);
           remove_highlight();
           result = { image: screenshot.image, text: element_result.element_str };
           break;
