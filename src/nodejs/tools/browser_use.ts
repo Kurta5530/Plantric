@@ -1,7 +1,7 @@
 import { BrowserUseParam, BrowserUseResult } from '../../types/tools.types';
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
-import { chromium, Browser, Page, ElementHandle } from 'playwright';
-import { run_build_dom_tree } from '../script/build_dom_tree'
+import { chromium, Browser, Page, ElementHandle, BrowserContext } from 'playwright';
+import { run_build_dom_tree } from '../script/build_dom_tree';
 
 /**
  * Browser Use => `npx playwright install`
@@ -12,7 +12,8 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
   input_schema: InputSchema;
 
   private browser: Browser | null = null;
-  private currentPage: Page | null = null;
+  private browser_context: BrowserContext | null = null;
+  private current_page: Page | null = null;
 
   constructor() {
     this.name = 'browser_use';
@@ -85,7 +86,7 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
       if (params === null || !params.action) {
         throw new Error('Invalid parameters. Expected an object with a "action" property.');
       }
-      let page = this.currentPage as Page;
+      let page = this.current_page as Page;
       let selector_map = context.selector_map;
       let selector_xpath;
       if (params.index != null && selector_map) {
@@ -105,7 +106,7 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           result = {
             title: await page.title(),
             url: page.url(),
-            success: true
+            success: true,
           };
           break;
         case 'input_text':
@@ -115,11 +116,15 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           if (params.text == null) {
             throw new Error('text parameter is required');
           }
-          elementHandle = await this.get_highlight_element(page, params.index);
+          elementHandle = await this.get_highlight_element(page, params.index, true);
           if (elementHandle) {
-            elementHandle.fill('');
-            elementHandle.fill(params.text as string);
-            result = true;
+            try {
+              await elementHandle.fill('');
+              await elementHandle.fill(params.text as string);
+              result = true;
+            } catch (e) {
+              result = await page.evaluate(do_input, { text: params.text, index: params.index });
+            }
           } else {
             result = false;
           }
@@ -131,8 +136,12 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           }
           elementHandle = await this.get_highlight_element(page, params.index);
           if (elementHandle) {
-            elementHandle.click({ button: 'left' });
-            result = true;
+            try {
+              await elementHandle.click({ button: 'left', force: true });
+              result = true;
+            } catch (e) {
+              result = await page.evaluate(do_click, { type: 'click', index: params.index });
+            }
           } else {
             result = false;
           }
@@ -144,8 +153,12 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           }
           elementHandle = await this.get_highlight_element(page, params.index);
           if (elementHandle) {
-            elementHandle.click({ button: 'right' });
-            result = true;
+            try {
+              await elementHandle.click({ button: 'right', force: true });
+              result = true;
+            } catch (e) {
+              result = await page.evaluate(do_click, { type: 'right_click', index: params.index });
+            }
           } else {
             result = false;
           }
@@ -157,8 +170,12 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           }
           elementHandle = await this.get_highlight_element(page, params.index);
           if (elementHandle) {
-            elementHandle.click({ button: 'left', clickCount: 2 });
-            result = true;
+            try {
+              await elementHandle.click({ button: 'left', clickCount: 2, force: true });
+              result = true;
+            } catch (e) {
+              result = await page.evaluate(do_click, { type: 'double_click', index: params.index });
+            }
           } else {
             result = false;
           }
@@ -168,17 +185,14 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           if (params.index == null) {
             throw new Error('index parameter is required');
           }
-          result = await page.evaluate(
-            (highlightIndex) => {
-              let element = (window as any).get_highlight_element(highlightIndex);
-              if (!element) {
-                return false;
-              }
-              element.scrollIntoView({ behavior: 'smooth' });
-              return true;
-            },
-            [params.index]
-          );
+          result = await page.evaluate((highlightIndex) => {
+            let element = (window as any).get_highlight_element(highlightIndex);
+            if (!element) {
+              return false;
+            }
+            element.scrollIntoView({ behavior: 'smooth' });
+            return true;
+          }, params.index);
           await sleep(500);
           break;
         case 'extract_content':
@@ -210,7 +224,7 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           await sleep(100);
           let element_result = await page.evaluate(() => {
             return (window as any).get_clickable_elements(true);
-          }, []);
+          });
           context.selector_map = element_result.selector_map;
           let screenshotBuffer = await page.screenshot({
             fullPage: false,
@@ -221,7 +235,7 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           let image = 'data:image/jpeg;base64,' + base64;
           await page.evaluate(() => {
             return (window as any).remove_highlight();
-          }, []);
+          });
           result = { image: image, text: element_result.element_str };
           break;
         default:
@@ -235,26 +249,32 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
         return { success: false };
       }
     } catch (e: any) {
-      console.log(e)
+      console.log(e);
       return { success: false, error: e?.message };
     }
   }
 
   private async open_url(context: ExecutionContext, url: string): Promise<Page> {
     if (!this.browser) {
+      this.current_page = null;
+      this.browser_context = null;
       this.browser = await chromium.launch({
         headless: false,
         args: ['--no-sandbox'],
       });
     }
-    const page: Page = await this.browser.newPage();
+    if (!this.browser_context) {
+      this.current_page = null;
+      this.browser_context = await this.browser.newContext();
+    }
+    const page: Page = await this.browser_context.newPage();
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto(url, {
       waitUntil: 'networkidle',
       timeout: 15000,
     });
     await page.waitForLoadState('load');
-    this.currentPage = page;
+    this.current_page = page;
     return page;
   }
 
@@ -262,10 +282,27 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
     return await page.evaluate(run_build_dom_tree);
   }
 
-  private async get_highlight_element(page: Page, index: number): Promise<ElementHandle | null> {
+  private async get_highlight_element(
+    page: Page,
+    highlightIndex: number,
+    findInput?: boolean
+  ): Promise<ElementHandle | null> {
     return await page.evaluateHandle(
-      (highlightIndex) => (window as any).get_highlight_element(highlightIndex),
-      [index]
+      (params: any) => {
+        let element = (window as any).get_highlight_element(params.highlightIndex);
+        if (element && params.findInput) {
+          if (
+            element.tagName != 'INPUT' &&
+            element.tagName != 'TEXTAREA' &&
+            element.childElementCount != 0
+          ) {
+            element =
+              element.querySelector('input') || element.querySelector('textarea') || element;
+          }
+        }
+        return element;
+      },
+      { highlightIndex, findInput }
     );
   }
 
@@ -300,24 +337,21 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
   }
 
   private async get_dropdown_options(page: Page, highlightIndex: number): Promise<any> {
-    return await page.evaluate(
-      (highlightIndex) => {
-        let select = (window as any).get_highlight_element(highlightIndex);
-        if (!select) {
-          return null;
-        }
-        return {
-          options: Array.from(select.options).map((opt: any) => ({
-            index: opt.index,
-            text: opt.text.trim(),
-            value: opt.value,
-          })),
-          id: select.id,
-          name: select.name,
-        };
-      },
-      [highlightIndex]
-    );
+    return await page.evaluate((highlightIndex) => {
+      let select = (window as any).get_highlight_element(highlightIndex);
+      if (!select) {
+        return null;
+      }
+      return {
+        options: Array.from(select.options).map((opt: any) => ({
+          index: opt.index,
+          text: opt.text.trim(),
+          value: opt.value,
+        })),
+        id: select.id,
+        name: select.name,
+      };
+    }, highlightIndex);
   }
 
   private async select_dropdown_option(
@@ -349,7 +383,7 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           selectedText: option.text.trim(),
         };
       },
-      [{ highlightIndex, text }]
+      { highlightIndex, text }
     );
   }
 
@@ -358,11 +392,98 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
     if (this.browser) {
       this.browser.close();
       this.browser = null;
-      this.currentPage = null;
+      this.current_page = null;
+      this.browser_context = null;
     }
   }
 }
 
 function sleep(time: number): Promise<void> {
   return new Promise((resolve) => setTimeout(() => resolve(), time));
+}
+
+function do_click(param: any) {
+  function simulateMouseEvent(
+    eventTypes: Array<string>,
+    button: 0 | 1 | 2,
+    highlightIndex?: number
+  ): boolean {
+    let element = (window as any).get_highlight_element(highlightIndex);
+    if (!element) {
+      return false;
+    }
+    for (let i = 0; i < eventTypes.length; i++) {
+      const event = new MouseEvent(eventTypes[i], {
+        view: window,
+        bubbles: true,
+        cancelable: true,
+        button, // 0 left; 2 right
+      });
+      let result = element.dispatchEvent(event);
+      console.log('simulateMouse', element, { eventTypes, button }, result);
+    }
+    return true;
+  }
+  if (param.type == 'right_click') {
+    return simulateMouseEvent(['mousedown', 'mouseup', 'contextmenu'], 2, param.index);
+  } else if (param.type == 'double_click') {
+    return simulateMouseEvent(
+      ['mousedown', 'mouseup', 'click', 'mousedown', 'mouseup', 'click', 'dblclick'],
+      0,
+      param.index
+    );
+  } else {
+    return simulateMouseEvent(['mousedown', 'mouseup', 'click'], 0, param.index);
+  }
+}
+
+function do_input(params: any): boolean {
+  let text = params.text as string;
+  let highlightIndex = params.index as number;
+  let element = (window as any).get_highlight_element(highlightIndex);
+  if (!element) {
+    return false;
+  }
+  let enter = false;
+  if (text.endsWith('\\n')) {
+    enter = true;
+    text = text.substring(0, text.length - 2);
+  } else if (text.endsWith('\n')) {
+    enter = true;
+    text = text.substring(0, text.length - 1);
+  }
+  let input: any;
+  if (
+    element.tagName == 'INPUT' ||
+    element.tagName == 'TEXTAREA' ||
+    element.childElementCount == 0
+  ) {
+    input = element;
+  } else {
+    input = element.querySelector('input') || element.querySelector('textarea') || element;
+  }
+  input.focus && input.focus();
+  if (!text) {
+    if (input.value == '') {
+      return true;
+    }
+    input.value = '';
+  } else {
+    input.value += text;
+  }
+  let result = input.dispatchEvent(new Event('input', { bubbles: true }));
+  if (enter) {
+    ['keydown', 'keypress', 'keyup'].forEach((eventType) => {
+      const event = new KeyboardEvent(eventType, {
+        key: 'Enter',
+        code: 'Enter',
+        keyCode: 13,
+        bubbles: true,
+        cancelable: true,
+      });
+      input.dispatchEvent(event);
+    });
+  }
+  console.log('type', input, result);
+  return true;
 }
