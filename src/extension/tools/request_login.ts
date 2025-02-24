@@ -1,5 +1,7 @@
+import { Message } from '../../types';
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
-import { getTabId, doesTabExists } from '../utils';
+import { getTabId, getWindowId, doesTabExists } from '../utils';
+import { screenshot } from './browser';
 
 export class RequestLogin implements Tool<any, any> {
   name: string;
@@ -8,7 +10,8 @@ export class RequestLogin implements Tool<any, any> {
 
   constructor() {
     this.name = 'request_login';
-    this.description = 'Login to this website, assist with identity verification when manual intervention is needed, guide users through the login process, and wait for their confirmation of successful login.';
+    this.description =
+      'Login to this website, assist with identity verification when manual intervention is needed, guide users through the login process, and wait for their confirmation of successful login.';
     this.input_schema = {
       type: 'object',
       properties: {},
@@ -16,6 +19,9 @@ export class RequestLogin implements Tool<any, any> {
   }
 
   async execute(context: ExecutionContext, params: any): Promise<any> {
+    if (!params.force && await this.isLoginIn(context)) {
+      return true;
+    }
     let tabId = await getTabId(context);
     let task_id = 'login_required_' + tabId;
     const request_user_help = async () => {
@@ -34,8 +40,7 @@ export class RequestLogin implements Tool<any, any> {
       }
     }, 2000);
     try {
-      let result = await this.awaitLogin(tabId, task_id);
-      return { result };
+      return await this.awaitLogin(tabId, task_id);
     } finally {
       clearInterval(login_interval);
     }
@@ -59,5 +64,31 @@ export class RequestLogin implements Tool<any, any> {
       };
       chrome.runtime.onMessage.addListener(listener);
     });
+  }
+
+  async isLoginIn(context: ExecutionContext): Promise<boolean> {
+    let windowId = await getWindowId(context);
+    let screenshot_result = await screenshot(windowId, true);
+    let messages: Message[] = [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: screenshot_result.image,
+          },
+          {
+            type: 'text',
+            text: 'Check if the current website is logged in. If not logged in, output `NOT_LOGIN`. If logged in, output `LOGGED_IN`. Output directly without explanation.',
+          },
+        ],
+      },
+    ];
+    let response = await context.llmProvider.generateText(messages, { maxTokens: 256 });
+    let text = response.textContent;
+    if (!text) {
+      text = JSON.stringify(response.content);
+    }
+    return text.indexOf('LOGGED_IN') > -1;
   }
 }
