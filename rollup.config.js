@@ -1,7 +1,9 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import typescript from '@rollup/plugin-typescript';
+import json from '@rollup/plugin-json';
 import copy from 'rollup-plugin-copy';
+import replace from '@rollup/plugin-replace';
 
 export default [
   {
@@ -103,13 +105,10 @@ export default [
       {
         file: 'dist/nodejs.cjs.js',
         format: 'cjs'
-      },
-      {
-        file: 'dist/nodejs.esm.js',
-        format: 'esm'
       }
     ],
     plugins: [
+      json(),
       resolve(),
       commonjs(),
       typescript({ 
@@ -117,6 +116,32 @@ export default [
         declaration: true,
         declarationDir: 'dist',
         include: ['src/types/*', 'src/nodejs/**/*']
+      })
+    ]
+  },
+  {
+    input: 'src/nodejs/index.ts',
+    output: [
+      {
+        file: 'dist/nodejs.esm.js',
+        format: 'esm'
+      }
+    ],
+    plugins: [
+      json(),
+      resolve(),
+      commonjs(),
+      typescript({ 
+        tsconfig: './tsconfig.json',
+        declaration: true,
+        declarationDir: 'dist',
+        include: ['src/types/*', 'src/nodejs/**/*']
+      }),
+      replace({
+        preventAssignment: true,
+        values: {
+          __dirname: "'.'" // Temporary Solution
+        }
       })
     ]
   },

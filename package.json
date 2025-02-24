@@ -69,15 +69,19 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.33.0",
+    "chromium-bidi": "^0.12.0",
     "dotenv": "^16.0.0",
     "html2canvas": "^1.4.1",
     "openai": "^4.77.0",
+    "playwright": "^1.49.1",
     "uuid": "^11.0.3",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.2",
+    "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.0",
+    "@rollup/plugin-replace": "^6.0.2",
     "@rollup/plugin-typescript": "^12.1.2",
     "@types/chrome": "0.0.158",
     "@types/jest": "^29.5.12",
