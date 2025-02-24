@@ -96,7 +96,7 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
       if (params === null || !params.action) {
         throw new Error('Invalid parameters. Expected an object with a "action" property.');
       }
-      let page = this.currentPage;
+      let page = this.currentPage as Page;
       let selector_map = context.selector_map;
       let selector_xpath;
       if (params.index != null && selector_map) {
