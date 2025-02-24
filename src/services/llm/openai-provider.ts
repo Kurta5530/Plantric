@@ -141,12 +141,56 @@ export class OpenaiProvider implements LLMProvider {
               role: 'user',
               content: content.text,
             });
-          } else if (content.type == 'tool_result') {
+          } else if (content.type == 'image') {
             _messages.push({
-              role: 'tool',
-              content: content.content,
-              tool_call_id: content.tool_call_id || content.tool_use_id,
+              role: 'user',
+              content: [
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:${content.source.media_type};base64,${content.source.data}`,
+                  },
+                },
+              ],
             });
+          } else if (content.type == 'tool_result') {
+            let _content = [];
+            if (content.content == 'string') {
+              _content.push({ type: 'text', text: content.content });
+            } else {
+              for (let k = 0; k < content.content.length; k++) {
+                let item = content.content[k];
+                if (item.type == 'text') {
+                  _content.push({ ...item });
+                } else if (item.type == 'image') {
+                  _content.push({
+                    type: 'image_url',
+                    image_url: {
+                      url: `data:${item.source.media_type};base64,${item.source.data}`,
+                    },
+                  });
+                }
+              }
+            }
+            let hasImage = _content.filter((s) => s.type == 'image_url').length > 0;
+            if (hasImage) {
+              // OpenAI does not support images returned by the tool.
+              _messages.push({
+                role: 'tool',
+                content: 'ok',
+                tool_call_id: content.tool_call_id || content.tool_use_id,
+              });
+              _messages.push({
+                role: 'user',
+                content: _content,
+              });
+            } else {
+              _messages.push({
+                role: 'tool',
+                content: _content,
+                tool_call_id: content.tool_call_id || content.tool_use_id,
+              });
+            }
           }
         }
       } else {

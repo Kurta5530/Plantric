@@ -91,7 +91,7 @@ async function executeWithBrowserUse(
 ): Promise<boolean> {
   let tabId = await getTabId(context);
   let windowId = await getWindowId(context);
-  let screenshot_result = await screenshot(windowId);
+  let screenshot_result = await screenshot(windowId, false);
   let messages: Message[] = [
     {
       role: 'user',

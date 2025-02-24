@@ -15,7 +15,6 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
     this.name = 'browser_use';
     this.description = `Use structured commands to interact with the browser, manipulating page elements through screenshots and webpage element extraction.
 * This is a browser GUI interface where you need to analyze webpages by taking screenshots and extracting page element structures, and specify action sequences to complete designated tasks.
-* Some operations may need time to process, so you might need to wait and continuously take screenshots and extract element structures to check the operation results.
 * Before any operation, you must first call the \`screenshot_extract_element\` command, which will return the browser page screenshot and structured element information, both specially processed.
 * ELEMENT INTERACTION:
    - Only use indexes that exist in the provided element list
@@ -25,17 +24,7 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
    - If no suitable elements exist, use other functions to complete the task
    - If stuck, try alternative approaches
    - Handle popups/cookies by accepting or closing them
-   - Use scroll to find elements you are looking for
-* Form filling:
-   - If you fill a input field and your action sequence is interrupted, most often a list with suggestions poped up under the field and you need to first select the right element from the suggestion list.
-* ACTION SEQUENCING:
-   - Actions are executed in the order they appear in the list 
-   - Each action should logically follow from the previous one
-   - If the page changes after an action, the sequence is interrupted and you get the new state.
-   - If content only disappears the sequence continues.
-   - Only provide the action sequence until you think the page will change.
-   - Try to be efficient, e.g. fill forms at once, or chain actions where nothing changes on the page like saving, extracting, checkboxes...
-   - only use multiple actions if it makes sense.`;
+   - Use scroll to find elements you are looking for`;
     this.input_schema = {
       type: 'object',
       properties: {
@@ -178,7 +167,7 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
             return (window as any).get_clickable_elements(true);
           }, []);
           context.selector_map = element_result.selector_map;
-          let screenshot = await browser.screenshot(windowId);
+          let screenshot = await browser.screenshot(windowId, true);
           await executeScript(tabId, () => {
             return (window as any).remove_highlight();
           }, []);

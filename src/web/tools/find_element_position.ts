@@ -88,7 +88,7 @@ async function executeWithBrowserUse(
   context: ExecutionContext,
   task_prompt: string
 ): Promise<ElementRect | null> {
-  let screenshot_result = await screenshot();
+  let screenshot_result = await screenshot(false);
   let messages: Message[] = [
     {
       role: 'user',
