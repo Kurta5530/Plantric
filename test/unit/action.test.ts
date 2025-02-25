@@ -139,7 +139,9 @@ describe('ActionImpl', () => {
 
       const action = ActionImpl.createPromptAction('test_action', 'This is an action for testing purposes', [mockTool], mockLLMProvider);
 
-      await action.execute('Test input', context);
+      const nodeInput: NodeInput = { items: [] };
+      nodeInput.items.push({ name: 'test_input', description: 'Test input' } as NodeOutput);
+      await action.execute(nodeInput, context);
       // Should handle tool failure gracefully, no error thrown
     });
 
@@ -148,7 +150,9 @@ describe('ActionImpl', () => {
 
       const action = ActionImpl.createPromptAction('test_action', 'This is an action for testing purposes', [mockTool], mockLLMProvider);
 
-      await expect(action.execute('Test input', context)).resolves.toBeDefined();
+      const nodeInput: NodeInput = { items: [] };
+      nodeInput.items.push({ name: 'test_input', description: 'Test input' } as NodeOutput)
+      await expect(action.execute(nodeInput, context)).resolves.toBeDefined();
       // Should handle LLM failure gracefully
     });
 
@@ -163,8 +167,9 @@ describe('ActionImpl', () => {
       ]);
 
       const action = ActionImpl.createPromptAction('test_action', 'This is an action for testing purposes', [mockTool], mockLLMProvider);
-
-      await action.execute('Test input', context);
+      const nodeInput: NodeInput = { items: [] };
+      nodeInput.items.push({ name: 'test_input', description: 'Test input' } as NodeOutput)
+      await action.execute(nodeInput, context);
 
       // Check if value was written to context
       expect(context.variables.get('test_key')).toEqual({ data: 'test' });
@@ -181,8 +186,9 @@ describe('ActionImpl', () => {
       ]);
 
       const action = ActionImpl.createPromptAction('test_action', 'This is an action for testing purposes', [mockTool], mockLLMProvider);
-
-      await action.execute('Test input', context);
+      const nodeInput: NodeInput = { items: [] };
+      nodeInput.items.push({ name: 'test_input', description: 'Test input' } as NodeOutput)
+      await action.execute(nodeInput, context);
 
       // Check if value was written to context as string
       expect(context.variables.get('test_key')).toBe('plain text value');
@@ -206,8 +212,9 @@ describe('ActionImpl', () => {
         [mockTool],
         mockLLMProviderWithCapture
       );
-
-      await action.execute('Test input', context);
+      const nodeInput: NodeInput = { items: [] };
+      nodeInput.items.push({ name: 'test_input', description: 'Test input' } as NodeOutput)
+      await action.execute(nodeInput, context);
 
       // Verify system prompt includes context variables
       const initialPrompt = capturedMessages[1].content as string;
@@ -226,8 +233,9 @@ describe('ActionImpl', () => {
       ]);
 
       const action = ActionImpl.createPromptAction('test_action', 'This is an action for testing purposes', [mockTool], mockLLMProvider);
-
-      await action.execute('Test input', context);
+      const nodeInput: NodeInput = { items: [] };
+      nodeInput.items.push({ name: 'test_input', description: 'Test input' } as NodeOutput)
+      await action.execute(nodeInput, context);
       // Both tools should have been accessible
     });
   });

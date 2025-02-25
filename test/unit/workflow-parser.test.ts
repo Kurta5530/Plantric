@@ -16,6 +16,10 @@ describe('WorkflowParser', () => {
           type: "script",
           name: "testAction",
           tools: ["tool1", "tool2"]
+        },
+        output: {
+          name: "output1",
+          description: "Intermediate result"
         }
       },
       {
@@ -25,6 +29,10 @@ describe('WorkflowParser', () => {
         action: {
           type: "prompt",
           name: "promptAction"
+        },
+        output: {
+          name: "output2",
+          description: "Final result"
         }
       }
     ],
@@ -176,30 +184,11 @@ describe('WorkflowParser', () => {
       expect(node.output).toBeDefined();
     });
 
-    it('should preserve custom IO schemas', () => {
-      const workflowWithIO = {
-        ...validWorkflowJson,
-        nodes: [
-          {
-            id: "node1",
-            action: { type: "script", name: "test" },
-            input: {
-              type: "object",
-              schema: { required: ["test"], properties: { test: { type: "string" } } }
-            },
-            output: {
-              type: "array",
-              schema: { items: { type: "number" } }
-            }
-          }
-        ]
-      };
-      const workflow = WorkflowParser.parse(JSON.stringify(workflowWithIO));
+    it('should preserve output specifications', () => {
+      const workflow = WorkflowParser.parse(JSON.stringify(validWorkflowJson));
       const node = workflow.getNode('node1');
-      expect(node.input.type).toBe('object');
-      expect(node.output.type).toBe('array');
-      expect(node.input.schema).toEqual(workflowWithIO.nodes[0].input.schema);
-      expect(node.output.schema).toEqual(workflowWithIO.nodes[0].output.schema);
+      expect(node.output.name).toEqual(validWorkflowJson.nodes[0].output.name);
+      expect(node.output.description).toEqual(validWorkflowJson.nodes[0].output.description);
     });
   });
 });

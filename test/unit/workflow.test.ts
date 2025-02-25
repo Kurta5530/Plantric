@@ -11,8 +11,8 @@ describe('WorkflowImpl', () => {
   const createMockNode = (id: string, dependencies: string[] = []): WorkflowNode => ({
     id,
     name: `Node ${id}`,
-    input: { type: 'object', schema: {}, value: null },
-    output: { type: 'object', schema: {}, value: null },
+    input: { items: [] },
+    output: { name: "mock_output", description: "mock output", value: null },
     dependencies,
     action: {
       type: 'script',
