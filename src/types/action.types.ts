@@ -1,5 +1,6 @@
+import { Workflow } from "./workflow.types";
 import { LLMProvider } from "./llm.types";
-import { WorkflowCallback } from "./workflow.types";
+import { NodeOutput, WorkflowCallback } from "./workflow.types";
 import { NodeInput } from "./workflow.types";
 
 export interface Tool<T, R> {
@@ -31,6 +32,7 @@ export interface Property {
 export interface ExecutionContext {
   llmProvider: LLMProvider;
   variables: Map<string, unknown>;
+  workflow?: Workflow;
   tools?: Map<string, Tool<any, any>>;
   callback?: WorkflowCallback;
   [key: string]: any;
@@ -40,6 +42,6 @@ export interface Action {
   type: 'prompt' | 'script' | 'hybrid';
   name: string;
   description: string;
-  execute: (input: NodeInput, context: ExecutionContext) => Promise<unknown>;
+  execute: (input: NodeInput, output: NodeOutput, context: ExecutionContext) => Promise<unknown>;
   tools: Tool<any, any>[];
 }

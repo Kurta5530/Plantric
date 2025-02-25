@@ -12,7 +12,7 @@ export class WorkflowImpl implements Workflow {
     public llmProvider?: LLMProvider,
   ) {}
 
-  async execute(callback?: WorkflowCallback): Promise<void> {
+  async execute(callback?: WorkflowCallback): Promise<NodeOutput[]> {
     if (!this.validateDAG()) {
       throw new Error("Invalid workflow: Contains circular dependencies");
     }
@@ -41,6 +41,7 @@ export class WorkflowImpl implements Workflow {
       const context = {
         __skip: false,
         __abort: false,
+        workflow: this,
         variables: this.variables,
         llmProvider: this.llmProvider as LLMProvider,
         tools: new Map(node.action.tools.map(tool => [tool.name, tool])),
@@ -73,7 +74,7 @@ export class WorkflowImpl implements Workflow {
         return;
       }
 
-      node.output.value = await node.action.execute(node.input, context);
+      node.output.value = await node.action.execute(node.input, node.output, context);
 
       executing.delete(nodeId);
       executed.add(nodeId);
@@ -89,6 +90,8 @@ export class WorkflowImpl implements Workflow {
     await Promise.all(terminalNodes.map(node => executeNode(node.id)));
 
     callback && await callback.hooks.afterWorkflow?.(this, this.variables);
+
+    return terminalNodes.map(node => node.output);
   }
 
   addNode(node: WorkflowNode): void {

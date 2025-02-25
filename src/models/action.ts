@@ -1,7 +1,7 @@
 // src/models/action.ts
 
 import { Action, Tool, ExecutionContext, InputSchema } from '../types/action.types';
-import { NodeInput } from '../types/workflow.types';
+import { NodeInput, NodeOutput } from '../types/workflow.types';
 import {
   LLMProvider,
   Message,
@@ -18,7 +18,7 @@ import { ExecutionLogger } from '../utils/execution-logger';
 class WriteContextTool implements Tool<any, any> {
   name = 'write_context';
   description =
-    'Write a value to the workflow context. Use this to store intermediate results or outputs.';
+    'Write a value to the global workflow context. Use this to store important intermediate results, but only when a piece of information is essential for future reference but missing from the final output specification of the current action.';
   input_schema = {
     type: 'object',
     properties: {
@@ -48,27 +48,34 @@ class WriteContextTool implements Tool<any, any> {
   }
 }
 
-function createReturnTool(outputSchema: unknown): Tool<any, any> {
+function createReturnTool(actionName: string, outputDescription: string, outputSchema?: unknown): Tool<any, any> {
   return {
     name: 'return_output',
     description:
-      'Return the final output of this action. Use this to return a value matching the required output schema.',
+      `Return the final output of this action. Use this to return a value matching the required output schema (if specified) and the following description:
+      ${outputDescription}
+
+      You can either set 'use_tool_result=true' to return the result of a previous tool call, or explicitly specify 'value' with 'use_tool_result=false' to return a value according to your own understanding. Whenever possible, reuse tool results to avoid redundancy.
+      `,
     input_schema: {
       type: 'object',
       properties: {
+        use_tool_result: {
+          type: ['boolean'],
+          description: `Whether to use the latest tool result as output. When set to true, the 'value' parameter is ignored.`,
+        },
         value: outputSchema || {
           // Default to accepting any JSON value
           type: ['string', 'number', 'boolean', 'object', 'null'],
-          description: 'The output value',
+          description: 'The output value. Only provide a value if the previous tool result is not suitable for the output description. Otherwise, leave this as null.',
         },
       } as unknown,
-      required: ['value'],
+      required: ['use_tool_result', 'value'],
     } as InputSchema,
 
     async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
-      const { value } = params as { value: unknown };
-      context.variables.set('__action_output', value);
-      return { returned: value };
+      context.variables.set(`__action_${actionName}_output`, params);
+      return { success: true };
     },
   };
 }
@@ -77,6 +84,7 @@ export class ActionImpl implements Action {
   private readonly maxRounds: number = 10; // Default max rounds
   private writeContextTool: WriteContextTool;
   private logger: ExecutionLogger;
+  private toolResults: Map<string, any> = new Map();
 
   constructor(
     public type: 'prompt', // Only support prompt type
@@ -190,9 +198,7 @@ export class ActionImpl implements Action {
                 result = modified_result;
               }
             }
-            const resultMessage: Message = {
-              role: 'user',
-              content: [
+            const resultContent =
                 result.image && result.image.type
                   ? {
                       type: 'tool_result',
@@ -208,11 +214,20 @@ export class ActionImpl implements Action {
                       type: 'tool_result',
                       tool_use_id: toolCall.id,
                       content: [{ type: 'text', text: JSON.stringify(result) }],
-                    },
+                    }
+            const resultContentText = result.image && result.image.type ? (result.text ? result.text + " [Image]" : "[Image]") : JSON.stringify(result);
+            const resultMessage: Message = {
+              role: 'user',
+              content: [
+                resultContent,
               ],
             };
             toolResultMessage = resultMessage;
-            this.logger.logToolResult(toolCall.name, result.image && result.image.type ? (result.text ? result.text + " [Image]" : "[Image]") : JSON.stringify(result), context);
+            this.logger.logToolResult(tool.name, resultContentText, context);
+            // Store tool results except for the return_output tool
+            if (tool.name !== 'return_output') {
+              this.toolResults.set(toolCall.id, resultContentText);
+            }
           } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
             const errorResult: Message = {
@@ -300,11 +315,12 @@ export class ActionImpl implements Action {
 
   async execute(
     input: NodeInput,
+    output: NodeOutput,
     context: ExecutionContext,
     outputSchema?: unknown
   ): Promise<unknown> {
     // Create return tool with output schema
-    const returnTool = createReturnTool(outputSchema);
+    const returnTool = createReturnTool(this.name, output.description, outputSchema);
 
     // Create tool map combining context tools, action tools, and return tool
     const toolMap = new Map<string, Tool<any, any>>();
@@ -348,10 +364,12 @@ export class ActionImpl implements Action {
 
       // Add round messages to conversation history
       messages.push(...roundMessages);
+      this.logger.log("debug", `Round ${roundCount} messages: ${JSON.stringify(roundMessages)}`, context);
 
       // Check termination conditions
       if (!hasToolUse && response) {
         // LLM sent a message without using tools - request explicit return
+        this.logger.log('info', `Assistant: ${response.textContent}`);
         this.logger.log("warn", "LLM sent a message without using tools; requesting explicit return");
         const returnOnlyParams = {
           ...params,
@@ -415,38 +433,53 @@ export class ActionImpl implements Action {
     }
 
     // Get and clean up output value
-    const output = context.variables.get('__action_output');
-    context.variables.delete('__action_output');
+    const outputKey = `__action_${this.name}_output`;
+    const outputParams = context.variables.get(outputKey) as any;
+    context.variables.delete(outputKey);
 
-    if (output === undefined) {
+    // Get output value, first checking for use_tool_result
+    const outputValue = outputParams.use_tool_result
+      ? Array.from(this.toolResults.values()).pop()
+      : outputParams?.value;
+
+    if (outputValue === undefined) {
       console.warn('Action completed without returning a value');
       return {};
     }
 
-    return output;
+    return outputValue;
   }
 
   private formatSystemPrompt(): string {
-    return `You are a task executor. You need to complete the task specified by the user, using the tools provided. When you need to store results or outputs, use the write_context tool. When you are ready to return the final output, use the return_output tool.
+    return `You are a subtask executor. You need to complete the subtask specified by the user, which is a consisting part of the overall task. Help the user by calling the tools provided.
 
     Remember to:
     1. Use tools when needed to accomplish the task
-    2. Store important results using write_context, including intermediate and final results
-    3. Think step by step about what needs to be done`;
+    2. Think step by step about what needs to be done
+    3. Return the output of the subtask using the 'return_output' tool when you are done; prefer using the 'tool_use_id' parameter to refer to the output of a tool call over providing a long text as the value
+    4. Use the context to store important information for later reference, but use it sparingly: most of the time, the output of the subtask should be sufficient for the next steps
+    `;
   }
 
   private formatUserPrompt(context: ExecutionContext, input: unknown): string {
-    // Create a description of the current context
-    const contextDescription = Array.from(context.variables.entries())
+    const workflowDescription = context.workflow?.description || null;
+    const actionDescription = `${this.name} -- ${this.description}`;
+    const inputDescription = JSON.stringify(input, null, 2) || null;
+    const contextVariables = Array.from(context.variables.entries())
       .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
       .join('\n');
 
-    return `You are executing the action "${this.name}". The specific instructions are: "${this.description}". You have access to the following context:
+    return `You are executing a subtask in the workflow. The workflow description is as follows:
+    ${workflowDescription}
 
-    ${contextDescription || 'No context variables set'}
+    The subtask description is as follows:
+    ${actionDescription}
 
-    You have been provided with the following input:
-    ${(typeof input === 'string' ? input : JSON.stringify(input, null, 2)) || 'No additional input provided'}
+    The input to the subtask is as follows:
+    ${inputDescription}
+
+    There are some variables stored in the context that you can use for reference:
+    ${contextVariables}
     `;
   }
 

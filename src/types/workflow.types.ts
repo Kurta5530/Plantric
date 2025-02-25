@@ -29,7 +29,7 @@ export interface Workflow {
   variables: Map<string, any>;
   llmProvider?: LLMProvider;
 
-  execute(callback?: WorkflowCallback): Promise<void>;
+  execute(callback?: WorkflowCallback): Promise<NodeOutput[]>;
   addNode(node: WorkflowNode): void;
   removeNode(nodeId: string): void;
   getNode(nodeId: string): WorkflowNode;

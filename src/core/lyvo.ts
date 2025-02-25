@@ -10,6 +10,7 @@ import {
   ClaudeConfig,
   OpenaiConfig,
   WorkflowCallback,
+  NodeOutput,
 } from '../types';
 import { ToolRegistry } from './tool-registry';
 
@@ -69,7 +70,7 @@ export class Lyvo {
     return workflow;
   }
 
-  public async execute(workflow: Workflow, callback?: WorkflowCallback): Promise<void> {
+  public async execute(workflow: Workflow, callback?: WorkflowCallback): Promise<NodeOutput[]> {
     return await workflow.execute(callback);
   }
 
