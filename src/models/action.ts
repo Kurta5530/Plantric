@@ -1,6 +1,7 @@
 // src/models/action.ts
 
 import { Action, Tool, ExecutionContext, InputSchema } from '../types/action.types';
+import { NodeInput } from '../types/workflow.types';
 import {
   LLMProvider,
   Message,
@@ -298,7 +299,7 @@ export class ActionImpl implements Action {
   }
 
   async execute(
-    input: unknown,
+    input: NodeInput,
     context: ExecutionContext,
     outputSchema?: unknown
   ): Promise<unknown> {

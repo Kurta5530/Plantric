@@ -1,5 +1,6 @@
 import { ActionImpl } from '../../src/models/action';
 import { Tool, ExecutionContext, InputSchema } from '../../src/types/action.types';
+import { NodeInput, NodeOutput } from '../../src/types/workflow.types';
 import { LLMProvider, Message, LLMParameters, LLMStreamHandler } from '../../src/types/llm.types';
 
 // Mock tool for testing
@@ -122,7 +123,9 @@ describe('ActionImpl', () => {
 
       const action = ActionImpl.createPromptAction('test_action', 'This is an action for testing purposes', [mockTool], mockLLMProvider);
 
-      await action.execute('Test input', context);
+      const nodeInput: NodeInput = { items: [] };
+      nodeInput.items.push({ name: 'test_input', description: 'Test input' } as NodeOutput);
+      await action.execute(nodeInput, context);
       // Tool was successful, no errors thrown
     });
 

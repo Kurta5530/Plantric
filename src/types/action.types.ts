@@ -1,5 +1,6 @@
 import { LLMProvider } from "./llm.types";
 import { WorkflowCallback } from "./workflow.types";
+import { NodeInput } from "./workflow.types";
 
 export interface Tool<T, R> {
   name: string;
@@ -39,6 +40,6 @@ export interface Action {
   type: 'prompt' | 'script' | 'hybrid';
   name: string;
   description: string;
-  execute: (input: unknown, context: ExecutionContext) => Promise<unknown>;
+  execute: (input: NodeInput, context: ExecutionContext) => Promise<unknown>;
   tools: Tool<any, any>[];
 }

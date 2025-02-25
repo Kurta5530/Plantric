@@ -1,4 +1,4 @@
-import { Workflow, WorkflowNode, NodeIO, ExecutionContext, LLMProvider, WorkflowCallback } from "../types";
+import { Workflow, WorkflowNode, NodeInput, NodeOutput, ExecutionContext, LLMProvider, WorkflowCallback } from "../types";
 
 export class WorkflowImpl implements Workflow {
   abort?: boolean;
@@ -49,14 +49,6 @@ export class WorkflowImpl implements Workflow {
         abortAll: () => this.abort = context.__abort = true,
       };
 
-      callback && await callback.hooks.beforeSubtask?.(node, context);
-
-      if (context.__abort) {
-        throw new Error("Abort");
-      } else if (context.__skip) {
-        return;
-      }
-
       executing.add(nodeId);
 
       // Execute dependencies first
@@ -65,14 +57,23 @@ export class WorkflowImpl implements Workflow {
       }
 
       // Prepare input by gathering outputs from dependencies
-      const input: Record<string, unknown> = {};
+      const input: NodeInput = { items: [] };
       for (const depId of node.dependencies) {
         const depNode = this.getNode(depId);
-        input[depId] = depNode.output.value;
+        input.items.push(depNode.output);
       }
-      node.input.value = input;
+      node.input = input;
 
-      node.output.value = await node.action.execute(node.input.value, context);
+      // Run pre-execution hooks and execute action
+      callback && await callback.hooks.beforeSubtask?.(node, context);
+
+      if (context.__abort) {
+        throw new Error("Abort");
+      } else if (context.__skip) {
+        return;
+      }
+
+      node.output.value = await node.action.execute(node.input, context);
 
       executing.delete(nodeId);
       executed.add(nodeId);
