@@ -54,7 +54,7 @@ await lyvo.execute(sysWorkflow);
 
 ## Demos
 
-**Propmt:** `Collect the latest NASDAQ data on Yahoo Finance, including price changes, market capitalization, trading volume of major stocks, analyze the data and generate visualization reports`.
+**Prompt:** `Collect the latest NASDAQ data on Yahoo Finance, including price changes, market capitalization, trading volume of major stocks, analyze the data and generate visualization reports`.
 
 https://github.com/user-attachments/assets/4087b370-8eb8-4346-a549-c4ce4d1efec3
 
@@ -62,7 +62,7 @@ Click [here](https://github.com/LyvoAI/lyvo-demos/tree/main/browser-extension-st
 
 ---
 
-**Propmt:** `Based on the README of LyvoAI/lyvo on github, search for competitors, highlight the key contributions of Lyvo, write a blog post advertising Lyvo, and post it on Write.as.`
+**Prompt:** `Based on the README of LyvoAI/lyvo on github, search for competitors, highlight the key contributions of Lyvo, write a blog post advertising Lyvo, and post it on Write.as.`
 
 https://github.com/user-attachments/assets/6feaea86-2fb9-4e5c-b510-479c2473d810
 
@@ -70,7 +70,7 @@ Click [here](https://github.com/LyvoAI/lyvo-demos/tree/main/browser-extension-bl
 
 ---
 
-**Propmt:** `Clean up all files in the current directory larger than 1MB`
+**Prompt:** `Clean up all files in the current directory larger than 1MB`
 
 https://github.com/user-attachments/assets/ef7feb58-3ddd-4296-a1de-bb8b6c66e48b
 
@@ -78,7 +78,7 @@ Click [here](https://lyvo.fellou.ai/docs/computeruse/computer-node/#example-file
 
 ---
 
-**Propmt:** Automatic software testing
+**Prompt:** Automatic software testing
 ```
     Current login page automation test:
     1. Correct account and password are: admin / 666666 
