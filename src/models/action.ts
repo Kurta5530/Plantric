@@ -9,6 +9,7 @@ import {
   ToolDefinition,
   LLMResponse,
 } from '../types/llm.types';
+import { ExecutionLogger } from '../utils/execution-logger';
 
 /**
  * Special tool that allows LLM to write values to context
@@ -74,6 +75,7 @@ function createReturnTool(outputSchema: unknown): Tool<any, any> {
 export class ActionImpl implements Action {
   private readonly maxRounds: number = 10; // Default max rounds
   private writeContextTool: WriteContextTool;
+  private logger: ExecutionLogger;
 
   constructor(
     public type: 'prompt', // Only support prompt type
@@ -86,6 +88,11 @@ export class ActionImpl implements Action {
   ) {
     this.writeContextTool = new WriteContextTool();
     this.tools = [...tools, this.writeContextTool];
+    this.logger = new ExecutionLogger({
+      maxHistoryLength: 5,  // Keep last 5 messages for context
+      logLevel: 'info',
+      includeTimestamp: true
+    });
     if (config?.maxRounds) {
       this.maxRounds = config.maxRounds;
     }
@@ -120,7 +127,8 @@ export class ActionImpl implements Action {
         }
       },
       onToolUse: async (toolCall) => {
-        console.log('Tool Call:', toolCall.name, toolCall.input);
+        this.logger.log('info', `Assistant: ${assistantTextMessage}`);
+        this.logger.logToolExecution(toolCall.name, toolCall.input, context);
         hasToolUse = true;
 
         const tool = toolMap.get(toolCall.name);
@@ -203,7 +211,7 @@ export class ActionImpl implements Action {
               ],
             };
             toolResultMessage = resultMessage;
-            console.log('Tool Result:', result);
+            this.logger.logToolResult(toolCall.name, result.image && result.image.type ? (result.text ? result.text + " [Image]" : "[Image]") : JSON.stringify(result), context);
           } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
             const errorResult: Message = {
@@ -218,7 +226,7 @@ export class ActionImpl implements Action {
               ],
             };
             toolResultMessage = errorResult;
-            console.error('Tool Error:', err);
+            this.logger.logError(err as Error, context);
           }
         })();
       },
@@ -309,9 +317,7 @@ export class ActionImpl implements Action {
       { role: 'user', content: this.formatUserPrompt(context, input) },
     ];
 
-    console.log('Starting LLM conversation...');
-    console.log('Initial messages:', messages);
-    console.log('Output schema:', outputSchema);
+    this.logger.logActionStart(this.name, input, context);
 
     // Configure tool parameters
     const params: LLMParameters = {
@@ -328,9 +334,8 @@ export class ActionImpl implements Action {
 
     while (roundCount < this.maxRounds) {
       roundCount++;
-      console.log(`Starting round ${roundCount} of ${this.maxRounds}`);
+      this.logger.log("info", `Starting round ${roundCount} of ${this.maxRounds}`, context);
 
-      console.log('Current conversation status:', JSON.stringify(messages, null, 2));
       const { response, hasToolUse, roundMessages } = await this.executeSingleRound(
         messages,
         params,
@@ -346,8 +351,7 @@ export class ActionImpl implements Action {
       // Check termination conditions
       if (!hasToolUse && response) {
         // LLM sent a message without using tools - request explicit return
-        console.log('No tool use detected, requesting explicit return');
-        console.log('Response:', response);
+        this.logger.log("warn", "LLM sent a message without using tools; requesting explicit return");
         const returnOnlyParams = {
           ...params,
           tools: [
@@ -376,13 +380,12 @@ export class ActionImpl implements Action {
       }
 
       if (response?.toolCalls.some((call) => call.name === 'return_output')) {
-        console.log('Task completed with return_output tool');
         break;
       }
 
       // If this is the last round, force an explicit return
       if (roundCount === this.maxRounds) {
-        console.log('Max rounds reached, requesting explicit return');
+        this.logger.log("warn", "Max rounds reached, requesting explicit return");
         const returnOnlyParams = {
           ...params,
           tools: [
