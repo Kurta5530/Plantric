@@ -128,9 +128,10 @@ Lyvo can be used in multiple environments:
 
 <h1 align="center">
   <a href="https://github.com/LyvoAI/lyvo" target="_blank">
-    <img width="452" alt="Screenshot 2025-01-15 at 10 43 05 AM" src="https://github.com/user-attachments/assets/d64e9a7a-77d8-4d91-abb5-33d1253df373" />
+    <img width="452" alt="Jan 15 Screenshot from iLoveIMG" src="https://github.com/user-attachments/assets/fb2944c4-e169-437b-b5d7-63536cc8d2b2" />
   </a>
 </h1>
+
 
 ## License
 
