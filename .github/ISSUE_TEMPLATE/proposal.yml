@@ -13,24 +13,18 @@ body:
       label: "Proposal Summary"
       description: "Provide a concise summary of your proposal"
       placeholder: "Write a brief summary here"
-      validations:
-        required: true
   - type: textarea
     id: problem_statement
     attributes:
       label: "Problem Statement"
       description: "What problem does this proposal aim to solve?"
       placeholder: "Describe the problem here"
-      validations:
-        required: true
   - type: textarea
     id: proposed_solution
     attributes:
       label: "Proposed Solution"
       description: "Describe your proposed solution and why it's the best approach"
       placeholder: "Write your solution here"
-      validations:
-        required: true
   - type: textarea
     id: alternatives_considered
     attributes:
