@@ -13,16 +13,12 @@ body:
       label: "Topic"
       description: "Briefly describe your question or issue"
       placeholder: "E.g., How to configure X? What does Y mean?"
-      validations:
-        required: true
   - type: textarea
     id: details
     attributes:
       label: "Details"
       description: "Provide more details about your question or issue"
       placeholder: "Write a detailed description here"
-      validations:
-        required: true
   - type: textarea
     id: additional_context
     attributes:
