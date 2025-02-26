@@ -13,16 +13,12 @@ body:
       label: "Affected Code"
       description: "Which part of the codebase needs refactoring?"
       placeholder: "E.g., Module X, Function Y"
-      validations:
-        required: true
   - type: textarea
     id: refactor_reason
     attributes:
       label: "Reason for Refactoring"
       description: "Why does this part of the code need improvement?"
       placeholder: "Describe the reasons for refactoring here"
-      validations:
-        required: true
   - type: textarea
     id: suggestions
     attributes:
