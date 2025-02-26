@@ -1,0 +1,31 @@
+name: "📚 Documentation Improvement"
+description: "Suggest updates or improvements to the documentation"
+title: "[DOC] Describe the improvement"
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to propose documentation updates or report missing information.
+  - type: input
+    id: section
+    attributes:
+      label: "Documentation Section"
+      description: "Which part of the documentation needs improvement?"
+      placeholder: "E.g., Installation Guide, API Reference"
+      validations:
+        required: true
+  - type: textarea
+    id: improvement_details
+    attributes:
+      label: "Improvement Details"
+      description: "Describe the changes or additions you propose"
+      placeholder: "Write your proposed updates here"
+      validations:
+        required: true
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: "Additional Context"
+      description: "Include any supporting information or references"
+      placeholder: "E.g., links to other resources, screenshots, or examples"
