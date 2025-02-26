@@ -13,16 +13,12 @@ body:
       label: "Affected Documentation Section"
       description: "Specify the part of the documentation you are referencing."
       placeholder: "E.g., Installation Guide, API Reference"
-      validations:
-        required: true
   - type: textarea
     id: improvement_details
     attributes:
       label: "Details of the Improvement"
       description: "Clearly describe the proposed updates, additions, or corrections."
       placeholder: "Provide details about what you are suggesting, including specific examples or corrections."
-      validations:
-        required: true
   - type: textarea
     id: additional_context
     attributes:
@@ -42,10 +38,6 @@ body:
       description: "Select all areas that are impacted by this change."
       options:
         - label: "Code Examples"
-          value: "code_examples"
         - label: "API Reference"
-          value: "api_reference"
         - label: "User Guide"
-          value: "user_guide"
         - label: "Other"
-          value: "other"
