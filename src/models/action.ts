@@ -91,7 +91,7 @@ export class ActionImpl implements Action {
     public name: string,
     public description: string,
     public tools: Tool<any, any>[],
-    private llmProvider: LLMProvider,
+    private llmProvider: LLMProvider | undefined,
     private llmConfig?: LLMParameters,
     config?: { maxRounds?: number }
   ) {
@@ -257,6 +257,9 @@ export class ActionImpl implements Action {
     this.handleHistoryImageMessages(messages);
 
     // Wait for stream to complete
+    if (!this.llmProvider) {
+      throw new Error('LLM provider not set');
+    }
     await this.llmProvider.generateStream(messages, params, handler);
 
     // Wait for tool execution to complete if it was started
@@ -319,6 +322,7 @@ export class ActionImpl implements Action {
     context: ExecutionContext,
     outputSchema?: unknown
   ): Promise<unknown> {
+    console.log(`Executing action started: ${this.name}`);
     // Create return tool with output schema
     const returnTool = createReturnTool(this.name, output.description, outputSchema);
 
@@ -488,7 +492,7 @@ export class ActionImpl implements Action {
     name: string,
     description: string,
     tools: Tool<any, any>[],
-    llmProvider: LLMProvider,
+    llmProvider: LLMProvider | undefined,
     llmConfig?: LLMParameters
   ): Action {
     return new ActionImpl('prompt', name, description, tools, llmProvider, llmConfig);

@@ -71,6 +71,25 @@ export class Lyvo {
   }
 
   public async execute(workflow: Workflow, callback?: WorkflowCallback): Promise<NodeOutput[]> {
+    // Inject LLM provider at workflow level
+    workflow.llmProvider = this.llmProvider;
+
+    // Process each node's action
+    for (const node of workflow.nodes) {
+      if (node.action.type === 'prompt') {
+        // Inject LLM provider
+        node.action.llmProvider = this.llmProvider;
+
+        // Resolve tools
+        node.action.tools = node.action.tools.map(tool => {
+          if (typeof tool === 'string') {
+            return this.toolRegistry.getTool(tool);
+          }
+          return tool;
+        });
+      }
+    }
+
     return await workflow.execute(callback);
   }
 
