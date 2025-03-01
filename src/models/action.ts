@@ -245,6 +245,7 @@ export class ActionImpl implements Action {
       },
       onError: (error) => {
         console.error('Stream Error:', error);
+        console.log('Last message array sent to LLM:', messages);
       },
     };
 
