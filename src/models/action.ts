@@ -10,7 +10,6 @@ import {
   ToolDefinition,
   LLMResponse,
 } from '../types/llm.types';
-import { ExecutionLogger } from '../utils/execution-logger';
 
 /**
  * Special tool that allows LLM to write values to context
@@ -83,7 +82,6 @@ function createReturnTool(actionName: string, outputDescription: string, outputS
 export class ActionImpl implements Action {
   private readonly maxRounds: number = 10; // Default max rounds
   private writeContextTool: WriteContextTool;
-  private logger: ExecutionLogger;
   private toolResults: Map<string, any> = new Map();
 
   constructor(
@@ -91,17 +89,12 @@ export class ActionImpl implements Action {
     public name: string,
     public description: string,
     public tools: Tool<any, any>[],
-    private llmProvider: LLMProvider | undefined,
+    public llmProvider: LLMProvider | undefined,
     private llmConfig?: LLMParameters,
     config?: { maxRounds?: number }
   ) {
     this.writeContextTool = new WriteContextTool();
     this.tools = [...tools, this.writeContextTool];
-    this.logger = new ExecutionLogger({
-      maxHistoryLength: 5,  // Keep last 5 messages for context
-      logLevel: 'info',
-      includeTimestamp: true
-    });
     if (config?.maxRounds) {
       this.maxRounds = config.maxRounds;
     }
@@ -117,6 +110,7 @@ export class ActionImpl implements Action {
     hasToolUse: boolean;
     roundMessages: Message[];
   }> {
+    const logger = context.logger;
     const roundMessages: Message[] = [];
     let hasToolUse = false;
     let response: LLMResponse | null = null;
@@ -136,8 +130,8 @@ export class ActionImpl implements Action {
         }
       },
       onToolUse: async (toolCall) => {
-        this.logger.log('info', `Assistant: ${assistantTextMessage}`);
-        this.logger.logToolExecution(toolCall.name, toolCall.input, context);
+        logger.log('info', `Assistant: ${assistantTextMessage}`);
+        logger.logToolExecution(toolCall.name, toolCall.input, context);
         hasToolUse = true;
 
         const tool = toolMap.get(toolCall.name);
@@ -223,7 +217,7 @@ export class ActionImpl implements Action {
               ],
             };
             toolResultMessage = resultMessage;
-            this.logger.logToolResult(tool.name, resultContentText, context);
+            logger.logToolResult(tool.name, result, context);
             // Store tool results except for the return_output tool
             if (tool.name !== 'return_output') {
               this.toolResults.set(toolCall.id, resultContentText);
@@ -242,7 +236,7 @@ export class ActionImpl implements Action {
               ],
             };
             toolResultMessage = errorResult;
-            this.logger.logError(err as Error, context);
+            logger.logError(err as Error, context);
           }
         })();
       },
@@ -322,6 +316,7 @@ export class ActionImpl implements Action {
     context: ExecutionContext,
     outputSchema?: unknown
   ): Promise<unknown> {
+    const logger = context.logger;
     console.log(`Executing action started: ${this.name}`);
     // Create return tool with output schema
     const returnTool = createReturnTool(this.name, output.description, outputSchema);
@@ -338,7 +333,7 @@ export class ActionImpl implements Action {
       { role: 'user', content: this.formatUserPrompt(context, input) },
     ];
 
-    this.logger.logActionStart(this.name, input, context);
+    logger.logActionStart(this.name, input, context);
 
     // Configure tool parameters
     const params: LLMParameters = {
@@ -355,7 +350,7 @@ export class ActionImpl implements Action {
 
     while (roundCount < this.maxRounds) {
       roundCount++;
-      this.logger.log("info", `Starting round ${roundCount} of ${this.maxRounds}`, context);
+      logger.log("info", `Starting round ${roundCount} of ${this.maxRounds}`, context);
 
       const { response, hasToolUse, roundMessages } = await this.executeSingleRound(
         messages,
@@ -368,13 +363,13 @@ export class ActionImpl implements Action {
 
       // Add round messages to conversation history
       messages.push(...roundMessages);
-      this.logger.log("debug", `Round ${roundCount} messages: ${JSON.stringify(roundMessages)}`, context);
+      logger.log("debug", `Round ${roundCount} messages: ${JSON.stringify(roundMessages)}`, context);
 
       // Check termination conditions
       if (!hasToolUse && response) {
         // LLM sent a message without using tools - request explicit return
-        this.logger.log('info', `Assistant: ${response.textContent}`);
-        this.logger.log("warn", "LLM sent a message without using tools; requesting explicit return");
+        logger.log('info', `Assistant: ${response.textContent}`);
+        logger.log("warn", "LLM sent a message without using tools; requesting explicit return");
         const returnOnlyParams = {
           ...params,
           tools: [
@@ -408,7 +403,7 @@ export class ActionImpl implements Action {
 
       // If this is the last round, force an explicit return
       if (roundCount === this.maxRounds) {
-        this.logger.log("warn", "Max rounds reached, requesting explicit return");
+        logger.log("warn", "Max rounds reached, requesting explicit return");
         const returnOnlyParams = {
           ...params,
           tools: [

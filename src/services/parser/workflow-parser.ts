@@ -1,9 +1,7 @@
 import { Workflow, WorkflowNode, NodeInput, NodeOutput } from '../../types/workflow.types';
 import { ValidationResult, ValidationError } from '../../types/parser.types';
 import { WorkflowImpl } from '../../models/workflow';
-import { workflowSchema } from '../../schemas/workflow.schema';
 import { ActionImpl } from '../../models/action';
-import { Tool } from '../../types/action.types';
 
 export class WorkflowParser {
   /**
@@ -158,7 +156,18 @@ export class WorkflowParser {
 
   private static toRuntime(json: any): Workflow {
     const variables = new Map(Object.entries(json.variables || {}));
-    const workflow = new WorkflowImpl(json.id, json.name, json.description, [], variables);
+    const workflow = new WorkflowImpl(
+      json.id,
+      json.name,
+      json.description,
+      [],
+      variables,
+      undefined,
+      {
+        logLevel: 'info',
+        includeTimestamp: true,
+      }
+    );
 
     // Convert nodes
     json.nodes.forEach((nodeJson: any) => {

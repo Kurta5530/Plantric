@@ -1,7 +1,9 @@
+import { ExecutionLogger, LogOptions } from "@/utils/execution-logger";
 import { Workflow, WorkflowNode, NodeInput, NodeOutput, ExecutionContext, LLMProvider, WorkflowCallback } from "../types";
 
 export class WorkflowImpl implements Workflow {
   abort?: boolean;
+  private logger?: ExecutionLogger;
 
   constructor(
     public id: string,
@@ -10,7 +12,16 @@ export class WorkflowImpl implements Workflow {
     public nodes: WorkflowNode[] = [],
     public variables: Map<string, unknown> = new Map(),
     public llmProvider?: LLMProvider,
-  ) {}
+    loggerOptions?: LogOptions
+  ) {
+    if (loggerOptions) {
+      this.logger = new ExecutionLogger(loggerOptions);
+    }
+  }
+
+  setLogger(logger: ExecutionLogger) {
+    this.logger = logger;
+  }
 
   async execute(callback?: WorkflowCallback): Promise<NodeOutput[]> {
     if (!this.validateDAG()) {
@@ -46,6 +57,7 @@ export class WorkflowImpl implements Workflow {
         llmProvider: this.llmProvider as LLMProvider,
         tools: new Map(node.action.tools.map(tool => [tool.name, tool])),
         callback,
+        logger: this.logger,
         next: () => context.__skip = true,
         abortAll: () => this.abort = context.__abort = true,
       };
