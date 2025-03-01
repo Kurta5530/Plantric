@@ -1,4 +1,4 @@
-import { Workflow, WorkflowNode, NodeIO } from '../../types/workflow.types';
+import { Workflow, WorkflowNode, NodeInput, NodeOutput } from '../../types/workflow.types';
 import { ValidationResult, ValidationError } from '../../types/parser.types';
 import { WorkflowImpl } from '../../models/workflow';
 import { workflowSchema } from '../../schemas/workflow.schema';
@@ -169,8 +169,8 @@ export class WorkflowParser {
         name: nodeJson.name || nodeJson.id,
         description: nodeJson.description,
         dependencies: nodeJson.dependencies || [],
-        input: this.convertIO(nodeJson.input),
-        output: this.convertIO(nodeJson.output),
+        input: {items: []},
+        output: nodeJson.output as NodeOutput || {name: (nodeJson.name || nodeJson.id) + '_output', description: 'Output of node ' + (nodeJson.name || nodeJson.id), value: null},
         action: {
           type: nodeJson.action.type,
           name: nodeJson.action.name,
@@ -203,7 +203,6 @@ export class WorkflowParser {
         name: node.name,
         description: node.description,
         dependencies: node.dependencies,
-        input: node.input,
         output: node.output,
         action: {
           type: node.action.type,
@@ -213,17 +212,6 @@ export class WorkflowParser {
         },
       })),
       variables: Object.fromEntries(workflow.variables),
-    };
-  }
-
-  /**
-   * Helper to convert IO definitions
-   */
-  private static convertIO(io?: any): NodeIO {
-    return {
-      type: io?.type || 'object',
-      schema: io?.schema || {},
-      value: null,
     };
   }
 }

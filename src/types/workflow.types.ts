@@ -1,20 +1,24 @@
 import { Action, ExecutionContext, Tool } from "./action.types";
 import { LLMProvider } from "./llm.types";
 
+export interface NodeOutput {
+  name: string;
+  description: string;
+  value?: unknown;      // filled after execution
+}
+
+export interface NodeInput {
+  items: NodeOutput[];  // populated by the outputs of the dependencies before execution
+}
+
 export interface WorkflowNode {
   id: string;
   name: string;
   description?: string;
-  input: NodeIO;
-  output: NodeIO;
-  action: Action;
   dependencies: string[];
-}
-
-export interface NodeIO {
-  type: string;
-  schema: object;
-  value: unknown;
+  action: Action;
+  input: NodeInput;
+  output: NodeOutput;
 }
 
 export interface Workflow {
@@ -25,7 +29,7 @@ export interface Workflow {
   variables: Map<string, any>;
   llmProvider?: LLMProvider;
 
-  execute(callback?: WorkflowCallback): Promise<void>;
+  execute(callback?: WorkflowCallback): Promise<NodeOutput[]>;
   addNode(node: WorkflowNode): void;
   removeNode(nodeId: string): void;
   getNode(nodeId: string): WorkflowNode;
