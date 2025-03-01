@@ -60,7 +60,7 @@ export interface ScreenshotImage {
 }
 
 export interface TabManagementParam {
-  commond: string;
+  command: string;
 }
 
 export type TabManagementResult = TabInfo | CloseTabInfo | TabInfo[];
