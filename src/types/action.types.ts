@@ -43,5 +43,6 @@ export interface Action {
   name: string;
   description: string;
   execute: (input: NodeInput, output: NodeOutput, context: ExecutionContext) => Promise<unknown>;
-  tools: Tool<any, any>[];
+  tools: Array<Tool<any, any> | string>; // Allow both Tool objects and tool names
+  llmProvider?: LLMProvider;
 }
