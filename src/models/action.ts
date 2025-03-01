@@ -10,6 +10,7 @@ import {
   ToolDefinition,
   LLMResponse,
 } from '../types/llm.types';
+import { ExecutionLogger } from '@/utils/execution-logger';
 
 /**
  * Special tool that allows LLM to write values to context
@@ -47,11 +48,14 @@ class WriteContextTool implements Tool<any, any> {
   }
 }
 
-function createReturnTool(actionName: string, outputDescription: string, outputSchema?: unknown): Tool<any, any> {
+function createReturnTool(
+  actionName: string,
+  outputDescription: string,
+  outputSchema?: unknown
+): Tool<any, any> {
   return {
     name: 'return_output',
-    description:
-      `Return the final output of this action. Use this to return a value matching the required output schema (if specified) and the following description:
+    description: `Return the final output of this action. Use this to return a value matching the required output schema (if specified) and the following description:
       ${outputDescription}
 
       You can either set 'use_tool_result=true' to return the result of a previous tool call, or explicitly specify 'value' with 'use_tool_result=false' to return a value according to your own understanding. Whenever possible, reuse tool results to avoid redundancy.
@@ -66,7 +70,8 @@ function createReturnTool(actionName: string, outputDescription: string, outputS
         value: outputSchema || {
           // Default to accepting any JSON value
           type: ['string', 'number', 'boolean', 'object', 'null'],
-          description: 'The output value. Only provide a value if the previous tool result is not suitable for the output description. Otherwise, leave this as null.',
+          description:
+            'The output value. Only provide a value if the previous tool result is not suitable for the output description. Otherwise, leave this as null.',
         },
       } as unknown,
       required: ['use_tool_result', 'value'],
@@ -83,6 +88,7 @@ export class ActionImpl implements Action {
   private readonly maxRounds: number = 10; // Default max rounds
   private writeContextTool: WriteContextTool;
   private toolResults: Map<string, any> = new Map();
+  private logger: ExecutionLogger = new ExecutionLogger();
 
   constructor(
     public type: 'prompt', // Only support prompt type
@@ -110,7 +116,7 @@ export class ActionImpl implements Action {
     hasToolUse: boolean;
     roundMessages: Message[];
   }> {
-    const logger = context.logger;
+    this.logger = context.logger;
     const roundMessages: Message[] = [];
     let hasToolUse = false;
     let response: LLMResponse | null = null;
@@ -130,8 +136,8 @@ export class ActionImpl implements Action {
         }
       },
       onToolUse: async (toolCall) => {
-        logger.log('info', `Assistant: ${assistantTextMessage}`);
-        logger.logToolExecution(toolCall.name, toolCall.input, context);
+        this.logger.log('info', `Assistant: ${assistantTextMessage}`);
+        this.logger.logToolExecution(toolCall.name, toolCall.input, context);
         hasToolUse = true;
 
         const tool = toolMap.get(toolCall.name);
@@ -193,31 +199,34 @@ export class ActionImpl implements Action {
               }
             }
             const resultContent =
-                result.image && result.image.type
-                  ? {
-                      type: 'tool_result',
-                      tool_use_id: toolCall.id,
-                      content: result.text
-                        ? [
-                            { type: 'image', source: result.image },
-                            { type: 'text', text: result.text },
-                          ]
-                        : [{ type: 'image', source: result.image }],
-                    }
-                  : {
-                      type: 'tool_result',
-                      tool_use_id: toolCall.id,
-                      content: [{ type: 'text', text: JSON.stringify(result) }],
-                    }
-            const resultContentText = result.image && result.image.type ? (result.text ? result.text + " [Image]" : "[Image]") : JSON.stringify(result);
+              result.image
+                ? {
+                    type: 'tool_result',
+                    tool_use_id: toolCall.id,
+                    content: result.text
+                      ? [
+                          { type: 'image', source: result.image },
+                          { type: 'text', text: result.text },
+                        ]
+                      : [{ type: 'image', source: result.image }],
+                  }
+                : {
+                    type: 'tool_result',
+                    tool_use_id: toolCall.id,
+                    content: [{ type: 'text', text: JSON.stringify(result) }],
+                  };
+            const resultContentText =
+              result.image
+                ? result.text
+                  ? result.text + ' [Image]'
+                  : '[Image]'
+                : JSON.stringify(result);
             const resultMessage: Message = {
               role: 'user',
-              content: [
-                resultContent,
-              ],
+              content: [resultContent],
             };
             toolResultMessage = resultMessage;
-            logger.logToolResult(tool.name, result, context);
+            this.logger.logToolResult(tool.name, result, context);
             // Store tool results except for the return_output tool
             if (tool.name !== 'return_output') {
               this.toolResults.set(toolCall.id, resultContentText);
@@ -236,7 +245,7 @@ export class ActionImpl implements Action {
               ],
             };
             toolResultMessage = errorResult;
-            logger.logError(err as Error, context);
+            this.logger.logError(err as Error, context);
           }
         })();
       },
@@ -245,7 +254,7 @@ export class ActionImpl implements Action {
       },
       onError: (error) => {
         console.error('Stream Error:', error);
-        console.log('Last message array sent to LLM:', messages);
+        console.log('Last message array sent to LLM:', JSON.stringify(messages, null, 2));
       },
     };
 
@@ -281,34 +290,56 @@ export class ActionImpl implements Action {
   }
 
   private handleHistoryImageMessages(messages: Message[]) {
-    // Remove all images of the historical tool call results, except for the last one.
-    let last_user = true;
+    // Remove all images from historical tool results except the most recent user message
+    const initialImageCount = this.countImages(messages);
+
+    let foundFirstUser = false;
+
     for (let i = messages.length - 1; i >= 0; i--) {
       const message = messages[i];
       if (message.role === 'user') {
-        if (last_user) {
-          last_user = false;
+        if (!foundFirstUser) {
+          foundFirstUser = true;
           continue;
         }
-        if (message.content instanceof Array) {
-          let content = message.content as any[];
-          for (let j = 0; j < content.length; j++) {
-            if (content[j].type === 'tool_result' && content[j].content instanceof Array) {
-              let tool_content = content[j].content as any[];
-              if (tool_content.length > 0) {
-                for (let k = tool_content.length - 1; k >= 0; k--) {
-                  if (tool_content[k].type === 'image') {
-                    tool_content.splice(k, 1);
-                  }
+
+        if (Array.isArray(message.content)) {
+          // Directly modify the message content array
+          message.content = message.content.map((item: any) => {
+            if (item.type === 'tool_result' && Array.isArray(item.content)) {
+              // Create a new content array without images
+              if (item.content.length > 0) {
+                item.content = item.content.filter((c) => c.type !== 'image');
+                // If all content was images and got filtered out, replace with ok message
+                if (item.content.length === 0) {
+                  item.content = [{ type: 'text', text: 'ok' }];
                 }
-              } else if (tool_content[0].type === 'image') {
-                tool_content = [{ type: 'text', text: 'ok' }];
               }
             }
-          }
+            return item;
+          });
         }
       }
     }
+
+    const finalImageCount = this.countImages(messages);
+    if (initialImageCount !== finalImageCount) {
+      this.logger.log("info", `Removed ${initialImageCount - finalImageCount} images from history`);
+    }
+  }
+
+  private countImages(messages: Message[]): number {
+    let count = 0;
+    messages.forEach(msg => {
+      if (Array.isArray(msg.content)) {
+        msg.content.forEach((item: any) => {
+          if (item.type === 'tool_result' && Array.isArray(item.content)) {
+            count += item.content.filter((c: any) => c.type === 'image').length;
+          }
+        });
+      }
+    });
+    return count;
   }
 
   async execute(
@@ -317,7 +348,7 @@ export class ActionImpl implements Action {
     context: ExecutionContext,
     outputSchema?: unknown
   ): Promise<unknown> {
-    const logger = context.logger;
+    this.logger = context.logger;
     console.log(`Executing action started: ${this.name}`);
     // Create return tool with output schema
     const returnTool = createReturnTool(this.name, output.description, outputSchema);
@@ -334,7 +365,7 @@ export class ActionImpl implements Action {
       { role: 'user', content: this.formatUserPrompt(context, input) },
     ];
 
-    logger.logActionStart(this.name, input, context);
+    this.logger.logActionStart(this.name, input, context);
 
     // Configure tool parameters
     const params: LLMParameters = {
@@ -351,7 +382,7 @@ export class ActionImpl implements Action {
 
     while (roundCount < this.maxRounds) {
       roundCount++;
-      logger.log("info", `Starting round ${roundCount} of ${this.maxRounds}`, context);
+      this.logger.log('info', `Starting round ${roundCount} of ${this.maxRounds}`, context);
 
       const { response, hasToolUse, roundMessages } = await this.executeSingleRound(
         messages,
@@ -364,13 +395,17 @@ export class ActionImpl implements Action {
 
       // Add round messages to conversation history
       messages.push(...roundMessages);
-      logger.log("debug", `Round ${roundCount} messages: ${JSON.stringify(roundMessages)}`, context);
+      this.logger.log(
+        'debug',
+        `Round ${roundCount} messages: ${JSON.stringify(roundMessages)}`,
+        context
+      );
 
       // Check termination conditions
       if (!hasToolUse && response) {
         // LLM sent a message without using tools - request explicit return
-        logger.log('info', `Assistant: ${response.textContent}`);
-        logger.log("warn", "LLM sent a message without using tools; requesting explicit return");
+        this.logger.log('info', `Assistant: ${response.textContent}`);
+        this.logger.log('warn', 'LLM sent a message without using tools; requesting explicit return');
         const returnOnlyParams = {
           ...params,
           tools: [
@@ -404,7 +439,7 @@ export class ActionImpl implements Action {
 
       // If this is the last round, force an explicit return
       if (roundCount === this.maxRounds) {
-        logger.log("warn", "Max rounds reached, requesting explicit return");
+        this.logger.log('warn', 'Max rounds reached, requesting explicit return');
         const returnOnlyParams = {
           ...params,
           tools: [
