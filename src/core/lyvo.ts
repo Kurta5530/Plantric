@@ -69,6 +69,10 @@ export class Lyvo {
     return workflow;
   }
 
+  public async cancel(workflow: Workflow): Promise<void> {
+    return await workflow.cancel();
+  }
+
   public async execute(workflow: Workflow, callback?: WorkflowCallback): Promise<void> {
     return await workflow.execute(callback);
   }
