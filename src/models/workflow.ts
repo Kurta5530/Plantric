@@ -1,5 +1,4 @@
 import { Workflow, WorkflowNode, NodeInput, NodeOutput, ExecutionContext, LLMProvider, WorkflowCallback } from "../types";
-import { getAllTabs } from './../extension/utils';
 
 export class WorkflowImpl implements Workflow {
   abort?: boolean;
@@ -44,15 +43,12 @@ export class WorkflowImpl implements Workflow {
         __abort: false,
         workflow: this,
         variables: this.variables,
-        tabs: [],
         llmProvider: this.llmProvider as LLMProvider,
         tools: new Map(node.action.tools.map(tool => [tool.name, tool])),
         callback,
         next: () => context.__skip = true,
         abortAll: () => this.abort = context.__abort = true,
       };
-      let tabs = await getAllTabs(context);
-      context.tabs = tabs;
 
       executing.add(nodeId);
 
