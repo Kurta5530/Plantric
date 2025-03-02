@@ -29,9 +29,18 @@ export interface Property {
   properties?: Properties;
 }
 
+export interface BrowserTab {
+  id: number,
+  url?: string,
+  title?: string,
+  content: string,
+  description: string,
+}
+
 export interface ExecutionContext {
   llmProvider: LLMProvider;
   variables: Map<string, unknown>;
+  tabs: BrowserTab[];
   workflow?: Workflow;
   tools?: Map<string, Tool<any, any>>;
   callback?: WorkflowCallback;

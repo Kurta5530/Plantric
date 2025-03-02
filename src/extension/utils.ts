@@ -1,4 +1,6 @@
-import { ExecutionContext } from '../types/action.types';
+import { BrowserTab, ExecutionContext } from '../types/action.types';
+import { LLMParameters, Message } from '../types/llm.types';
+import { extractHtmlContent } from '../web/tools/browser';
 
 export async function getWindowId(context: ExecutionContext): Promise<number> {
   let windowId = context.variables.get('windowId') as any;
@@ -50,6 +52,72 @@ export async function getTabId(context: ExecutionContext): Promise<number> {
     }
   }
   return tabId as number;
+}
+
+export async function getAllTabs(context: ExecutionContext): Promise<BrowserTab[]> {
+  const currentWindow = await chrome.windows.getCurrent();
+  const windowId = currentWindow.id;
+  const tabs = await chrome.tabs.query({ windowId });
+  const tabsInfo: BrowserTab[] = [];
+
+  for (const tab of tabs) {
+    if (tab.id === undefined) {
+      console.warn(`Tab ID is undefined for tab with URL: ${tab.url}`);
+      continue;
+    }
+
+    await injectScript(tab.id);
+    await sleep(500);
+    let content = await executeScript(tab.id, () => {
+      return extractHtmlContent();
+    }, []);
+
+    // let LLM summaries the description
+    const messages: Message[] = [
+      {
+        role: 'system',
+        content: `You are an AI assistant specialized in analyzing HTML content. Your task is to receive an HTML document from the user, summarize its key elements and content, and then provide a concise and informative description of the HTML document. The description should include the main purpose of the document, its structure, and any notable features or content elements. Ensure that the summary is clear, accurate, and captures the essence of the HTML document without including unnecessary details.`,
+      },
+      {
+        role: 'user',
+        content: content,
+      }
+    ]
+    const params: LLMParameters = {
+      temperature: 0.7,
+      maxTokens: 8192,
+    };
+    const response = await context.llmProvider.generateText(messages, params);
+
+    // get last response as description
+    let description = "No description available.";
+    if (typeof response.content == "string") {
+      description = response.content;
+    } else {
+      const textBlocks = response.content.filter(
+        (block: any): block is { type: 'text'; text: string } =>
+          block.type === 'text'
+      );
+      if (textBlocks.length > 0) {
+        description = textBlocks[textBlocks.length - 1].text;
+      }
+    }
+    
+    const tabInfo: BrowserTab = {
+      id: tab.id,
+      url: tab.url,
+      title: tab.title,
+      content: content,
+      description: description,
+    };
+
+    console.log("url: " + tab.url);
+    console.log("title: " + tab.title);
+    console.log("description: " + description);
+    tabsInfo.push(tabInfo);
+  }
+
+  return tabsInfo;
 }
 
 export function getCurrentTabId(windowId?: number | undefined): Promise<number | undefined> {
