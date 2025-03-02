@@ -49,7 +49,7 @@ export class WorkflowImpl implements Workflow {
       const node = this.getNode(nodeId);
 
       // Execute the node's action
-      const context = {
+      const context: ExecutionContext = {
         __skip: false,
         __abort: false,
         workflow: this,
