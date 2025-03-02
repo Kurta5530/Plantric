@@ -2,6 +2,7 @@ import { Workflow, WorkflowNode, NodeIO, ExecutionContext, LLMProvider, Workflow
 
 export class WorkflowImpl implements Workflow {
   abort?: boolean;
+  abortControllers: Map<string, AbortController> = new Map<string, AbortController>();
 
   constructor(
     public id: string,
@@ -11,6 +12,13 @@ export class WorkflowImpl implements Workflow {
     public variables: Map<string, unknown> = new Map(),
     public llmProvider?: LLMProvider,
   ) {}
+
+  async cancel(): Promise<void> {
+    this.abort = true;
+    for (const controller of this.abortControllers.values()) {
+      controller.abort("Workflow cancelled");
+    }
+  }
 
   async execute(callback?: WorkflowCallback): Promise<void> {
     if (!this.validateDAG()) {
@@ -36,9 +44,11 @@ export class WorkflowImpl implements Workflow {
       }
 
       const node = this.getNode(nodeId);
+      const abortController = new AbortController();
+      this.abortControllers.set(nodeId, abortController);
 
       // Execute the node's action
-      const context = {
+      const context: ExecutionContext = {
         __skip: false,
         __abort: false,
         variables: this.variables,
@@ -46,7 +56,14 @@ export class WorkflowImpl implements Workflow {
         tools: new Map(node.action.tools.map(tool => [tool.name, tool])),
         callback,
         next: () => context.__skip = true,
-        abortAll: () => this.abort = context.__abort = true,
+        abortAll: () => {
+          this.abort = context.__abort = true;
+          // Abort all running tasks
+          for (const controller of this.abortControllers.values()) {
+            controller.abort("Workflow cancelled");
+          }
+        },
+        signal: abortController.signal
       };
 
       callback && await callback.hooks.beforeSubtask?.(node, context);
@@ -59,22 +76,26 @@ export class WorkflowImpl implements Workflow {
 
       executing.add(nodeId);
 
-      // Execute dependencies first
-      for (const depId of node.dependencies) {
-        await executeNode(depId);
+      try {
+        // Execute dependencies first
+        for (const depId of node.dependencies) {
+          await executeNode(depId);
+        }
+
+        // Prepare input by gathering outputs from dependencies
+        const input: Record<string, unknown> = {};
+        for (const depId of node.dependencies) {
+          const depNode = this.getNode(depId);
+          input[depId] = depNode.output.value;
+        }
+        node.input.value = input;
+
+        node.output.value = await node.action.execute(node.input.value, context);
+      } finally {
+        executing.delete(nodeId);
+        this.abortControllers.delete(nodeId);
       }
 
-      // Prepare input by gathering outputs from dependencies
-      const input: Record<string, unknown> = {};
-      for (const depId of node.dependencies) {
-        const depNode = this.getNode(depId);
-        input[depId] = depNode.output.value;
-      }
-      node.input.value = input;
-
-      node.output.value = await node.action.execute(node.input.value, context);
-
-      executing.delete(nodeId);
       executed.add(nodeId);
 
       callback && await callback.hooks.afterSubtask?.(node, context, node.output?.value);

@@ -113,6 +113,13 @@ export class ActionImpl implements Action {
     // Track tool execution promise
     let toolExecutionPromise: Promise<void> | null = null;
 
+    // Listen for abort signal
+    if (context.signal) {
+      context.signal.addEventListener('abort', () => {
+        context.__abort = true;
+      });
+    }
+
     const handler: LLMStreamHandler = {
       onContent: (content) => {
         if (content.trim()) {
@@ -155,7 +162,7 @@ export class ActionImpl implements Action {
                 toolCall.input = modified_input;
               }
             }
-            if (context.__skip || context.__abort) {
+            if (context.__skip || context.__abort || context.signal?.aborted) {
               toolResultMessage = {
                 role: 'user',
                 content: [
@@ -327,6 +334,11 @@ export class ActionImpl implements Action {
     let lastResponse: LLMResponse | null = null;
 
     while (roundCount < this.maxRounds) {
+      // Check for abort signal
+      if (context.signal?.aborted) {
+        throw new Error('Workflow cancelled');
+      }
+
       roundCount++;
       console.log(`Starting round ${roundCount} of ${this.maxRounds}`);
 
