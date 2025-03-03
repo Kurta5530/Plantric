@@ -79,7 +79,7 @@ export class HumanInputSingleChoice implements Tool<HumanInputSingleChoiceInput,
     const choices = params.choices;
     console.log("question: " + question);
     console.log("choices: " + choices);
-    let answer = await context.callback?.hooks.onHumanInputSingleChoice(question, choices);
+    let answer = await context.callback?.hooks.onHumanInputSingleChoice?.(question, choices);
     if (!answer) {
       console.error("Cannot get user's answer.");
       return {status: "Error: Cannot get user's answer.", answer: ""};
@@ -122,7 +122,7 @@ export class HumanInputMultipleChoice implements Tool<HumanInputMultipleChoiceIn
     const choices = params.choices;
     console.log("question: " + question);
     console.log("choices: " + choices);
-    let answer = await context.callback?.hooks.onHumanInputMultipleChoice(question, choices);
+    let answer = await context.callback?.hooks.onHumanInputMultipleChoice?.(question, choices);
     if (!answer) {
       console.error("Cannot get user's answer.");
       return {status: "Error: Cannot get user's answer.", answer: []};
