@@ -93,6 +93,11 @@ export class Lyvo {
     return await workflow.execute(callback);
   }
 
+  public async cancel(workflow: Workflow): Promise<void> {
+    return await workflow.cancel();
+  }
+
+
   public async modify(workflow: Workflow, prompt: string): Promise<Workflow> {
     const generator = this.workflowGeneratorMap.get(workflow) as WorkflowGenerator;
     workflow = await generator.modifyWorkflow(prompt);

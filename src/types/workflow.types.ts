@@ -32,6 +32,7 @@ export interface Workflow {
 
   setLogger(logger: ExecutionLogger): void;
   execute(callback?: WorkflowCallback): Promise<NodeOutput[]>;
+  cancel(): Promise<void>;
   addNode(node: WorkflowNode): void;
   removeNode(nodeId: string): void;
   getNode(nodeId: string): WorkflowNode;
@@ -46,5 +47,7 @@ export interface WorkflowCallback {
     afterToolUse?: (tool: Tool<any, any>, context: ExecutionContext, result: any) => Promise<any>;
     afterSubtask?: (subtask: WorkflowNode, context: ExecutionContext, result: any) => Promise<void>;
     afterWorkflow?: (workflow: Workflow, variables: Map<string, unknown>) => Promise<void>;
+    onWindowCreated?: (windowId: number) => Promise<void>;
+    onTabCreated?: (tabId: number) => Promise<void>;
   }
 };

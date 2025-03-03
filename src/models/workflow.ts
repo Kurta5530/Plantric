@@ -4,6 +4,7 @@ import { Workflow, WorkflowNode, NodeInput, NodeOutput, ExecutionContext, LLMPro
 export class WorkflowImpl implements Workflow {
   abort?: boolean;
   private logger?: ExecutionLogger;
+  abortControllers: Map<string, AbortController> = new Map<string, AbortController>();
 
   constructor(
     public id: string,
@@ -21,6 +22,13 @@ export class WorkflowImpl implements Workflow {
 
   setLogger(logger: ExecutionLogger) {
     this.logger = logger;
+  }
+
+  async cancel(): Promise<void> {
+    this.abort = true;
+    for (const controller of this.abortControllers.values()) {
+      controller.abort("Workflow cancelled");
+    }
   }
 
   async execute(callback?: WorkflowCallback): Promise<NodeOutput[]> {
@@ -47,6 +55,8 @@ export class WorkflowImpl implements Workflow {
       }
 
       const node = this.getNode(nodeId);
+      const abortController = new AbortController();
+      this.abortControllers.set(nodeId, abortController);
 
       // Execute the node's action
       const context: ExecutionContext = {
@@ -59,16 +69,17 @@ export class WorkflowImpl implements Workflow {
         callback,
         logger: this.logger,
         next: () => context.__skip = true,
-        abortAll: () => this.abort = context.__abort = true,
+        abortAll: () => {
+          this.abort = context.__abort = true;
+          // Abort all running tasks
+          for (const controller of this.abortControllers.values()) {
+            controller.abort("Workflow cancelled");
+          }
+        },
+        signal: abortController.signal
       };
 
       executing.add(nodeId);
-
-      // Execute dependencies first
-      for (const depId of node.dependencies) {
-        await executeNode(depId);
-      }
-
       // Prepare input by gathering outputs from dependencies
       const input: NodeInput = { items: [] };
       for (const depId of node.dependencies) {
