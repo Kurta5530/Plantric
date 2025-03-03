@@ -17,7 +17,7 @@ export class HumanInputText implements Tool<HumanInputTextInput, HumanInputTextR
 
   constructor() {
     this.name = 'human_input_text';
-    this.description = 'When you are unsure about the details of your next action, invoke me and ask the user for details in the "question" field. The user will provide you with a text as an answer.';
+    this.description = 'When you are unsure about the details of your next action, call me and ask the user for details in the "question" field. The user will provide you with a text as an answer.';
     this.input_schema = {
       type: 'object',
       properties: {
@@ -54,7 +54,7 @@ export class HumanInputSingleChoice implements Tool<HumanInputSingleChoiceInput,
 
   constructor() {
     this.name = 'human_input_single_choice';
-    this.description = 'When you are unsure about the details of your next action, invoke me and ask the user for details in the "question" field with at least 2 choices. The user will provide you with ONE choice as an answer.';
+    this.description = 'When you are unsure about the details of your next action, call me and ask the user for details in the "question" field with at least 2 choices. The user will provide you with ONE choice as an answer.';
     this.input_schema = {
       type: 'object',
       properties: {
@@ -97,7 +97,7 @@ export class HumanInputMultipleChoice implements Tool<HumanInputMultipleChoiceIn
 
   constructor() {
     this.name = 'human_input_multiple_choice';
-    this.description = 'When you are unsure about the details of your next action, invoke me and ask the user for details in the "question" field with at least 2 choices. The user will provide you with ONE or MANY choice as an answer.';
+    this.description = 'When you are unsure about the details of your next action, call me and ask the user for details in the "question" field with at least 2 choices. The user will provide you with ONE or MORE choice as an answer.';
     this.input_schema = {
       type: 'object',
       properties: {
@@ -140,7 +140,7 @@ export class HumanOperate implements Tool<HumanOperateInput, HumanOperateResult>
 
   constructor() {
     this.name = 'human_operate';
-    this.description = 'When you encounter operations that require login, CAPTCHA verification, or other tasks that you cannot complete, please invoke this tool, transfer control to the user, and explain why.';
+    this.description = 'When you encounter operations that require login, CAPTCHA verification, or other tasks that you cannot complete, please call this tool, transfer control to the user, and explain why.';
     this.input_schema = {
       type: 'object',
       properties: {
