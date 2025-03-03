@@ -96,6 +96,7 @@ export class WorkflowGenerator {
     // Forcibly add special tools
     const specialTools = [
       "cancel_workflow",
+      "human_input_text",
     ]
     for (const node of workflowData.nodes) {
       for (const tool of specialTools) {

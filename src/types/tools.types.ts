@@ -115,3 +115,12 @@ export interface ElementRect {
 export interface CancelWorkflowInput {
   reason: string;
 }
+
+export interface HumanInputTextInput {
+  question: string;
+}
+
+export interface HumanInputTextResult {
+  status: string;
+  answer: string;
+}
