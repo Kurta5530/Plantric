@@ -509,6 +509,8 @@ export class ActionImpl implements Action {
     2. Think step by step about what needs to be done
     3. Return the output of the subtask using the 'return_output' tool when you are done; prefer using the 'tool_use_id' parameter to refer to the output of a tool call over providing a long text as the value
     4. Use the context to store important information for later reference, but use it sparingly: most of the time, the output of the subtask should be sufficient for the next steps
+    5. If there are any unclear points during the task execution, please use the human-related tool to inquire with the user
+    6. If user intervention is required during the task execution, please use the human-related tool to transfer the operation rights to the user
     `;
   }
 
