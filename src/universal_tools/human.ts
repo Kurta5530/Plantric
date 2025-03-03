@@ -5,6 +5,8 @@ import {
   HumanInputSingleChoiceResult,
   HumanInputMultipleChoiceInput,
   HumanInputMultipleChoiceResult,
+  HumanOperateInput,
+  HumanOperateResult,
 } from '../types/tools.types';
 import { Tool, InputSchema, ExecutionContext } from '../types/action.types';
 
@@ -130,3 +132,41 @@ export class HumanInputMultipleChoice implements Tool<HumanInputMultipleChoiceIn
     }
   }
 }
+
+export class HumanOperate implements Tool<HumanOperateInput, HumanOperateResult> {
+  name: string;
+  description: string;
+  input_schema: InputSchema;
+
+  constructor() {
+    this.name = 'human_operate';
+    this.description = 'When you encounter operations that require login, CAPTCHA verification, or other tasks that you cannot complete, please invoke this tool, transfer control to the user, and explain why.';
+    this.input_schema = {
+      type: 'object',
+      properties: {
+        reason: {
+          type: 'string',
+          description: 'The reason why you need to transfer control.',
+        },
+      },
+      required: ['reason'],
+    };
+  }
+
+  async execute(context: ExecutionContext, params: HumanOperateInput): Promise<HumanOperateResult> {
+    if (typeof params !== 'object' || params === null || !params.reason) {
+      throw new Error('Invalid parameters. Expected an object with a "reason" property.');
+    }
+    const reason = params.reason;
+    console.log("reason: " + reason);
+    let userOperation = await context.callback?.hooks.onHumanOperate(reason);
+    if (!userOperation) {
+      console.error("Cannot get user's operation.");
+      return {status: "Error: Cannot get user's operation.", userOperation: ""};
+    } else {
+      console.log("userOperation: " + userOperation);
+      return {status: "OK", userOperation: userOperation};
+    }
+  }
+}
+

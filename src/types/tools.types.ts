@@ -144,3 +144,12 @@ export interface HumanInputMultipleChoiceResult {
   status: string;
   answer: string[];
 }
+
+export interface HumanOperateInput {
+  reason: string,
+}
+
+export interface HumanOperateResult {
+  status: string,
+  userOperation: string,
+}

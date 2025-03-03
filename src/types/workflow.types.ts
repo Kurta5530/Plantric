@@ -52,5 +52,6 @@ export interface WorkflowCallback {
     onHumanInputText: (question: string) => Promise<string>;
     onHumanInputSingleChoice: (question: string, choices: string[]) => Promise<string>;
     onHumanInputMultipleChoice: (question: string, choices: string[]) => Promise<string[]>;
+    onHumanOperate: (reason: string) => Promise<string>;
   }
 };
