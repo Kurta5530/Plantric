@@ -50,5 +50,7 @@ export interface WorkflowCallback {
     onTabCreated?: (tabId: number) => Promise<void>;
     onLlmMessage?: (textContent: string) => Promise<void>;
     onHumanInputText: (question: string) => Promise<string>;
+    onHumanInputSingleChoice: (question: string, choices: string[]) => Promise<string>;
+    onHumanInputMultipleChoice: (question: string, choices: string[]) => Promise<string[]>;
   }
 };

@@ -124,3 +124,23 @@ export interface HumanInputTextResult {
   status: string;
   answer: string;
 }
+
+export interface HumanInputSingleChoiceInput {
+  question: string;
+  choices: string[];
+}
+
+export interface HumanInputSingleChoiceResult {
+  status: string;
+  answer: string;
+}
+
+export interface HumanInputMultipleChoiceInput {
+  question: string;
+  choices: string[];
+}
+
+export interface HumanInputMultipleChoiceResult {
+  status: string;
+  answer: string[];
+}
