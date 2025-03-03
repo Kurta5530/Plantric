@@ -80,6 +80,11 @@ export class WorkflowImpl implements Workflow {
       };
 
       executing.add(nodeId);
+      // Execute dependencies first
+      for (const depId of node.dependencies) {
+        await executeNode(depId);
+      }
+
       // Prepare input by gathering outputs from dependencies
       const input: NodeInput = { items: [] };
       for (const depId of node.dependencies) {
