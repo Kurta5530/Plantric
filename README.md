@@ -132,8 +132,7 @@ Lyvo can be used in multiple environments:
   </a>
 </h1>
 
-
-
+[![Star History Chart](https://api.star-history.com/svg?repos=LyvoAI/lyvo&type=Date)](https://star-history.com/#LyvoAI/lyvo&Date)
 
 ## License
 
