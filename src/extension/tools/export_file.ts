@@ -83,6 +83,7 @@ export class ExportFile implements Tool<ExportFileParam, unknown> {
       });
     } catch (e) {
       let tab = await open_new_tab('https://www.google.com', true);
+      context.callback?.hooks?.onTabCreated?.(tab.id as number);
       tabId = tab.id as number;
       await chrome.scripting.executeScript({
         target: { tabId: tabId as number },
