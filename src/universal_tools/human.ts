@@ -51,7 +51,7 @@ export class HumanInputSingleChoice implements Tool<HumanInputSingleChoiceInput,
   input_schema: InputSchema;
 
   constructor() {
-    this.name = 'human_input_text';
+    this.name = 'human_input_single_choice';
     this.description = 'When you are unsure about the details of your next action, invoke me and ask the user for details in the "question" field with at least 2 choices. The user will provide you with ONE choice as an answer.';
     this.input_schema = {
       type: 'object',
@@ -94,7 +94,7 @@ export class HumanInputMultipleChoice implements Tool<HumanInputMultipleChoiceIn
   input_schema: InputSchema;
 
   constructor() {
-    this.name = 'human_input_text';
+    this.name = 'human_input_multiple_choice';
     this.description = 'When you are unsure about the details of your next action, invoke me and ask the user for details in the "question" field with at least 2 choices. The user will provide you with ONE or MANY choice as an answer.';
     this.input_schema = {
       type: 'object',
