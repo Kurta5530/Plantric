@@ -205,8 +205,10 @@ export class ActionImpl implements Action {
                 result = modified_result;
               }
             }
+
+            const result_has_image: boolean = result && "image" in result;
             const resultContent =
-              result.image
+              result_has_image
                 ? {
                     type: 'tool_result',
                     tool_use_id: toolCall.id,
@@ -223,7 +225,7 @@ export class ActionImpl implements Action {
                     content: [{ type: 'text', text: JSON.stringify(result) }],
                   };
             const resultContentText =
-              result.image
+              result_has_image
                 ? result.text
                   ? result.text + ' [Image]'
                   : '[Image]'
@@ -239,6 +241,8 @@ export class ActionImpl implements Action {
               this.toolResults.set(toolCall.id, resultContentText);
             }
           } catch (err) {
+            console.log("An error occurred when calling tool:");
+            console.log(err);
             const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
             const errorResult: Message = {
               role: 'user',
