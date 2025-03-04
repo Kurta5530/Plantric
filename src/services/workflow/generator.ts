@@ -86,13 +86,6 @@ export class WorkflowGenerator {
 
     const workflowData = response.toolCalls[0].input.workflow as any;
 
-    // Validate all tools exist
-    for (const node of workflowData.nodes) {
-      if (!this.toolRegistry.hasTools(node.action.tools)) {
-        throw new Error(`Workflow contains undefined tools: ${node.action.tools}`);
-      }
-    }
-
     // Forcibly add special tools
     const specialTools = [
       "cancel_workflow",
@@ -107,11 +100,23 @@ export class WorkflowGenerator {
       }
     }
 
+    // Validate all tools exist
+    for (const node of workflowData.nodes) {
+      if (!this.toolRegistry.hasTools(node.action.tools)) {
+        throw new Error(`Workflow contains undefined tools: ${node.action.tools}`);
+      }
+    }
+
     // Generate a new UUID if not provided
     if (!workflowData.id) {
       workflowData.id = uuidv4();
     }
 
+    // debug
+    console.log("Debug the workflow...")
+    console.log(workflowData);
+    console.log("Debug the workflow...Done")    
+    
     return this.createWorkflowFromData(workflowData);
   }
 
