@@ -153,3 +153,7 @@ export interface HumanOperateResult {
   status: string,
   userOperation: string,
 }
+
+export interface SummaryWorkflowInput {
+  summary: string,
+}
