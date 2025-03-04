@@ -89,7 +89,7 @@ export class ExportFile implements Tool<ExportFileParam, unknown> {
         func: exportFile,
         args: [filename, type, params.content],
       });
-      await sleep(1000);
+      await sleep(5000);
       await chrome.tabs.remove(tabId);
     }
     return { success: true };
