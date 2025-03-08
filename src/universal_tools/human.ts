@@ -1,4 +1,4 @@
-import { 
+import {
   HumanInputTextInput,
   HumanInputTextResult,
   HumanInputSingleChoiceInput,
@@ -36,7 +36,7 @@ export class HumanInputText implements Tool<HumanInputTextInput, HumanInputTextR
     }
     const question = params.question;
     console.log("question: " + question);
-    let answer = await context.callback?.hooks.onHumanInputText(question);
+    let answer = await context.callback?.hooks.onHumanInputText?.(question);
     if (!answer) {
       console.error("Cannot get user's answer.");
       return {status: "Error: Cannot get user's answer.", answer: ""};
@@ -159,7 +159,7 @@ export class HumanOperate implements Tool<HumanOperateInput, HumanOperateResult>
     }
     const reason = params.reason;
     console.log("reason: " + reason);
-    let userOperation = await context.callback?.hooks.onHumanOperate(reason);
+    let userOperation = await context.callback?.hooks.onHumanOperate?.(reason);
     if (!userOperation) {
       console.error("Cannot get user's operation.");
       return {status: "Error: Cannot get user's operation.", userOperation: ""};
@@ -169,4 +169,3 @@ export class HumanOperate implements Tool<HumanOperateInput, HumanOperateResult>
     }
   }
 }
-
