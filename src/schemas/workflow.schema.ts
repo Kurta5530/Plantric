@@ -20,18 +20,11 @@ export const workflowSchema = {
             type: "array",
             items: { type: "string" },
           },
-          input: {
-            type: "object",
-            properties: {
-              type: { type: "string" },
-              schema: { type: "object" },
-            },
-          },
           output: {
             type: "object",
             properties: {
-              type: { type: "string" },
-              schema: { type: "object" },
+              name: { type: "string" },
+              description: { type: "string" },
             },
           },
           action: {

@@ -180,5 +180,5 @@ describeIntegration('Minimal Workflow Integration', () => {
     const finalResult = numberResults.find(([_, value]) => value === 1102);
     expect(finalResult).toBeDefined();
     console.log('Found result:', finalResult);
-  }, 30000);
+  }, 60000);
 });

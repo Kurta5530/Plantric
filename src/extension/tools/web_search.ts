@@ -12,7 +12,7 @@ export class WebSearch implements Tool<WebSearchParam, WebSearchResult[]> {
 
   constructor() {
     this.name = 'web_search';
-    this.description = 'Use web search to return search results';
+    this.description = 'Search the web based on keywords and return relevant extracted content from webpages.';
     this.input_schema = {
       type: 'object',
       properties: {
@@ -47,7 +47,7 @@ export class WebSearch implements Tool<WebSearchParam, WebSearchResult[]> {
     }
     let taskId = new Date().getTime() + '';
     let searchs = [{ url: url as string, keyword: query as string }];
-    let searchInfo = await deepSearch(taskId, searchs, maxResults || 5);
+    let searchInfo = await deepSearch(context, taskId, searchs, maxResults || 5);
     let links = searchInfo.result[0]?.links || [];
     return links.filter((s: any) => s.content) as WebSearchResult[];
   }
@@ -127,6 +127,7 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
  * @param {number} detailsMaxNum Maximum crawling quantity per search detail page
  */
 async function deepSearch(
+  context: ExecutionContext,
   taskId: string,
   searchs: Array<{ url: string; keyword: string }>,
   detailsMaxNum: number,
@@ -144,9 +145,9 @@ async function deepSearch(
   }
   // crawler the search page details page link
   // [{ links: [{ title, url }] }]
-  let detailLinkGroups = await doDetailLinkGroups(taskId, searchs, detailsMaxNum, window);
+  let detailLinkGroups = await doDetailLinkGroups(context, taskId, searchs, detailsMaxNum, window);
   // crawler all details page content and comments
-  let searchInfo = await doPageContent(taskId, detailLinkGroups, window);
+  let searchInfo = await doPageContent(context, taskId, detailLinkGroups, window);
   console.log('searchInfo: ', searchInfo);
   // close window
   closeWindow && chrome.windows.remove(window.id as number);
@@ -163,6 +164,7 @@ async function deepSearch(
  * @returns [{ links: [{ title, url }] }]
  */
 async function doDetailLinkGroups(
+  context: ExecutionContext,
   taskId: string,
   searchs: Array<{ url: string; keyword: string }>,
   detailsMaxNum: number,
@@ -179,6 +181,7 @@ async function doDetailLinkGroups(
         url: url,
         windowId: window.id,
       });
+      context.callback?.hooks?.onTabCreated?.(tab.id as number);
       let eventId = taskId + '_' + i;
       // monitor Tab status
       tabsUpdateEvent.addListener(async function (obj: any) {
@@ -229,6 +232,7 @@ async function doDetailLinkGroups(
  * @returns search info
  */
 async function doPageContent(
+  context: ExecutionContext,
   taskId: string,
   detailLinkGroups: Array<any>,
   window: chrome.windows.Window
@@ -258,15 +262,16 @@ async function doPageContent(
         url: link.url,
         windowId: window.id,
       });
+      context.callback?.hooks?.onTabCreated?.(tab.id as number);
       searchInfo.running++;
       let eventId = taskId + '_' + i + '_' + j;
 
-      // CHANGED: Create a timeout promise
+      // Create a timeout promise
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Page load timeout')), 10000); // Timeout after 10 seconds
       });
 
-      // CHANGED: Create a tab monitoring promise
+      // Create a tab monitoring promise
       const monitorTabPromise = new Promise<void>(async (resolve, reject) => {
         tabsUpdateEvent.addListener(async function onTabUpdated(obj: any) {
           if (obj.tabId !== tab.id) return;
@@ -308,7 +313,7 @@ async function doPageContent(
         }, eventId);
       });
 
-      // CHANGED: Use Promise.race to enforce the timeout
+      // Use Promise.race to enforce the timeout
       try {
         await Promise.race([monitorTabPromise, timeoutPromise]);
       } catch (e) {
