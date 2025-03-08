@@ -146,7 +146,7 @@ export class WorkflowGenerator {
           nodeData.action.description,
           tools,
           this.llmProvider,
-          { maxTokens: 1000 }
+          { maxTokens: 8192 }
         );
 
         const node = {

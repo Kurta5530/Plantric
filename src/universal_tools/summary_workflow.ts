@@ -1,7 +1,7 @@
 import { SummaryWorkflowInput } from '../types/tools.types';
 import { Tool, InputSchema, ExecutionContext } from '../types/action.types';
 
-export class SummaryWorkflow implements Tool<SummaryWorkflowInput, void> {
+export class SummaryWorkflow implements Tool<SummaryWorkflowInput, any> {
   name: string;
   description: string;
   input_schema: InputSchema;
@@ -21,13 +21,13 @@ export class SummaryWorkflow implements Tool<SummaryWorkflowInput, void> {
     };
   }
 
-  async execute(context: ExecutionContext, params: SummaryWorkflowInput): Promise<void> {
+  async execute(context: ExecutionContext, params: SummaryWorkflowInput): Promise<any> {
     if (typeof params !== 'object' || params === null || !params.summary) {
       throw new Error('Invalid parameters. Expected an object with a "summary" property.');
     }
     const summary = params.summary;
     console.log("summary: " + summary);
     await context.callback?.hooks.onSummaryWorkflow?.(summary);
-    return;
+    return {status: "OK"};
   }
 }
