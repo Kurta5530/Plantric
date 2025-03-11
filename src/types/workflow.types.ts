@@ -1,20 +1,25 @@
 import { Action, ExecutionContext, Tool } from "./action.types";
 import { LLMProvider } from "./llm.types";
+import { ExecutionLogger } from "@/utils/execution-logger";
+
+export interface NodeOutput {
+  name: string;
+  description: string;
+  value?: unknown;      // filled after execution
+}
+
+export interface NodeInput {
+  items: NodeOutput[];  // populated by the outputs of the dependencies before execution
+}
 
 export interface WorkflowNode {
   id: string;
   name: string;
   description?: string;
-  input: NodeIO;
-  output: NodeIO;
-  action: Action;
   dependencies: string[];
-}
-
-export interface NodeIO {
-  type: string;
-  schema: object;
-  value: unknown;
+  action: Action;
+  input: NodeInput;
+  output: NodeOutput;
 }
 
 export interface Workflow {
@@ -25,7 +30,8 @@ export interface Workflow {
   variables: Map<string, any>;
   llmProvider?: LLMProvider;
 
-  execute(callback?: WorkflowCallback): Promise<void>;
+  setLogger(logger: ExecutionLogger): void;
+  execute(callback?: WorkflowCallback): Promise<NodeOutput[]>;
   cancel(): Promise<void>;
   addNode(node: WorkflowNode): void;
   removeNode(nodeId: string): void;
@@ -41,7 +47,12 @@ export interface WorkflowCallback {
     afterToolUse?: (tool: Tool<any, any>, context: ExecutionContext, result: any) => Promise<any>;
     afterSubtask?: (subtask: WorkflowNode, context: ExecutionContext, result: any) => Promise<void>;
     afterWorkflow?: (workflow: Workflow, variables: Map<string, unknown>) => Promise<void>;
-    onWindowCreated?: (windowId: number) => Promise<void>;
     onTabCreated?: (tabId: number) => Promise<void>;
+    onLlmMessage?: (textContent: string) => Promise<void>;
+    onHumanInputText?: (question: string) => Promise<string>;
+    onHumanInputSingleChoice?: (question: string, choices: string[]) => Promise<string>;
+    onHumanInputMultipleChoice?: (question: string, choices: string[]) => Promise<string[]>;
+    onHumanOperate?: (reason: string) => Promise<string>;
+    onSummaryWorkflow?: (summary: string) => Promise<void>;
   }
 };

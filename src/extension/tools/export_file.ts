@@ -74,8 +74,8 @@ export class ExportFile implements Tool<ExportFileParam, unknown> {
     } else {
       filename = params.filename;
     }
-    let tabId = await getTabId(context);
     try {
+      let tabId = await getTabId(context);
       await chrome.scripting.executeScript({
         target: { tabId: tabId as number },
         func: exportFile,
@@ -83,13 +83,14 @@ export class ExportFile implements Tool<ExportFileParam, unknown> {
       });
     } catch (e) {
       let tab = await open_new_tab('https://www.google.com', true);
-      tabId = tab.id as number;
+      context.callback?.hooks?.onTabCreated?.(tab.id as number);
+      let tabId = tab.id as number;
       await chrome.scripting.executeScript({
         target: { tabId: tabId as number },
         func: exportFile,
         args: [filename, type, params.content],
       });
-      await sleep(1000);
+      await sleep(5000);
       await chrome.tabs.remove(tabId);
     }
     return { success: true };

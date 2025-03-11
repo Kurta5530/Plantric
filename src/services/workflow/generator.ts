@@ -86,6 +86,20 @@ export class WorkflowGenerator {
 
     const workflowData = response.toolCalls[0].input.workflow as any;
 
+    // Forcibly add special tools
+    const specialTools = [
+      "cancel_workflow",
+      "human_input_text",
+      "human_operate",
+    ]
+    for (const node of workflowData.nodes) {
+      for (const tool of specialTools) {
+        if (!node.action.tools.includes(tool)) {
+          node.action.tools.push(tool);
+        }
+      }
+    }
+
     // Validate all tools exist
     for (const node of workflowData.nodes) {
       if (!this.toolRegistry.hasTools(node.action.tools)) {
@@ -98,6 +112,11 @@ export class WorkflowGenerator {
       workflowData.id = uuidv4();
     }
 
+    // debug
+    console.log("Debug the workflow...")
+    console.log(workflowData);
+    console.log("Debug the workflow...Done")    
+    
     return this.createWorkflowFromData(workflowData);
   }
 
@@ -108,7 +127,11 @@ export class WorkflowGenerator {
       data.description || '',
       [],
       new Map(Object.entries(data.variables || {})),
-      this.llmProvider
+      this.llmProvider,
+      {
+        logLevel: 'info',
+        includeTimestamp: true,
+      }
     );
 
     // Add nodes to workflow
@@ -123,7 +146,7 @@ export class WorkflowGenerator {
           nodeData.action.description,
           tools,
           this.llmProvider,
-          { maxTokens: 1000 }
+          { maxTokens: 8192 }
         );
 
         const node = {
