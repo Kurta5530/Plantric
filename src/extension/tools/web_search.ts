@@ -318,8 +318,10 @@ async function doPageContent(
         await Promise.race([monitorTabPromise, timeoutPromise]);
       } catch (e) {
         console.error(`${link.title} failed:`, e);
+        searchInfo.running--;
         searchInfo.failed++;
         searchInfo.failedLinks.push(link);
+        countDownLatch.countDown();
         chrome.tabs.remove(tab.id as number); // Clean up tab on failure
       }
     }
