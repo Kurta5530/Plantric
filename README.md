@@ -33,7 +33,7 @@ Lyvo (pronounced like ‘echo’) is a production-ready JavaScript framework tha
 npm install @lyvo-ai/lyvo
 ```
 
-> For detailed usage, please refer to the [Lyvo Quickstart guide](https://lyvo.fellou.ai/docs/getting-started/quickstart/).
+> Important Notice: The following example code cannot be executed directly. Please refer to the [Lyvo Quickstart guide](https://lyvo.fellou.ai/docs/getting-started/quickstart/) guide for instructions on how to run it.
 
 ```typescript
 import { Lyvo } from '@lyvo-ai/lyvo';
