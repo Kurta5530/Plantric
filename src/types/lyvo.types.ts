@@ -19,7 +19,11 @@ export interface OpenaiConfig {
 
 export type ClaudeApiKey = string;
 
-export type LyvoConfig = ClaudeApiKey | ClaudeConfig | OpenaiConfig | LLMProvider;
+export type LLMConfig = ClaudeApiKey | ClaudeConfig | OpenaiConfig | LLMProvider;
+
+export interface LyvoConfig {
+  workingWindowId?: number,
+}
 
 export interface LyvoInvokeParam {
   tools?: Array<string> | Array<Tool<any, any>>;
