@@ -2,6 +2,7 @@ import { WorkflowGenerator } from '../services/workflow/generator';
 import { ClaudeProvider } from '../services/llm/claude-provider';
 import { OpenaiProvider } from '../services/llm/openai-provider';
 import {
+  LLMConfig,
   LyvoConfig,
   LyvoInvokeParam,
   LLMProvider,
@@ -11,6 +12,7 @@ import {
   OpenaiConfig,
   WorkflowCallback,
   NodeOutput,
+  ExecutionContext,
 } from '../types';
 import { ToolRegistry } from './tool-registry';
 
@@ -21,33 +23,45 @@ export class Lyvo {
   public static tools: Map<string, Tool<any, any>> = new Map();
 
   private llmProvider: LLMProvider;
+  private lyvoConfig: LyvoConfig;
   private toolRegistry = new ToolRegistry();
   private workflowGeneratorMap = new Map<Workflow, WorkflowGenerator>();
 
-  constructor(config: LyvoConfig) {
-    if (typeof config == 'string') {
-      this.llmProvider = new ClaudeProvider(config);
-    } else if ('llm' in config) {
-      if (config.llm == 'claude') {
-        let claudeConfig = config as ClaudeConfig;
+  constructor(llmConfig: LLMConfig, lyvoConfig?: LyvoConfig) {
+    if (typeof llmConfig == 'string') {
+      this.llmProvider = new ClaudeProvider(llmConfig);
+    } else if ('llm' in llmConfig) {
+      if (llmConfig.llm == 'claude') {
+        let claudeConfig = llmConfig as ClaudeConfig;
         this.llmProvider = new ClaudeProvider(
           claudeConfig.apiKey,
           claudeConfig.modelName,
           claudeConfig.options
         );
-      } else if (config.llm == 'openai') {
-        let openaiConfig = config as OpenaiConfig;
+      } else if (llmConfig.llm == 'openai') {
+        let openaiConfig = llmConfig as OpenaiConfig;
         this.llmProvider = new OpenaiProvider(
           openaiConfig.apiKey,
           openaiConfig.modelName,
           openaiConfig.options
         );
       } else {
-        throw new Error('Unknown parameter: llm > ' + config['llm']);
+        let msg: string = 'Unknown parameter: llm > ' + llmConfig['llm'];
+        console.error(msg)
+        throw new Error(msg);
       }
     } else {
-      this.llmProvider = config as LLMProvider;
+      this.llmProvider = llmConfig as LLMProvider;
     }
+
+    if (lyvoConfig) {
+      this.lyvoConfig = lyvoConfig;
+    } else {
+      this.lyvoConfig = {
+        workingWindowId: undefined,
+      };
+    }
+
     Lyvo.tools.forEach((tool) => this.toolRegistry.registerTool(tool));
   }
 
@@ -65,7 +79,7 @@ export class Lyvo {
       }
     }
     const generator = new WorkflowGenerator(this.llmProvider, toolRegistry);
-    const workflow = await generator.generateWorkflow(prompt);
+    const workflow = await generator.generateWorkflow(prompt, this.lyvoConfig);
     this.workflowGeneratorMap.set(workflow, generator);
     return workflow;
   }
@@ -100,7 +114,7 @@ export class Lyvo {
 
   public async modify(workflow: Workflow, prompt: string): Promise<Workflow> {
     const generator = this.workflowGeneratorMap.get(workflow) as WorkflowGenerator;
-    workflow = await generator.modifyWorkflow(prompt);
+    workflow = await generator.modifyWorkflow(prompt, this.lyvoConfig);
     this.workflowGeneratorMap.set(workflow, generator);
     return workflow;
   }
@@ -132,8 +146,9 @@ export class Lyvo {
     if (typeof tool === 'string') {
       tool = this.getTool(tool);
     }
-    let context = {
+    let context: ExecutionContext = {
       llmProvider: this.llmProvider,
+      lyvoConfig: this.lyvoConfig,
       variables: new Map<string, unknown>(),
       tools: new Map<string, Tool<any, any>>(),
       callback,

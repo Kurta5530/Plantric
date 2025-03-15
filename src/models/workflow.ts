@@ -1,5 +1,6 @@
 import { ExecutionLogger, LogOptions } from "@/utils/execution-logger";
 import { Workflow, WorkflowNode, NodeInput, NodeOutput, ExecutionContext, LLMProvider, WorkflowCallback } from "../types";
+import { LyvoConfig } from "../types/lyvo.types";
 
 export class WorkflowImpl implements Workflow {
   abort?: boolean;
@@ -9,6 +10,7 @@ export class WorkflowImpl implements Workflow {
   constructor(
     public id: string,
     public name: string,
+    private lyvoConfig: LyvoConfig,
     public description?: string,
     public nodes: WorkflowNode[] = [],
     public variables: Map<string, unknown> = new Map(),
@@ -65,6 +67,7 @@ export class WorkflowImpl implements Workflow {
         workflow: this,
         variables: this.variables,
         llmProvider: this.llmProvider as LLMProvider,
+        lyvoConfig: this.lyvoConfig,
         tools: new Map(node.action.tools.map(tool => [tool.name, tool])),
         callback,
         logger: this.logger,
