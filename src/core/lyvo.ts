@@ -79,7 +79,7 @@ export class Lyvo {
       }
     }
     const generator = new WorkflowGenerator(this.llmProvider, toolRegistry);
-    const workflow = await generator.generateWorkflow(prompt);
+    const workflow = await generator.generateWorkflow(prompt, this.lyvoConfig);
     this.workflowGeneratorMap.set(workflow, generator);
     return workflow;
   }
@@ -114,7 +114,7 @@ export class Lyvo {
 
   public async modify(workflow: Workflow, prompt: string): Promise<Workflow> {
     const generator = this.workflowGeneratorMap.get(workflow) as WorkflowGenerator;
-    workflow = await generator.modifyWorkflow(prompt);
+    workflow = await generator.modifyWorkflow(prompt, this.lyvoConfig);
     this.workflowGeneratorMap.set(workflow, generator);
     return workflow;
   }

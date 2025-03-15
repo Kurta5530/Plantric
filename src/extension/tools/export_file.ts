@@ -82,7 +82,13 @@ export class ExportFile implements Tool<ExportFileParam, unknown> {
         args: [filename, type, params.content],
       });
     } catch (e) {
-      let tab = await open_new_tab('https://www.google.com', true);
+      let tab;
+      const url = 'https://www.google.com';
+      if (context.lyvoConfig.workingWindowId) {
+        tab = await open_new_tab(url, false, context.lyvoConfig.workingWindowId);
+      } else {
+        tab = await open_new_tab(url, true);
+      }
       context.callback?.hooks?.onTabCreated?.(tab.id as number);
       let tabId = tab.id as number;
       await chrome.scripting.executeScript({
