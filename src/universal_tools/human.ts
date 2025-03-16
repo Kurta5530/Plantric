@@ -36,13 +36,14 @@ export class HumanInputText implements Tool<HumanInputTextInput, HumanInputTextR
     }
     const question = params.question;
     console.log("question: " + question);
-    let answer = await context.callback?.hooks.onHumanInputText?.(question);
-    if (!answer) {
-      console.error("Cannot get user's answer.");
-      return {status: "Error: Cannot get user's answer.", answer: ""};
-    } else {
+    let onHumanInputText = context.callback?.hooks.onHumanInputText;
+    if (onHumanInputText) {
+      let answer = await onHumanInputText(question);
       console.log("answer: " + answer);
       return {status: "OK", answer: answer};
+    } else {
+      console.error("Cannot get user's answer.");
+      return {status: "Error: Cannot get user's answer.", answer: ""};
     }
   }
 }
@@ -79,13 +80,14 @@ export class HumanInputSingleChoice implements Tool<HumanInputSingleChoiceInput,
     const choices = params.choices;
     console.log("question: " + question);
     console.log("choices: " + choices);
-    let answer = await context.callback?.hooks.onHumanInputSingleChoice?.(question, choices);
-    if (!answer) {
-      console.error("Cannot get user's answer.");
-      return {status: "Error: Cannot get user's answer.", answer: ""};
-    } else {
+    let onHumanInputSingleChoice = context.callback?.hooks.onHumanInputSingleChoice;
+    if (onHumanInputSingleChoice) {
+      let answer = await onHumanInputSingleChoice(question, choices);
       console.log("answer: " + answer);
       return {status: "OK", answer: answer};
+    } else {
+      console.error("Cannot get user's answer.");
+      return {status: "Error: Cannot get user's answer.", answer: ""};
     }
   }
 }
@@ -122,13 +124,14 @@ export class HumanInputMultipleChoice implements Tool<HumanInputMultipleChoiceIn
     const choices = params.choices;
     console.log("question: " + question);
     console.log("choices: " + choices);
-    let answer = await context.callback?.hooks.onHumanInputMultipleChoice?.(question, choices);
-    if (!answer) {
-      console.error("Cannot get user's answer.");
-      return {status: "Error: Cannot get user's answer.", answer: []};
-    } else {
+    let onHumanInputMultipleChoice = context.callback?.hooks.onHumanInputMultipleChoice;
+    if (onHumanInputMultipleChoice) {
+      let answer = await onHumanInputMultipleChoice(question, choices)
       console.log("answer: " + answer);
       return {status: "OK", answer: answer};
+    } else {
+      console.error("Cannot get user's answer.");
+      return {status: "Error: Cannot get user's answer.", answer: []};
     }
   }
 }
@@ -159,13 +162,14 @@ export class HumanOperate implements Tool<HumanOperateInput, HumanOperateResult>
     }
     const reason = params.reason;
     console.log("reason: " + reason);
-    let userOperation = await context.callback?.hooks.onHumanOperate?.(reason);
-    if (!userOperation) {
-      console.error("Cannot get user's operation.");
-      return {status: "Error: Cannot get user's operation.", userOperation: ""};
-    } else {
+    let onHumanOperate = await context.callback?.hooks.onHumanOperate;
+    if (onHumanOperate) {
+      let userOperation = await onHumanOperate(reason);
       console.log("userOperation: " + userOperation);
       return {status: "OK", userOperation: userOperation};
+    } else {
+      console.error("Cannot get user's operation.");
+      return {status: "Error: Cannot get user's operation.", userOperation: ""};
     }
   }
 }
