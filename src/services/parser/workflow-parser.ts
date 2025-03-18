@@ -2,13 +2,14 @@ import { Workflow, WorkflowNode, NodeInput, NodeOutput } from '../../types/workf
 import { ValidationResult, ValidationError } from '../../types/parser.types';
 import { WorkflowImpl } from '../../models/workflow';
 import { ActionImpl } from '../../models/action';
+import { LyvoConfig } from '@/types';
 
 export class WorkflowParser {
   /**
    * Parse JSON string into runtime Workflow object
    * @throws {Error} if JSON is invalid or schema validation fails
    */
-  static parse(json: string): Workflow {
+  static parse(json: string, lyvoConfig: LyvoConfig): Workflow {
     let parsed: any;
 
     try {
@@ -24,7 +25,7 @@ export class WorkflowParser {
       );
     }
 
-    return this.toRuntime(parsed);
+    return this.toRuntime(parsed, lyvoConfig);
   }
 
   /**
@@ -154,11 +155,12 @@ export class WorkflowParser {
     };
   }
 
-  private static toRuntime(json: any): Workflow {
+  private static toRuntime(json: any, lyvoConfig: LyvoConfig): Workflow {
     const variables = new Map(Object.entries(json.variables || {}));
     const workflow = new WorkflowImpl(
       json.id,
       json.name,
+      lyvoConfig,
       json.description,
       [],
       variables,
