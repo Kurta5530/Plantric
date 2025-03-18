@@ -357,7 +357,7 @@ function request_user_help(task_id: string, failure_type: string, failure_messag
     position: fixed;
     top: 5px;
     left: 18px;
-    z-index: 9999;
+    z-index: 999999;
     background-color: #FEF0ED;
     color: white;
     padding: 16px;
