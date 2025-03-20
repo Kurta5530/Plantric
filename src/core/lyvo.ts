@@ -61,8 +61,35 @@ export class Lyvo {
         workingWindowId: undefined,
       };
     }
+    this.registerTools();
+  }
 
-    Lyvo.tools.forEach((tool) => this.toolRegistry.registerTool(tool));
+  private registerTools() {
+    let tools = Array.from(Lyvo.tools.entries()).map(([_key, tool]) => tool);
+
+    // filter human tools by callbacks
+    const callback = this.lyvoConfig.callback;
+    if (callback) {
+      const hooks = callback.hooks;
+
+      // these tools could not work without corresponding hook
+      const tool2isHookExists: { [key: string]: boolean } = {
+        "human_input_text": Boolean(hooks.onHumanInputText),
+        "human_input_single_choice": Boolean(hooks.onHumanInputSingleChoice),
+        "human_input_multiple_choice": Boolean(hooks.onHumanInputMultipleChoice),
+        "human_operate": Boolean(hooks.onHumanOperate),
+      };
+      tools = tools.filter(tool => {
+        if (tool.name in tool2isHookExists) {
+          let isHookExists = tool2isHookExists[tool.name]
+          return isHookExists;
+        } else {
+          return true;
+        }
+      });
+    }
+    
+    tools.forEach(tool => this.toolRegistry.registerTool(tool));
   }
 
   public async generate(prompt: string, param?: LyvoInvokeParam): Promise<Workflow> {
@@ -84,7 +111,7 @@ export class Lyvo {
     return workflow;
   }
 
-  public async execute(workflow: Workflow, callback?: WorkflowCallback): Promise<NodeOutput[]> {
+  public async execute(workflow: Workflow): Promise<NodeOutput[]> {
     // Inject LLM provider at workflow level
     workflow.llmProvider = this.llmProvider;
 
@@ -104,7 +131,7 @@ export class Lyvo {
       }
     }
 
-    return await workflow.execute(callback);
+    return await workflow.execute(this.lyvoConfig.callback);
   }
 
   public async cancel(workflow: Workflow): Promise<void> {
