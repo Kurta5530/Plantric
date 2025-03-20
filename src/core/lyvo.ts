@@ -57,9 +57,8 @@ export class Lyvo {
     if (lyvoConfig) {
       this.lyvoConfig = lyvoConfig;
     } else {
-      this.lyvoConfig = {
-        workingWindowId: undefined,
-      };
+      console.warn("`lyvoConfig` is missing when construct `Lyvo` instance, default to `{}`");
+      this.lyvoConfig = {};
     }
     this.registerTools();
   }
@@ -87,6 +86,8 @@ export class Lyvo {
           return true;
         }
       });
+    } else {
+      console.warn("`lyvoConfig.callback` is missing when construct `Lyvo` instance.")
     }
     
     tools.forEach(tool => this.toolRegistry.registerTool(tool));
