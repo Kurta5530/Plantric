@@ -38,11 +38,17 @@ export class HumanInputText implements Tool<HumanInputTextInput, HumanInputTextR
     console.log("question: " + question);
     let onHumanInputText = context.callback?.hooks.onHumanInputText;
     if (onHumanInputText) {
-      let answer = await onHumanInputText(question);
+      let answer;
+      try {
+        answer = await onHumanInputText(question);
+      } catch (e) {
+        console.error(e);
+        return {status: "Error: Cannot get user's answer.", answer: ""};
+      }
       console.log("answer: " + answer);
       return {status: "OK", answer: answer};
     } else {
-      console.error("Cannot get user's answer.");
+      console.error("`onHumanInputText` not implemented");
       return {status: "Error: Cannot get user's answer.", answer: ""};
     }
   }
@@ -82,11 +88,17 @@ export class HumanInputSingleChoice implements Tool<HumanInputSingleChoiceInput,
     console.log("choices: " + choices);
     let onHumanInputSingleChoice = context.callback?.hooks.onHumanInputSingleChoice;
     if (onHumanInputSingleChoice) {
-      let answer = await onHumanInputSingleChoice(question, choices);
+      let answer;
+      try {
+        answer = await onHumanInputSingleChoice(question, choices);
+      } catch (e) {
+        console.error(e);
+        return {status: "Error: Cannot get user's answer.", answer: ""};
+      }
       console.log("answer: " + answer);
       return {status: "OK", answer: answer};
     } else {
-      console.error("Cannot get user's answer.");
+      console.error("`onHumanInputSingleChoice` not implemented");
       return {status: "Error: Cannot get user's answer.", answer: ""};
     }
   }
@@ -126,7 +138,13 @@ export class HumanInputMultipleChoice implements Tool<HumanInputMultipleChoiceIn
     console.log("choices: " + choices);
     let onHumanInputMultipleChoice = context.callback?.hooks.onHumanInputMultipleChoice;
     if (onHumanInputMultipleChoice) {
-      let answer = await onHumanInputMultipleChoice(question, choices)
+      let answer;
+      try {
+        answer = await onHumanInputMultipleChoice(question, choices)
+      } catch (e) {
+        console.error(e);
+        return {status: "`onHumanInputMultipleChoice` not implemented", answer: []};
+      }
       console.log("answer: " + answer);
       return {status: "OK", answer: answer};
     } else {
@@ -162,9 +180,15 @@ export class HumanOperate implements Tool<HumanOperateInput, HumanOperateResult>
     }
     const reason = params.reason;
     console.log("reason: " + reason);
-    let onHumanOperate = await context.callback?.hooks.onHumanOperate;
+    let onHumanOperate = context.callback?.hooks.onHumanOperate;
     if (onHumanOperate) {
-      let userOperation = await onHumanOperate(reason);
+      let userOperation;
+      try {
+        userOperation = await onHumanOperate(reason);
+      } catch (e) {
+        console.error(e);
+        return {status: "`onHumanOperate` not implemented", userOperation: ""};
+      }
       console.log("userOperation: " + userOperation);
       return {status: "OK", userOperation: userOperation};
     } else {
