@@ -5,6 +5,7 @@ import { ActionImpl } from '../../models/action';
 import { ToolRegistry } from '../../core/tool-registry';
 import { createWorkflowPrompts, createWorkflowGenerationTool } from './templates';
 import { v4 as uuidv4 } from 'uuid';
+import { LyvoConfig } from '@/types';
 
 export class WorkflowGenerator {
   message_history: Message[] = [];
@@ -14,19 +15,19 @@ export class WorkflowGenerator {
     private toolRegistry: ToolRegistry
   ) {}
 
-  async generateWorkflow(prompt: string): Promise<Workflow> {
-    return this.doGenerateWorkflow(prompt, false);
+  async generateWorkflow(prompt: string, lyvoConfig: LyvoConfig): Promise<Workflow> {
+    return this.doGenerateWorkflow(prompt, false, lyvoConfig);
   }
 
-  async generateWorkflowFromJson(json: any): Promise<Workflow> {
-    return this.createWorkflowFromData(json);
+  async generateWorkflowFromJson(json: any, lyvoConfig: LyvoConfig): Promise<Workflow> {
+    return this.createWorkflowFromData(json, lyvoConfig);
   }
 
-  async modifyWorkflow(prompt: string): Promise<Workflow> {
-    return this.doGenerateWorkflow(prompt, true);
+  async modifyWorkflow(prompt: string, lyvoConfig: LyvoConfig): Promise<Workflow> {
+    return this.doGenerateWorkflow(prompt, true, lyvoConfig);
   }
 
-  private async doGenerateWorkflow(prompt: string, modify: boolean): Promise<Workflow> {
+  private async doGenerateWorkflow(prompt: string, modify: boolean, lyvoConfig: LyvoConfig): Promise<Workflow> {
     // Create prompts with current set of tools
     const prompts = createWorkflowPrompts(this.toolRegistry.getToolDefinitions());
 
@@ -90,19 +91,7 @@ export class WorkflowGenerator {
 
     const workflowData = response.toolCalls[0].input.workflow as any;
 
-    // Forcibly add special tools
-    const specialTools = [
-      "cancel_workflow",
-      "human_input_text",
-      "human_operate",
-    ]
-    for (const node of workflowData.nodes) {
-      for (const tool of specialTools) {
-        if (!node.action.tools.includes(tool)) {
-          node.action.tools.push(tool);
-        }
-      }
-    }
+    
 
     // Validate all tools exist
     for (const node of workflowData.nodes) {
@@ -121,13 +110,14 @@ export class WorkflowGenerator {
     console.log(workflowData);
     console.log("Debug the workflow...Done")    
     
-    return this.createWorkflowFromData(workflowData);
+    return this.createWorkflowFromData(workflowData, lyvoConfig);
   }
 
-  private createWorkflowFromData(data: any): Workflow {
+  private createWorkflowFromData(data: any, lyvoConfig: LyvoConfig): Workflow {
     const workflow = new WorkflowImpl(
       data.id,
       data.name,
+      lyvoConfig,
       data.description || '',
       [],
       new Map(Object.entries(data.variables || {})),

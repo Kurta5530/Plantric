@@ -2,6 +2,7 @@ import { WorkflowGenerator } from '../services/workflow/generator';
 import { ClaudeProvider } from '../services/llm/claude-provider';
 import { OpenaiProvider } from '../services/llm/openai-provider';
 import {
+  LLMConfig,
   LyvoConfig,
   LyvoInvokeParam,
   LLMProvider,
@@ -11,6 +12,7 @@ import {
   OpenaiConfig,
   WorkflowCallback,
   NodeOutput,
+  ExecutionContext,
 } from '../types';
 import { ToolRegistry } from './tool-registry';
 
@@ -21,34 +23,74 @@ export class Lyvo {
   public static tools: Map<string, Tool<any, any>> = new Map();
 
   private llmProvider: LLMProvider;
+  private lyvoConfig: LyvoConfig;
   private toolRegistry = new ToolRegistry();
   private workflowGeneratorMap = new Map<Workflow, WorkflowGenerator>();
 
-  constructor(config: LyvoConfig) {
-    if (typeof config == 'string') {
-      this.llmProvider = new ClaudeProvider(config);
-    } else if ('llm' in config) {
-      if (config.llm == 'claude') {
-        let claudeConfig = config as ClaudeConfig;
+  constructor(llmConfig: LLMConfig, lyvoConfig?: LyvoConfig) {
+    if (typeof llmConfig == 'string') {
+      this.llmProvider = new ClaudeProvider(llmConfig);
+    } else if ('llm' in llmConfig) {
+      if (llmConfig.llm == 'claude') {
+        let claudeConfig = llmConfig as ClaudeConfig;
         this.llmProvider = new ClaudeProvider(
           claudeConfig.apiKey,
           claudeConfig.modelName,
           claudeConfig.options
         );
-      } else if (config.llm == 'openai') {
-        let openaiConfig = config as OpenaiConfig;
+      } else if (llmConfig.llm == 'openai') {
+        let openaiConfig = llmConfig as OpenaiConfig;
         this.llmProvider = new OpenaiProvider(
           openaiConfig.apiKey,
           openaiConfig.modelName,
           openaiConfig.options
         );
       } else {
-        throw new Error('Unknown parameter: llm > ' + config['llm']);
+        let msg: string = 'Unknown parameter: llm > ' + llmConfig['llm'];
+        console.error(msg)
+        throw new Error(msg);
       }
     } else {
-      this.llmProvider = config as LLMProvider;
+      this.llmProvider = llmConfig as LLMProvider;
     }
-    Lyvo.tools.forEach((tool) => this.toolRegistry.registerTool(tool));
+
+    if (lyvoConfig) {
+      this.lyvoConfig = lyvoConfig;
+    } else {
+      console.warn("`lyvoConfig` is missing when construct `Lyvo` instance, default to `{}`");
+      this.lyvoConfig = {};
+    }
+    this.registerTools();
+  }
+
+  private registerTools() {
+    let tools = Array.from(Lyvo.tools.entries()).map(([_key, tool]) => tool);
+
+    // filter human tools by callbacks
+    const callback = this.lyvoConfig.callback;
+    if (callback) {
+      const hooks = callback.hooks;
+
+      // these tools could not work without corresponding hook
+      const tool2isHookExists: { [key: string]: boolean } = {
+        "human_input_text": Boolean(hooks.onHumanInputText),
+        "human_input_single_choice": Boolean(hooks.onHumanInputSingleChoice),
+        "human_input_multiple_choice": Boolean(hooks.onHumanInputMultipleChoice),
+        "human_operate": Boolean(hooks.onHumanOperate),
+      };
+      tools = tools.filter(tool => {
+        if (tool.name in tool2isHookExists) {
+          let isHookExists = tool2isHookExists[tool.name]
+          return isHookExists;
+        } else {
+          return true;
+        }
+      });
+    } else {
+      console.warn("`lyvoConfig.callback` is missing when construct `Lyvo` instance.")
+    }
+    
+    tools.forEach(tool => this.toolRegistry.registerTool(tool));
   }
 
   public async generate(prompt: string, param?: LyvoInvokeParam): Promise<Workflow> {
@@ -65,12 +107,12 @@ export class Lyvo {
       }
     }
     const generator = new WorkflowGenerator(this.llmProvider, toolRegistry);
-    const workflow = await generator.generateWorkflow(prompt);
+    const workflow = await generator.generateWorkflow(prompt, this.lyvoConfig);
     this.workflowGeneratorMap.set(workflow, generator);
     return workflow;
   }
 
-  public async execute(workflow: Workflow, callback?: WorkflowCallback): Promise<NodeOutput[]> {
+  public async execute(workflow: Workflow): Promise<NodeOutput[]> {
     // Inject LLM provider at workflow level
     workflow.llmProvider = this.llmProvider;
 
@@ -90,7 +132,7 @@ export class Lyvo {
       }
     }
 
-    return await workflow.execute(callback);
+    return await workflow.execute(this.lyvoConfig.callback);
   }
 
   public async cancel(workflow: Workflow): Promise<void> {
@@ -100,7 +142,7 @@ export class Lyvo {
 
   public async modify(workflow: Workflow, prompt: string): Promise<Workflow> {
     const generator = this.workflowGeneratorMap.get(workflow) as WorkflowGenerator;
-    workflow = await generator.modifyWorkflow(prompt);
+    workflow = await generator.modifyWorkflow(prompt, this.lyvoConfig);
     this.workflowGeneratorMap.set(workflow, generator);
     return workflow;
   }
@@ -132,8 +174,9 @@ export class Lyvo {
     if (typeof tool === 'string') {
       tool = this.getTool(tool);
     }
-    let context = {
+    let context: ExecutionContext = {
       llmProvider: this.llmProvider,
+      lyvoConfig: this.lyvoConfig,
       variables: new Map<string, unknown>(),
       tools: new Map<string, Tool<any, any>>(),
       callback,
