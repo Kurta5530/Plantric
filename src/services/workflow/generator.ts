@@ -19,6 +19,10 @@ export class WorkflowGenerator {
     return this.doGenerateWorkflow(prompt, false, lyvoConfig);
   }
 
+  async generateWorkflowFromJson(json: any, lyvoConfig: LyvoConfig): Promise<Workflow> {
+    return this.createWorkflowFromData(json, lyvoConfig);
+  }
+
   async modifyWorkflow(prompt: string, lyvoConfig: LyvoConfig): Promise<Workflow> {
     return this.doGenerateWorkflow(prompt, true, lyvoConfig);
   }
