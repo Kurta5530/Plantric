@@ -1,6 +1,5 @@
+import { LLMProviderFactory } from '../services/llm/provider-factory';
 import { WorkflowGenerator } from '../services/workflow/generator';
-import { ClaudeProvider } from '../services/llm/claude-provider';
-import { OpenaiProvider } from '../services/llm/openai-provider';
 import {
   LLMConfig,
   LyvoConfig,
@@ -8,8 +7,6 @@ import {
   LLMProvider,
   Tool,
   Workflow,
-  ClaudeConfig,
-  OpenaiConfig,
   WorkflowCallback,
   NodeOutput,
   ExecutionContext,
@@ -28,38 +25,15 @@ export class Lyvo {
   private workflowGeneratorMap = new Map<Workflow, WorkflowGenerator>();
 
   constructor(llmConfig: LLMConfig, lyvoConfig?: LyvoConfig) {
-    if (typeof llmConfig == 'string') {
-      this.llmProvider = new ClaudeProvider(llmConfig);
-    } else if ('llm' in llmConfig) {
-      if (llmConfig.llm == 'claude') {
-        let claudeConfig = llmConfig as ClaudeConfig;
-        this.llmProvider = new ClaudeProvider(
-          claudeConfig.apiKey,
-          claudeConfig.modelName,
-          claudeConfig.options
-        );
-      } else if (llmConfig.llm == 'openai') {
-        let openaiConfig = llmConfig as OpenaiConfig;
-        this.llmProvider = new OpenaiProvider(
-          openaiConfig.apiKey,
-          openaiConfig.modelName,
-          openaiConfig.options
-        );
-      } else {
-        let msg: string = 'Unknown parameter: llm > ' + llmConfig['llm'];
-        console.error(msg)
-        throw new Error(msg);
-      }
-    } else {
-      this.llmProvider = llmConfig as LLMProvider;
-    }
-
+    this.llmProvider = LLMProviderFactory.buildLLMProvider(llmConfig);
+    
     if (lyvoConfig) {
       this.lyvoConfig = lyvoConfig;
     } else {
       console.warn("`lyvoConfig` is missing when construct `Lyvo` instance, default to `{}`");
       this.lyvoConfig = {};
     }
+    
     this.registerTools();
   }
 
