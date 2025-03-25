@@ -30,3 +30,13 @@ export interface LyvoConfig {
 export interface LyvoInvokeParam {
   tools?: Array<string> | Array<Tool<any, any>>;
 }
+
+export interface WorkflowResult {
+  isSuccessful: boolean,
+  summary: string,
+  payload: WorkflowTranscript | WorkflowArtifact,
+}
+
+export type WorkflowTranscript = string
+
+export interface WorkflowArtifact {} // TODO

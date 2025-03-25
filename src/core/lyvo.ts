@@ -8,8 +8,8 @@ import {
   Tool,
   Workflow,
   WorkflowCallback,
-  NodeOutput,
   ExecutionContext,
+  WorkflowResult
 } from '../types';
 import { ToolRegistry } from './tool-registry';
 
@@ -86,7 +86,7 @@ export class Lyvo {
     return workflow;
   }
 
-  public async execute(workflow: Workflow): Promise<NodeOutput[]> {
+  public async execute(workflow: Workflow): Promise<WorkflowResult> {
     // Inject LLM provider at workflow level
     workflow.llmProvider = this.llmProvider;
 
@@ -106,7 +106,9 @@ export class Lyvo {
       }
     }
 
-    return await workflow.execute(this.lyvoConfig.callback);
+    const result = await workflow.execute(this.lyvoConfig.callback);
+    console.log(result);
+    return result;
   }
 
   public async cancel(workflow: Workflow): Promise<void> {
