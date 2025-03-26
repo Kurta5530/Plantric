@@ -3,6 +3,7 @@ import { WorkflowGenerator } from '../services/workflow/generator';
 import {
   LLMConfig,
   LyvoConfig,
+  DefaultLyvoConfig,
   LyvoInvokeParam,
   LLMProvider,
   Tool,
@@ -27,15 +28,18 @@ export class Lyvo {
   constructor(llmConfig: LLMConfig, lyvoConfig?: LyvoConfig) {
     console.info("using Lyvo@" + process.env.COMMIT_HASH);
     this.llmProvider = LLMProviderFactory.buildLLMProvider(llmConfig);
-    
-    if (lyvoConfig) {
-      this.lyvoConfig = lyvoConfig;
-    } else {
-      console.warn("`lyvoConfig` is missing when construct `Lyvo` instance");
-      this.lyvoConfig = { chromeProxy: chrome };
-    }
-    
+    this.lyvoConfig = this.buildLyvoConfig();
     this.registerTools();
+  }
+
+  private buildLyvoConfig(lyvoConfig?: Partial<LyvoConfig>): LyvoConfig {
+    if (!lyvoConfig) {
+      console.warn("`lyvoConfig` is missing when construct `Lyvo` instance");
+    }
+    return {
+      ...DefaultLyvoConfig,
+      ...lyvoConfig,
+    };
   }
 
   private registerTools() {
