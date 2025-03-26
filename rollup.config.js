@@ -4,6 +4,9 @@ import typescript from '@rollup/plugin-typescript';
 import json from '@rollup/plugin-json';
 import copy from 'rollup-plugin-copy';
 import replace from '@rollup/plugin-replace';
+import { execSync } from 'child_process';
+
+const commitHash = execSync('git rev-parse HEAD').toString().trim();
 
 export default [
   {
@@ -27,7 +30,10 @@ export default [
         declarationDir: 'dist',
         include: ['src/**/*'],
         exclude: ['node_modules', 'dist', 'src/extension/**/*', 'src/web/**/*', 'src/nodejs/**/*', 'src/fellou/**/*']
-      })
+      }),
+      replace({
+        'process.env.COMMIT_HASH': JSON.stringify(commitHash),
+      }),
     ]
   },
   {
@@ -52,6 +58,9 @@ export default [
         include: ['src/common/**/*', 'src/types/*', 'src/extension/**/*'],
         exclude: ['src/extension/script']
       }),
+      replace({
+        'process.env.COMMIT_HASH': JSON.stringify(commitHash),
+      }),
       copy({
         targets: [
           { src: 'src/extension/script', dest: 'dist/extension' }
@@ -73,7 +82,10 @@ export default [
         declaration: false,
         include: ['src/common/**/*', 'src/extension/content/*'],
         declarationDir: 'dist'
-      })
+      }),
+      replace({
+        'process.env.COMMIT_HASH': JSON.stringify(commitHash),
+      }),
     ]
   },
   {
@@ -96,7 +108,10 @@ export default [
         declaration: true,
         declarationDir: 'dist',
         include: ['src/common/**/*', 'src/types/*', 'src/web/**/*']
-      })
+      }),
+      replace({
+        'process.env.COMMIT_HASH': JSON.stringify(commitHash),
+      }),
     ]
   },
   {
@@ -116,7 +131,10 @@ export default [
         declaration: true,
         declarationDir: 'dist',
         include: ['src/common/**/*', 'src/types/*', 'src/nodejs/**/*']
-      })
+      }),
+      replace({
+        'process.env.COMMIT_HASH': JSON.stringify(commitHash),
+      }),
     ]
   },
   {
@@ -136,6 +154,9 @@ export default [
         declaration: true,
         declarationDir: 'dist',
         include: ['src/common/**/*', 'src/types/*', 'src/nodejs/**/*']
+      }),
+      replace({
+        'process.env.COMMIT_HASH': JSON.stringify(commitHash),
       }),
       replace({
         preventAssignment: true,
@@ -165,7 +186,10 @@ export default [
         declaration: true,
         declarationDir: 'dist',
         include: ['src/common/**/*', 'src/types/*', 'src/fellou/**/*']
-      })
+      }),
+      replace({
+        'process.env.COMMIT_HASH': JSON.stringify(commitHash),
+      }),
     ]
   }
 ];

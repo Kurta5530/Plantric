@@ -25,6 +25,7 @@ export class Lyvo {
   private workflowGeneratorMap = new Map<Workflow, WorkflowGenerator>();
 
   constructor(llmConfig: LLMConfig, lyvoConfig?: LyvoConfig) {
+    console.info("using Lyvo@" + process.env.COMMIT_HASH);
     this.llmProvider = LLMProviderFactory.buildLLMProvider(llmConfig);
     
     if (lyvoConfig) {
