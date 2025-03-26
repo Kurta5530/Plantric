@@ -19,10 +19,21 @@ export async function getWindowId(context: ExecutionContext): Promise<number> {
       }
     }
   }
+
   if (!windowId) {
     const window = await context.lyvoConfig.chromeProxy.windows.getCurrent();
     windowId = window.id;
   }
+
+  // `window.FELLOU_WINDOW_ID` is a feature of Downstream Caller
+  if (!windowId) {
+    windowId = (window as any).FELLOU_WINDOW_ID;
+  }
+
+  if (!windowId) {
+    console.warn("`getWindowId()` returns " + windowId);
+  }
+
   return windowId as number;
 }
 
