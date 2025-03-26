@@ -1,6 +1,7 @@
 import { WebSearchParam, WebSearchResult } from '../../types/tools.types';
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
 import { MsgEvent, CountDownLatch, sleep, injectScript } from '../utils';
+import { createChromeApiProxy } from '@/common/chrome/proxy';
 
 /**
  * Web Search
@@ -115,6 +116,7 @@ function buildDeepSearchUrl(url: string, keyword: string) {
 
 // Event
 const tabsUpdateEvent = new MsgEvent();
+// TODO: replace `chrome` with `context.lyvoConfig.chromeProxy`
 chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
   await tabsUpdateEvent.publish({ tabId, changeInfo, tab });
 });
@@ -136,7 +138,7 @@ async function deepSearch(
   let closeWindow = false;
   if (!windowId) {
     // open new window
-    let window = await chrome.windows.create({
+    let window = await context.lyvoConfig.chromeProxy.windows.create({
       type: 'normal',
       state: 'maximized',
       url: null,
@@ -152,7 +154,7 @@ async function deepSearch(
   let searchInfo = await doPageContent(context, taskId, detailLinkGroups, windowId);
   console.log('searchInfo: ', searchInfo);
   // close window
-  closeWindow && chrome.windows.remove(windowId);
+  closeWindow && context.lyvoConfig.chromeProxy.windows.remove(windowId);
   return searchInfo;
 }
 
@@ -179,7 +181,7 @@ async function doDetailLinkGroups(
       // script name & build search URL
       const { filename, url } = buildDeepSearchUrl(searchs[i].url, searchs[i].keyword);
       // open new Tab
-      let tab = await chrome.tabs.create({
+      let tab = await context.lyvoConfig.chromeProxy.tabs.create({
         url: url,
         windowId,
       });
@@ -193,11 +195,11 @@ async function doDetailLinkGroups(
         if (obj.changeInfo.status === 'complete') {
           tabsUpdateEvent.removeListener(eventId);
           // inject js
-          await injectScript(tab.id as number, filename);
+          await injectScript(context.lyvoConfig.chromeProxy, tab.id as number, filename);
           await sleep(1000);
           // crawler the search page details page
           // { links: [{ title, url }] }
-          let detailLinks: any = await chrome.tabs.sendMessage(tab.id as number, {
+          let detailLinks: any = await context.lyvoConfig.chromeProxy.tabs.sendMessage(tab.id as number, {
             type: 'page:getDetailLinks',
             keyword: searchs[i].keyword,
           });
@@ -209,10 +211,10 @@ async function doDetailLinkGroups(
           let links = detailLinks.links.slice(0, detailsMaxNum);
           detailLinkGroups.push({ url, links, filename });
           countDownLatch.countDown();
-          chrome.tabs.remove(tab.id as number);
+          context.lyvoConfig.chromeProxy.tabs.remove(tab.id as number);
         } else if (obj.changeInfo.status === 'unloaded') {
           countDownLatch.countDown();
-          chrome.tabs.remove(tab.id as number);
+          context.lyvoConfig.chromeProxy.tabs.remove(tab.id as number);
           tabsUpdateEvent.removeListener(eventId);
         }
       }, eventId);
@@ -260,7 +262,7 @@ async function doPageContent(
     for (let j = 0; j < links.length; j++) {
       let link = links[j];
       // open new tab
-      let tab = await chrome.tabs.create({
+      let tab = await context.lyvoConfig.chromeProxy.tabs.create({
         url: link.url,
         windowId,
       });
@@ -282,10 +284,10 @@ async function doPageContent(
             tabsUpdateEvent.removeListener(eventId);
             try {
               // Inject script and get page content
-              await injectScript(tab.id as number, filename);
+              await injectScript(context.lyvoConfig.chromeProxy, tab.id as number, filename);
               await sleep(1000);
 
-              let result: any = await chrome.tabs.sendMessage(tab.id as number, {
+              let result: any = await context.lyvoConfig.chromeProxy.tabs.sendMessage(tab.id as number, {
                 type: 'page:getContent',
               });
 
@@ -302,13 +304,13 @@ async function doPageContent(
             } finally {
               searchInfo.running--;
               countDownLatch.countDown();
-              chrome.tabs.remove(tab.id as number);
+              context.lyvoConfig.chromeProxy.tabs.remove(tab.id as number);
               tabsUpdateEvent.removeListener(eventId);
             }
           } else if (obj.changeInfo.status === 'unloaded') {
             searchInfo.running--;
             countDownLatch.countDown();
-            chrome.tabs.remove(tab.id as number);
+            context.lyvoConfig.chromeProxy.tabs.remove(tab.id as number);
             tabsUpdateEvent.removeListener(eventId);
             reject(new Error('Tab unloaded')); // Reject if the tab is unloaded
           }
@@ -324,7 +326,7 @@ async function doPageContent(
         searchInfo.failed++;
         searchInfo.failedLinks.push(link);
         countDownLatch.countDown();
-        chrome.tabs.remove(tab.id as number); // Clean up tab on failure
+        context.lyvoConfig.chromeProxy.tabs.remove(tab.id as number); // Clean up tab on failure
       }
     }
   }

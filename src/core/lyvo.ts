@@ -30,8 +30,8 @@ export class Lyvo {
     if (lyvoConfig) {
       this.lyvoConfig = lyvoConfig;
     } else {
-      console.warn("`lyvoConfig` is missing when construct `Lyvo` instance, default to `{}`");
-      this.lyvoConfig = {};
+      console.warn("`lyvoConfig` is missing when construct `Lyvo` instance");
+      this.lyvoConfig = { chromeProxy: chrome };
     }
     
     this.registerTools();

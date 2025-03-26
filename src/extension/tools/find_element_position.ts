@@ -52,7 +52,7 @@ async function executeWithHtmlElement(
   task_prompt: string
 ): Promise<ElementRect | null> {
   let tabId = await getTabId(context);
-  let pseudoHtml = await executeScript(tabId, extractOperableElements, []);
+  let pseudoHtml = await executeScript(context.lyvoConfig.chromeProxy, tabId, extractOperableElements, []);
   let messages: Message[] = [
     {
       role: 'user',
@@ -81,7 +81,7 @@ ${pseudoHtml}
   let json = content.substring(content.indexOf('{'), content.indexOf('}') + 1);
   let elementId = JSON.parse(json).elementId;
   if (elementId) {
-    return await executeScript(tabId, getOperableElementRect, [elementId]);
+    return await executeScript(context.lyvoConfig.chromeProxy, tabId, getOperableElementRect, [elementId]);
   }
   return null;
 }
@@ -92,7 +92,7 @@ async function executeWithBrowserUse(
 ): Promise<ElementRect | null> {
   let tabId = await getTabId(context);
   let windowId = await getWindowId(context);
-  let screenshot_result = await screenshot(windowId, false);
+  let screenshot_result = await screenshot(context.lyvoConfig.chromeProxy, windowId, false);
   let messages: Message[] = [
     {
       role: 'user',

@@ -108,43 +108,43 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           if (params.text == null) {
             throw new Error('text parameter is required');
           }
-          await browser.clear_input_by(tabId, selector_xpath, params.index);
-          result = await browser.type_by(tabId, params.text, selector_xpath, params.index);
+          await browser.clear_input_by(context.lyvoConfig.chromeProxy, tabId, selector_xpath, params.index);
+          result = await browser.type_by(context.lyvoConfig.chromeProxy, tabId, params.text, selector_xpath, params.index);
           await sleep(200);
           break;
         case 'click':
           if (params.index == null) {
             throw new Error('index parameter is required');
           }
-          result = await browser.left_click_by(tabId, selector_xpath, params.index);
+          result = await browser.left_click_by(context.lyvoConfig.chromeProxy, tabId, selector_xpath, params.index);
           await sleep(100);
           break;
         case 'right_click':
           if (params.index == null) {
             throw new Error('index parameter is required');
           }
-          result = await browser.right_click_by(tabId, selector_xpath, params.index);
+          result = await browser.right_click_by(context.lyvoConfig.chromeProxy, tabId, selector_xpath, params.index);
           await sleep(100);
           break;
         case 'double_click':
           if (params.index == null) {
             throw new Error('index parameter is required');
           }
-          result = await browser.double_click_by(tabId, selector_xpath, params.index);
+          result = await browser.double_click_by(context.lyvoConfig.chromeProxy, tabId, selector_xpath, params.index);
           await sleep(100);
           break;
         case 'scroll_to':
           if (params.index == null) {
             throw new Error('index parameter is required');
           }
-          result = await browser.scroll_to_by(tabId, selector_xpath, params.index);
+          result = await browser.scroll_to_by(context.lyvoConfig.chromeProxy, tabId, selector_xpath, params.index);
           await sleep(500);
           break;
         case 'extract_content':
-          let tab = await chrome.tabs.get(tabId);
-          await injectScript(tabId);
+          let tab = await context.lyvoConfig.chromeProxy.tabs.get(tabId);
+          await injectScript(context.lyvoConfig.chromeProxy, tabId);
           await sleep(200);
-          let content = await executeScript(tabId, () => {
+          let content = await executeScript(context.lyvoConfig.chromeProxy, tabId, () => {
             return lyvo.extractHtmlContent();
           }, []);
           result = {
@@ -157,7 +157,7 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           if (params.index == null) {
             throw new Error('index parameter is required');
           }
-          result = await browser.get_dropdown_options(tabId, selector_xpath, params.index);
+          result = await browser.get_dropdown_options(context.lyvoConfig.chromeProxy, tabId, selector_xpath, params.index);
           break;
         case 'select_dropdown_option':
           if (params.index == null) {
@@ -167,6 +167,7 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
             throw new Error('text parameter is required');
           }
           result = await browser.select_dropdown_option(
+            context.lyvoConfig.chromeProxy, 
             tabId,
             params.text,
             selector_xpath,
@@ -175,14 +176,14 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           break;
         case 'screenshot_extract_element':
           await sleep(100);
-          await injectScript(tabId, 'build_dom_tree.js');
+          await injectScript(context.lyvoConfig.chromeProxy, tabId, 'build_dom_tree.js');
           await sleep(100);
-          let element_result = await executeScript(tabId, () => {
+          let element_result = await executeScript(context.lyvoConfig.chromeProxy, tabId, () => {
             return (window as any).get_clickable_elements(true);
           }, []);
           context.selector_map = element_result.selector_map;
-          let screenshot = await browser.screenshot(windowId, true);
-          await executeScript(tabId, () => {
+          let screenshot = await browser.screenshot(context.lyvoConfig.chromeProxy, windowId, true);
+          await executeScript(context.lyvoConfig.chromeProxy, tabId, () => {
             return (window as any).remove_highlight();
           }, []);
           result = { image: screenshot.image, text: element_result.element_str };

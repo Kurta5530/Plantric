@@ -11,7 +11,7 @@ import {
   LLMResponse,
 } from '../types/llm.types';
 import { ExecutionLogger } from '@/utils/execution-logger';
-import { WriteContextTool } from '@/universal_tools/write_context';
+import { WriteContextTool } from '@/common/tools/write_context';
 
 function createReturnTool(
   actionName: string,

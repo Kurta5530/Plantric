@@ -24,6 +24,7 @@ export type LLMConfig = ClaudeApiKey | ClaudeConfig | OpenaiConfig | LLMProvider
 
 export interface LyvoConfig {
   workingWindowId?: number,
+  chromeProxy?: any, // should be original `chrome` or a proxy created by `createChromeApiProxy()`
   callback?: WorkflowCallback,
 }
 
