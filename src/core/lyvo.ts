@@ -28,11 +28,11 @@ export class Lyvo {
   constructor(llmConfig: LLMConfig, lyvoConfig?: LyvoConfig) {
     console.info("using Lyvo@" + process.env.COMMIT_HASH);
     this.llmProvider = LLMProviderFactory.buildLLMProvider(llmConfig);
-    this.lyvoConfig = this.buildLyvoConfig();
+    this.lyvoConfig = this.buildLyvoConfig(lyvoConfig);
     this.registerTools();
   }
 
-  private buildLyvoConfig(lyvoConfig?: Partial<LyvoConfig>): LyvoConfig {
+  private buildLyvoConfig(lyvoConfig: Partial<LyvoConfig> | undefined): LyvoConfig {
     if (!lyvoConfig) {
       console.warn("`lyvoConfig` is missing when construct `Lyvo` instance");
     }
