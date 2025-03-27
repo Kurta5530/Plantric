@@ -79,39 +79,28 @@ export async function getTabId(context: ExecutionContext): Promise<number> {
 export function getCurrentTabId(chromeProxy: any, windowId?: number | undefined): Promise<number | undefined> {
   return new Promise((resolve, reject) => {
     console.debug("[getCurrentTabId] get the active tabId on: ", { windowId });
+    let queryInfo: chrome.tabs.QueryInfo;
     if (windowId !== undefined) {
       console.debug(`[getCurrentTabId] get the active tab in window (windowId=${windowId})...`);
-      chromeProxy.tabs.query({ windowId, active: true }, (tabs: chrome.tabs.Tab[]) => {
-        if (chromeProxy.runtime.lastError) {
-          console.error(`[getCurrentTabId] failed to get: `, chromeProxy.runtime.lastError);
-          reject(chromeProxy.runtime.lastError);
-          return;
-        }
-        if (tabs.length > 0) {
-          console.debug(`[getCurrentTabId] found the tab, ID=${tabs[0].id}`);
-          resolve(tabs[0].id);
-        } else {
-          console.debug(`[getCurrentTabId] cannot find the tab, returns undefined`);
-          resolve(undefined);
-        }
-      });
+      queryInfo = { windowId, active: true };
     } else {
       console.debug(`[getCurrentTabId] get the active tabId on current window`);
-      chromeProxy.tabs.query({ active: true, currentWindow: true }, (tabs: chrome.tabs.Tab[]) => {
-        if (chromeProxy.runtime.lastError) {
-          console.error(`[getCurrentTabId] failed to get: `, chromeProxy.runtime.lastError);
-          reject(chromeProxy.runtime.lastError);
-          return;
-        }
-        if (tabs.length > 0) {
-          console.debug(`[getCurrentTabId] found the tab, ID=${tabs[0].id}`);
-          resolve(tabs[0].id);
-        } else {
-          console.debug(`[getCurrentTabId] cannot find the tab, returns undefined`);
-          resolve(undefined);
-        }
-      });
+      queryInfo = { active: true, currentWindow: true };
     }
+    chrome.tabs.query(queryInfo, (tabs: chrome.tabs.Tab[]) => {
+      if (chromeProxy.runtime.lastError) {
+        console.error(`[getCurrentTabId] failed to get: `, chromeProxy.runtime.lastError);
+        reject(chromeProxy.runtime.lastError);
+        return;
+      }
+      if (tabs.length > 0) {
+        console.debug(`[getCurrentTabId] found the tab, ID=${tabs[0].id}`);
+        resolve(tabs[0].id);
+      } else {
+        console.debug(`[getCurrentTabId] cannot find the tab, returns undefined`);
+        resolve(undefined);
+      }
+    });
   });
 }
 
