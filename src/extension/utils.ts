@@ -49,16 +49,22 @@ export async function getTabId(context: ExecutionContext): Promise<number> {
   }
 
   if (!tabId) {
-    let windowId = context.variables.get('windowId') as any;
+    console.log("tabId is empty");
+    let windowId = await getWindowId(context);
+    console.log(`windowId=${windowId}`);
     if (windowId) {
       try {
         tabId = await getCurrentTabId(context.lyvoConfig.chromeProxy, windowId);
+        console.log("getCurrentTabId(context.lyvoConfig.chromeProxy, windowId) returns " + tabId);
       } catch (e) {
         tabId = await getCurrentTabId(context.lyvoConfig.chromeProxy);
+        console.log("getCurrentTabId(context.lyvoConfig.chromeProxy, windowId) throws an error");
+        console.log("getCurrentTabId(context.lyvoConfig.chromeProxy) returns " + tabId);
         context.variables.delete('windowId');
       }
     } else {
       tabId = await getCurrentTabId(context.lyvoConfig.chromeProxy);
+      console.log("getCurrentTabId(context.lyvoConfig.chromeProxy) #2 returns " + tabId);
     }
 
     if (!tabId) {
@@ -72,30 +78,40 @@ export async function getTabId(context: ExecutionContext): Promise<number> {
 
 export function getCurrentTabId(chromeProxy: any, windowId?: number | undefined): Promise<number | undefined> {
   return new Promise((resolve, reject) => {
-    chromeProxy.tabs.query({ windowId, active: true, lastFocusedWindow: true }, function (tabs: any) {
-      if (chromeProxy.runtime.lastError) {
-        console.error('Chrome runtime error:', chromeProxy.runtime.lastError);
-        reject(chromeProxy.runtime.lastError);
-        return;
-      }
-      if (tabs.length > 0) {
-        resolve(tabs[0].id);
-      } else {
-        chromeProxy.tabs.query({ windowId, active: true, currentWindow: true }, function (_tabs: any) {
-          if (_tabs.length > 0) {
-            resolve(_tabs[0].id);
-            return;
-          } else {
-            chromeProxy.tabs.query(
-              { windowId, status: 'complete', currentWindow: true },
-              function (__tabs: any) {
-                resolve(__tabs.length ? __tabs[__tabs.length - 1].id : undefined);
-              }
-            );
-          }
-        });
-      }
-    });
+    console.debug("[getCurrentTabId] get the active tabId on: ", { windowId });
+    if (windowId !== undefined) {
+      console.debug(`[getCurrentTabId] get the active tab in window (windowId=${windowId})...`);
+      chromeProxy.tabs.query({ windowId, active: true }, (tabs: chrome.tabs.Tab[]) => {
+        if (chromeProxy.runtime.lastError) {
+          console.error(`[getCurrentTabId] failed to get: `, chromeProxy.runtime.lastError);
+          reject(chromeProxy.runtime.lastError);
+          return;
+        }
+        if (tabs.length > 0) {
+          console.debug(`[getCurrentTabId] found the tab, ID=${tabs[0].id}`);
+          resolve(tabs[0].id);
+        } else {
+          console.debug(`[getCurrentTabId] cannot find the tab, returns undefined`);
+          resolve(undefined);
+        }
+      });
+    } else {
+      console.debug(`[getCurrentTabId] get the active tabId on current window`);
+      chromeProxy.tabs.query({ active: true, currentWindow: true }, (tabs: chrome.tabs.Tab[]) => {
+        if (chromeProxy.runtime.lastError) {
+          console.error(`[getCurrentTabId] failed to get: `, chromeProxy.runtime.lastError);
+          reject(chromeProxy.runtime.lastError);
+          return;
+        }
+        if (tabs.length > 0) {
+          console.debug(`[getCurrentTabId] found the tab, ID=${tabs[0].id}`);
+          resolve(tabs[0].id);
+        } else {
+          console.debug(`[getCurrentTabId] cannot find the tab, returns undefined`);
+          resolve(undefined);
+        }
+      });
+    }
   });
 }
 
