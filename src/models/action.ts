@@ -50,7 +50,7 @@ function createReturnTool(
 }
 
 export class ActionImpl implements Action {
-  private readonly maxRounds: number = 10; // Default max rounds
+  private readonly maxRounds: number = 100; // Default max rounds
   private writeContextTool: WriteContextTool;
   private toolResults: Map<string, any> = new Map();
   private logger: ExecutionLogger = new ExecutionLogger();
@@ -481,9 +481,8 @@ export class ActionImpl implements Action {
     1. Use tools when needed to accomplish the task
     2. Think step by step about what needs to be done
     3. Return the output of the subtask using the 'return_output' tool when you are done; prefer using the 'tool_use_id' parameter to refer to the output of a tool call over providing a long text as the value
-    4. Use the context to store important information for later reference, but use it sparingly: most of the time, the output of the subtask should be sufficient for the next steps
-    5. If there are any unclear points during the task execution, please use the human-related tool to inquire with the user
-    6. If user intervention is required during the task execution, please use the human-related tool to transfer the operation rights to the user
+    4. If there are any unclear points during the task execution, please use the human-related tool to inquire with the user
+    5. If user intervention is required during the task execution, please use the human-related tool to transfer the operation rights to the user
     `;
   }
 
@@ -495,18 +494,7 @@ export class ActionImpl implements Action {
       .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
       .join('\n');
 
-    return `You are executing a subtask in the workflow. The workflow description is as follows:
-    ${workflowDescription}
-
-    The subtask description is as follows:
-    ${actionDescription}
-
-    The input to the subtask is as follows:
-    ${inputDescription}
-
-    There are some variables stored in the context that you can use for reference:
-    ${contextVariables}
-    `;
+    return `You are executing a subtask in the workflow. The subtask description is as follows: ${actionDescription}`;
   }
 
   // Static factory method

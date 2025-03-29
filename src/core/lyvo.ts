@@ -26,6 +26,7 @@ export class Lyvo {
 
   constructor(llmConfig: LLMConfig, lyvoConfig?: LyvoConfig) {
     console.info("using Lyvo@" + process.env.COMMIT_HASH);
+    console.warn("this version is POC, should not used for production");
     this.llmProvider = LLMProviderFactory.buildLLMProvider(llmConfig);
     this.lyvoConfig = this.buildLyvoConfig(lyvoConfig);
     this.registerTools();
@@ -77,21 +78,26 @@ export class Lyvo {
   }
 
   public async generate(prompt: string, param?: LyvoInvokeParam): Promise<Workflow> {
-    let toolRegistry = this.toolRegistry;
-    if (param && param.tools && param.tools.length > 0) {
-      toolRegistry = new ToolRegistry();
-      for (let i = 0; i < param.tools.length; i++) {
-        let tool = param.tools[i];
-        if (typeof tool == 'string') {
-          toolRegistry.registerTool(this.getTool(tool));
-        } else {
-          toolRegistry.registerTool(tool);
-        }
-      }
-    }
-    const generator = new WorkflowGenerator(this.llmProvider, toolRegistry);
-    const workflow = await generator.generateWorkflow(prompt, this.lyvoConfig);
-    this.workflowGeneratorMap.set(workflow, generator);
+    const json = {
+      "id": "workflow_id",
+      "name": prompt,
+      "description": prompt,
+      "nodes": [
+        {
+          "id": "sub_task_id",
+          "type": "action",
+          "action": {
+            "type": "prompt",
+            "name": prompt,
+            "description": prompt,
+            "tools": this.toolRegistry.getToolEnum(),
+          },
+          "dependencies": []
+        },
+      ],
+    };
+    const generator = new WorkflowGenerator(this.llmProvider, this.toolRegistry);  
+    let workflow = await generator.generateWorkflowFromJson(json, this.lyvoConfig);
     return workflow;
   }
 
