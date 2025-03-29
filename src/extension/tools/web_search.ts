@@ -117,9 +117,11 @@ function buildDeepSearchUrl(url: string, keyword: string) {
 // Event
 const tabsUpdateEvent = new MsgEvent();
 // TODO: replace `chrome` with `context.lyvoConfig.chromeProxy`
-chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
-  await tabsUpdateEvent.publish({ tabId, changeInfo, tab });
-});
+if (typeof chrome !== 'undefined') {
+  chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
+    await tabsUpdateEvent.publish({ tabId, changeInfo, tab });
+  });
+}
 
 /**
  * deep search
