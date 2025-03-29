@@ -44,6 +44,9 @@ function createReturnTool(
 
     async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
       context.variables.set(`__action_${actionName}_output`, params);
+      console.info("debug the output...");
+      console.log(params);
+      console.info("debug the output...done");
       return { success: true };
     },
   };
