@@ -161,6 +161,7 @@ export class WorkflowParser {
       json.id,
       json.name,
       lyvoConfig,
+      json,
       json.description,
       [],
       variables,

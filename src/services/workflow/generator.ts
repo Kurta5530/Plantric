@@ -94,21 +94,6 @@ export class WorkflowGenerator {
     // debug
     console.log("Debug the workflow...")
     console.log({ ...workflowData});
-
-    // Add workflow summary subtask
-    (workflowData.nodes as any[]).push({
-      "id": "final",
-      "type": "action",
-      "dependencies": workflowData.nodes.map((node: { id: any; }) => node.id),
-      "action": {
-        "type": "prompt",
-        "name": "Summarize the workflow.",
-        "description": "Summarize briefly what this workflow has accomplished. Your summary should be based on user\'s original query. You MUST use the 'summary_workflow' tool.",
-        "tools": [
-          "summary_workflow"
-        ]
-      },
-    })
     console.log("Debug the workflow...Done")    
     
     // Validate all tools exist
@@ -131,6 +116,7 @@ export class WorkflowGenerator {
       data.id,
       data.name,
       lyvoConfig,
+      data,
       data.description || '',
       [],
       new Map(Object.entries(data.variables || {})),

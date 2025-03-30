@@ -1,6 +1,7 @@
 import { ExecutionLogger, LogOptions } from "@/utils/execution-logger";
-import { Workflow, WorkflowNode, NodeInput, ExecutionContext, LLMProvider, WorkflowCallback } from "../types";
+import { Workflow, WorkflowNode, NodeInput, ExecutionContext, LLMProvider, WorkflowCallback, WorkflowSummary } from "../types";
 import { LyvoConfig, WorkflowResult } from "../types/lyvo.types";
+import { summarizeWorkflow } from "@/common/summarize-workflow";
 
 export class WorkflowImpl implements Workflow {
   abort?: boolean;
@@ -11,6 +12,7 @@ export class WorkflowImpl implements Workflow {
     public id: string,
     public name: string,
     private lyvoConfig: LyvoConfig,
+    private rawWorkflow: string,
     public description?: string,
     public nodes: WorkflowNode[] = [],
     public variables: Map<string, unknown> = new Map(),
@@ -124,19 +126,23 @@ export class WorkflowImpl implements Workflow {
 
     let node_outputs = terminalNodes.map(node => node.output);
     
+    let workflowSummary: WorkflowSummary | undefined;
+    if (this.llmProvider) {
+      workflowSummary = await summarizeWorkflow(this.llmProvider, this, this.variables, node_outputs);
+    } else {
+      console.warn("WorkflowImpl.llmProvider is undefined, cannot generate workflow summary");
+    }
+    
     // Special context variables
     console.log("debug special context variables...");
-    const workflowIsSuccessful = this.variables.get("workflow_is_successful");
-    console.log(workflowIsSuccessful);
-    const workflowSummary = this.variables.get("workflow_summary");
-    console.log(workflowSummary);
-    const workflowTranscript = this.variables.get("workflow_transcript");
+
+    const workflowTranscript = this.variables.get("workflow_transcript") as string | undefined;
     console.log(workflowTranscript);
 
     return {
-      isSuccessful: workflowIsSuccessful as boolean,
-      summary: workflowSummary as string,
-      payload: workflowTranscript as string,
+      isSuccessful: workflowSummary?.isSuccessful,
+      summary: workflowSummary?.summary,
+      payload: workflowTranscript,
     };
   }
 
@@ -202,5 +208,9 @@ export class WorkflowImpl implements Workflow {
     };
 
     return !this.nodes.some(node => hasCycle(node.id));
+  }
+
+  public getRawWorkflowJson(): string {
+    return this.rawWorkflow;
   }
 }
