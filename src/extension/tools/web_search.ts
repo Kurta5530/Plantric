@@ -17,6 +17,10 @@ export class WebSearch implements Tool<WebSearchParam, WebSearchResult[]> {
     this.input_schema = {
       type: 'object',
       properties: {
+        url: {
+          type: 'string',
+          description: 'the URL of search engine, like https://www.bing.com'
+        },
         query: {
           type: 'string',
           description: 'search for keywords',
@@ -44,7 +48,7 @@ export class WebSearch implements Tool<WebSearchParam, WebSearchResult[]> {
     let query = params.query;
     let maxResults = params.maxResults;
     if (!url) {
-      url = 'https://www.google.com';
+      url = 'https://www.bing.com';
     }
     let taskId = new Date().getTime() + '';
     let searchs = [{ url: url as string, keyword: query as string }];
