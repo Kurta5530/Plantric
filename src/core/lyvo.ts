@@ -10,9 +10,7 @@ import {
   Workflow,
   WorkflowCallback,
   ExecutionContext,
-  WorkflowResult,
-  LLMParameters,
-  Message
+  WorkflowResult
 } from '../types';
 import { ToolRegistry } from './tool-registry';
 
@@ -76,24 +74,7 @@ export class Lyvo {
   }
 
   public async generate(prompt: string, param?: LyvoInvokeParam): Promise<Workflow> {
-    const messages: Message[] = [
-      {
-        role: 'system',
-        content: 'You are an intelligent agent responsible for operating the browser to meet user needs. However, before you officially begin, you need to recite and elaborate on this requirement to deepen your understanding of it. Now the user has sent the following requirement:',
-      },
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ];
-    console.log(messages);
-    const params: LLMParameters = {
-      temperature: 0.7,
-      maxTokens: 8192,
-    };
-    const response = await this.llmProvider.generateText(messages, params);
-
-    prompt = `Your ultimate task is: """${prompt}""". If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.\n\nThe detail of the task are as follows: ${response.textContent}`;
+    prompt = `Your ultimate task is: """${prompt}""". If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.`;
     const json = {
       "id": "workflow_id",
       "name": prompt,
