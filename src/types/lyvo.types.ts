@@ -28,20 +28,15 @@ export interface LyvoConfig {
   callback?: WorkflowCallback,
 }
 
-export const DefaultLyvoConfig: LyvoConfig = {
-  workingWindowId: undefined,
-  chromeProxy: chrome,
-  callback: undefined,
-};
 
 export interface LyvoInvokeParam {
   tools?: Array<string> | Array<Tool<any, any>>;
 }
 
 export interface WorkflowResult {
-  isSuccessful: boolean,
-  summary: string,
-  payload: WorkflowTranscript | WorkflowArtifact,
+  isSuccessful?: boolean,
+  summary?: string,
+  payload?: WorkflowTranscript | WorkflowArtifact,
 }
 
 export type WorkflowTranscript = string

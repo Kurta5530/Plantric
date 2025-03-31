@@ -3,7 +3,6 @@ import { WorkflowGenerator } from '../services/workflow/generator';
 import {
   LLMConfig,
   LyvoConfig,
-  DefaultLyvoConfig,
   LyvoInvokeParam,
   LLMProvider,
   Tool,
@@ -37,8 +36,13 @@ export class Lyvo {
     if (!lyvoConfig) {
       console.warn("`lyvoConfig` is missing when construct `Lyvo` instance");
     }
+    const defaultLyvoConfig: LyvoConfig = {
+      workingWindowId: undefined,
+      chromeProxy: chrome,
+      callback: undefined,
+    };
     return {
-      ...DefaultLyvoConfig,
+      ...defaultLyvoConfig,
       ...lyvoConfig,
     };
   }
