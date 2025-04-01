@@ -19,87 +19,89 @@ document.addEventListener('mousemove', (event) => {
 });
 
 // TODO: replace `chrome` with `context.lyvoConfig.chromeProxy`
-chrome.runtime.onMessage.addListener(function (request: any, sender: any, sendResponse: any) {
-  (async () => {
-    try {
-      switch (request.type) {
-        case 'lyvo:message': {
-          let result = null;
-          if (lyvo.subListeners && lyvo.subListeners[request.event]) {
-            try {
-              result = await lyvo.subListeners[request.event](request.params);
-            } catch (e) {
-              console.log(e);
+if (typeof chrome !== 'undefined') {
+  chrome.runtime.onMessage.addListener(function (request: any, sender: any, sendResponse: any) {
+    (async () => {
+      try {
+        switch (request.type) {
+          case 'lyvo:message': {
+            let result = null;
+            if (lyvo.subListeners && lyvo.subListeners[request.event]) {
+              try {
+                result = await lyvo.subListeners[request.event](request.params);
+              } catch (e) {
+                console.log(e);
+              }
             }
+            sendResponse(result);
+            break;
           }
-          sendResponse(result);
-          break;
+          case 'page:getDetailLinks': {
+            let result = await lyvo.getDetailLinks(request.search);
+            sendResponse(result);
+            break;
+          }
+          case 'page:getContent': {
+            let result = await lyvo.getContent(request.search);
+            sendResponse(result);
+            break;
+          }
+          case 'request_user_help': {
+            request_user_help(request.task_id, request.failure_type, request.failure_message);
+            sendResponse(true);
+            break;
+          }
+          case 'computer:type': {
+            sendResponse(type(request));
+            break;
+          }
+          case 'computer:mouse_move': {
+            sendResponse(mouse_move(request));
+            break;
+          }
+          case 'computer:left_click': {
+            sendResponse(simulateMouseEvent(request, ['mousedown', 'mouseup', 'click'], 0));
+            break;
+          }
+          case 'computer:right_click': {
+            sendResponse(simulateMouseEvent(request, ['mousedown', 'mouseup', 'contextmenu'], 2));
+            break;
+          }
+          case 'computer:double_click': {
+            sendResponse(
+              simulateMouseEvent(
+                request,
+                ['mousedown', 'mouseup', 'click', 'mousedown', 'mouseup', 'click', 'dblclick'],
+                0
+              )
+            );
+            break;
+          }
+          case 'computer:scroll_to': {
+            sendResponse(scroll_to(request));
+            break;
+          }
+          case 'computer:cursor_position': {
+            sendResponse({ coordinate: [lyvo.lastMouseX, lyvo.lastMouseY] });
+            break;
+          }
+          case 'computer:get_dropdown_options': {
+            sendResponse(get_dropdown_options(request));
+            break;
+          }
+          case 'computer:select_dropdown_option': {
+            sendResponse(select_dropdown_option(request));
+            break;
+          }
         }
-        case 'page:getDetailLinks': {
-          let result = await lyvo.getDetailLinks(request.search);
-          sendResponse(result);
-          break;
-        }
-        case 'page:getContent': {
-          let result = await lyvo.getContent(request.search);
-          sendResponse(result);
-          break;
-        }
-        case 'request_user_help': {
-          request_user_help(request.task_id, request.failure_type, request.failure_message);
-          sendResponse(true);
-          break;
-        }
-        case 'computer:type': {
-          sendResponse(type(request));
-          break;
-        }
-        case 'computer:mouse_move': {
-          sendResponse(mouse_move(request));
-          break;
-        }
-        case 'computer:left_click': {
-          sendResponse(simulateMouseEvent(request, ['mousedown', 'mouseup', 'click'], 0));
-          break;
-        }
-        case 'computer:right_click': {
-          sendResponse(simulateMouseEvent(request, ['mousedown', 'mouseup', 'contextmenu'], 2));
-          break;
-        }
-        case 'computer:double_click': {
-          sendResponse(
-            simulateMouseEvent(
-              request,
-              ['mousedown', 'mouseup', 'click', 'mousedown', 'mouseup', 'click', 'dblclick'],
-              0
-            )
-          );
-          break;
-        }
-        case 'computer:scroll_to': {
-          sendResponse(scroll_to(request));
-          break;
-        }
-        case 'computer:cursor_position': {
-          sendResponse({ coordinate: [lyvo.lastMouseX, lyvo.lastMouseY] });
-          break;
-        }
-        case 'computer:get_dropdown_options': {
-          sendResponse(get_dropdown_options(request));
-          break;
-        }
-        case 'computer:select_dropdown_option': {
-          sendResponse(select_dropdown_option(request));
-          break;
-        }
+      } catch (e) {
+        console.log('onMessage error', e);
+        sendResponse(false);
       }
-    } catch (e) {
-      console.log('onMessage error', e);
-      sendResponse(false);
-    }
-  })();
-  return true;
-});
+    })();
+    return true;
+  });
+}
 
 function type(request: any): boolean {
   let text = request.text as string;
