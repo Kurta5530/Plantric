@@ -23,6 +23,7 @@ export class Lyvo {
   private lyvoConfig: LyvoConfig;
   private toolRegistry = new ToolRegistry();
   private workflowGeneratorMap = new Map<Workflow, WorkflowGenerator>();
+  private prompt: string = "";
 
   constructor(llmConfig: LLMConfig, lyvoConfig?: LyvoConfig) {
     console.info("using Lyvo@" + process.env.COMMIT_HASH);
@@ -78,7 +79,27 @@ export class Lyvo {
   }
 
   public async generate(prompt: string, param?: LyvoInvokeParam): Promise<Workflow> {
-    prompt = `Your ultimate task is: """${prompt}""". If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.`;
+    this.prompt = prompt;
+    let toolRegistry = this.toolRegistry;
+    if (param && param.tools && param.tools.length > 0) {
+      toolRegistry = new ToolRegistry();
+      for (let i = 0; i < param.tools.length; i++) {
+        let tool = param.tools[i];
+        if (typeof tool == 'string') {
+          toolRegistry.registerTool(this.getTool(tool));
+        } else {
+          toolRegistry.registerTool(tool);
+        }
+      }
+    }
+    const generator = new WorkflowGenerator(this.llmProvider, toolRegistry);
+    const workflow = await generator.generateWorkflow(prompt, this.lyvoConfig);
+    this.workflowGeneratorMap.set(workflow, generator);
+    return workflow;  }
+
+  public async execute(workflow: Workflow): Promise<WorkflowResult> {
+    let prompt = `Your ultimate task is: """${this.prompt}""". If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.`;
+    ;
     const json = {
       "id": "workflow_id",
       "name": prompt,
@@ -109,11 +130,8 @@ export class Lyvo {
       ],
     };
     const generator = new WorkflowGenerator(this.llmProvider, this.toolRegistry);  
-    let workflow = await generator.generateWorkflowFromJson(json, this.lyvoConfig);
-    return workflow;
-  }
+    workflow = await generator.generateWorkflowFromJson(json, this.lyvoConfig);
 
-  public async execute(workflow: Workflow): Promise<WorkflowResult> {
     // Inject LLM provider at workflow level
     workflow.llmProvider = this.llmProvider;
 
