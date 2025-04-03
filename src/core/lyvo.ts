@@ -112,12 +112,34 @@ export class Lyvo {
             "type": "prompt",
             "name": prompt,
             "description": prompt,
-            "tools": this.toolRegistry.getToolEnum(),
+            "tools": [
+              "browser_use",
+              "cancel_workflow",
+              "document_agent",
+              "element_click",
+              "export_file",
+              "extract_content",
+              "find_element_position",
+              "get_all_tabs",
+              "open_url",
+              "request_login",
+              "screenshot",
+              "tab_management",
+              "web_search"
+            ],
           },
           "dependencies": []
         },
       ],
     };
+    console.log("debug the workflow...");
+    console.log(json);
+    console.log("debug the workflow...done");
+    
+    console.log("debug the LLMProvider...");
+    console.log(this.llmProvider);
+    console.log("debug the LLMProvider...done");
+    
     const generator = new WorkflowGenerator(this.llmProvider, this.toolRegistry);  
     workflow = await generator.generateWorkflowFromJson(json, this.lyvoConfig);
 
