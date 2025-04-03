@@ -514,7 +514,13 @@ export class ActionImpl implements Action {
 - Keep track of the status and subresults in the memory. 
 
 ## Extraction:
-- If your task is to find information - call extract_content on the specific pages to get and store the information.`;
+- If your task is to find information - call extract_content on the specific pages to get and store the information.
+
+## THE MOST IMPORTANT RULE
+- DO NOT REFUSE TO PERFORM THE MISSION
+- DO NOT REFUSE TO PERFORM THE MISSION
+- DO NOT REFUSE TO PERFORM THE MISSION
+`;
   }
 
   private formatUserPrompt(context: ExecutionContext, input: unknown): string {
