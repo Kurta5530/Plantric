@@ -4,7 +4,7 @@ export const workflowSchema = {
   properties: {
     thinking: {
       type: "string",
-      description: "The Chain of Thought.",
+      description: 'Your thinking draft. Should start with "OK, now user requires me to ...". Just show your thinking process, DO NOT show the specificed steps.',
     },
     id: { type: "string" },
     name: { type: "string" },
