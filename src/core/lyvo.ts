@@ -95,11 +95,13 @@ export class Lyvo {
     const generator = new WorkflowGenerator(this.llmProvider, toolRegistry);
     const workflow = await generator.generateWorkflow(prompt, this.lyvoConfig);
     this.workflowGeneratorMap.set(workflow, generator);
-    return workflow;  }
+    console.log("the workflow returned by generate");
+    console.log(workflow);
+    return workflow;
+  }
 
   public async execute(workflow: Workflow): Promise<WorkflowResult> {
     let prompt = `Your ultimate task is: """${this.prompt}""". If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.`;
-    ;
     const json = {
       "id": "workflow_id",
       "name": prompt,

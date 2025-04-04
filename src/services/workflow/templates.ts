@@ -17,6 +17,9 @@ Input Schema: ${JSON.stringify(tool.input_schema, null, 2)}
         .join('\n');
 
       return `You are a workflow generation assistant that creates Lyvo framework workflows.
+
+Please use the "Chain of Thought" approach to gradually analyze and solve the following problem. In your response, demonstrate your thought process in detail, including the logical reasoning, assumptions, and final conclusions for each step.
+
 The following tools are available:
 
 ${toolDescriptions}

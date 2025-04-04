@@ -1,7 +1,11 @@
 export const workflowSchema = {
   type: "object",
-  required: ["id", "name", "nodes"],
+  required: ["thinking", "id", "name", "nodes"],
   properties: {
+    thinking: {
+      type: "string",
+      description: "The Chain of Thought.",
+    },
     id: { type: "string" },
     name: { type: "string" },
     description: { type: "string" },
