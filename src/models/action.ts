@@ -482,9 +482,9 @@ export class ActionImpl implements Action {
 
 ## GENERIC:
 - Your tool calling must be always JSON with the specified format.
-- If you are required to login, try to bypass it (e.g. close it)
+- You should have a screenshot after every action to make sure the tools executed successfully.
 - User's requirement maybe not prefect, but user will not give you any further information, you should explore by yourself and follow the common sense
-- If you encountered a problem, try to bypass it or explore other ways and links
+- If you encountered a problem (e.g. be required to login), try to bypass it or explore other ways and links
 - Before you return output, reflect on whether the output provided *is what users need* and *whether it is too concise*
 - If you find the what user want, click the URL and show it on the current page.
 
