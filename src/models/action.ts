@@ -478,7 +478,10 @@ export class ActionImpl implements Action {
   }
 
   private formatSystemPrompt(): string {
-    return `You are an AI agent designed to automate browser tasks. Your goal is to accomplish the ultimate task following the rules.
+    const now = new Date();
+    const formattedTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    console.log("Now is " + formattedTime);
+    return `You are an AI agent designed to automate browser tasks. Your goal is to accomplish the ultimate task following the rules. Now is ${formattedTime}.
 
 ## GENERIC:
 - Your tool calling must be always JSON with the specified format.
