@@ -127,7 +127,11 @@ export class Lyvo {
               "request_login",
               "screenshot",
               "tab_management",
-              "web_search"
+              "web_search",
+              "human_input_text",
+              "human_input_single_choice",
+              "human_input_multiple_choice",
+              "human_operate",
             ],
           },
           "dependencies": []
