@@ -130,7 +130,13 @@ export class WorkflowGenerator {
     // Add nodes to workflow
     if (Array.isArray(data.nodes)) {
       data.nodes.forEach((nodeData: any) => {
-        const tools = nodeData.action.tools.map((toolName: string) =>
+        const tools = nodeData.action.tools.filter((toolName: string) => {
+          let hasTool = this.toolRegistry.hasTools([toolName]);
+          if (!hasTool) {
+            console.warn(`The [${toolName}] tool does not exist.`);
+          }
+          return hasTool;
+        }).map((toolName: string) =>
           this.toolRegistry.getTool(toolName)
         );
 
