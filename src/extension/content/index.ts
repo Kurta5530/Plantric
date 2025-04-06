@@ -18,7 +18,6 @@ document.addEventListener('mousemove', (event) => {
   lyvo.lastMouseY = event.clientY;
 });
 
-// TODO: replace `chrome` with `context.lyvoConfig.chromeProxy`
 if (typeof chrome !== 'undefined') {
   chrome.runtime.onMessage.addListener(function (request: any, sender: any, sendResponse: any) {
     (async () => {
@@ -463,7 +462,6 @@ function request_user_help(task_id: string, failure_type: string, failure_messag
     cursor: pointer;
   `;
   resolvedBut.onclick = () => {
-    // TODO: replace `chrome` with `context.lyvoConfig.chromeProxy`
     chrome.runtime.sendMessage({ type: 'issue_resolved', task_id, failure_type }, () => {
       notification.remove();
     });
