@@ -341,7 +341,7 @@ export class ActionImpl implements Action {
     // Prepare initial messages
     const messages: Message[] = [
       { role: 'system', content: this.formatSystemPrompt() },
-      { role: 'user', content: this.formatUserPrompt(context, input) },
+      { role: 'user', content: this.formatUserPrompt(this.name, this.description) },
     ];
 
     this.logger.logActionStart(this.name, input, context);
@@ -526,15 +526,10 @@ export class ActionImpl implements Action {
 `;
   }
 
-  private formatUserPrompt(context: ExecutionContext, input: unknown): string {
-    const workflowDescription = context.workflow?.description || null;
-    const actionDescription = `${this.name} -- ${this.description}`;
-    const inputDescription = JSON.stringify(input, null, 2) || null;
-    const contextVariables = Array.from(context.variables.entries())
-      .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
-      .join('\n');
-
-    return `You are executing a subtask in the workflow. The subtask description is as follows: ${actionDescription}`;
+  private formatUserPrompt(name: string, description: string): string {
+    let  prompt = `${name} -- ${description}`;
+    prompt = `Your ultimate task is: """${prompt}""". If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.`;
+    return `You are executing a subtask in the workflow. The subtask description is as follows: ${prompt}`;
   }
 
   // Static factory method
