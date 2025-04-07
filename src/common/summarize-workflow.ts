@@ -49,8 +49,12 @@ ${JSON.stringify(nodeOutputs)}
             type: 'string',
             description: 'Your summary in one paragraph with fluent and natural language, including task status and outcome of the task.',
           },
+          payload: {
+            type: 'string',
+            description: 'If the workflow has to give a output like a report or a draft, use the `payload`. If the workflow do not have any output (like click a link), leave it blank.'
+          }
         },
-        required: ['summary'],
+        required: ['isSuccessful', 'summary'],
       },
     }],
     toolChoice: { type: 'tool', name: 'summarize_workflow' },
@@ -61,5 +65,6 @@ ${JSON.stringify(nodeOutputs)}
   return {
     isSuccessful: response.toolCalls[0].input.isSuccessful as boolean,
     summary: response.toolCalls[0].input.summary as string,
+    payload: response.toolCalls[0].input.payload as string | undefined,
   };
 }

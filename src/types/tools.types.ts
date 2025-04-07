@@ -157,6 +157,7 @@ export interface HumanOperateResult {
 export interface WorkflowSummary {
   isSuccessful: boolean,
   summary: string,
+  payload: string | undefined,
 }
 
 export interface DocumentAgentToolInput {

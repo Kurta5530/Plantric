@@ -136,13 +136,15 @@ export class WorkflowImpl implements Workflow {
     // Special context variables
     console.log("debug special context variables...");
 
-    const workflowTranscript = this.variables.get("workflow_transcript") as string | undefined;
-    console.log(workflowTranscript);
-
+    let workflowPayload = this.variables.get("workflow_transcript") as string | undefined;
+    console.log(workflowPayload);
+    if (!workflowPayload) {
+      workflowPayload = workflowSummary?.payload;
+    }
     return {
       isSuccessful: workflowSummary?.isSuccessful,
       summary: workflowSummary?.summary,
-      payload: workflowTranscript,
+      payload: workflowPayload,
     };
   }
 
