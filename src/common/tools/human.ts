@@ -72,6 +72,14 @@ export class HumanInputSingleChoice implements Tool<HumanInputSingleChoiceInput,
         choices: {
           type: 'array',
           description: 'All of the choices.',
+          items: {
+            type: 'object',
+            properties: {
+              choice: {
+                type: 'string',
+              }
+            }
+          }
         }
       },
       required: ['question', 'choices'],
@@ -122,6 +130,14 @@ export class HumanInputMultipleChoice implements Tool<HumanInputMultipleChoiceIn
         choices: {
           type: 'array',
           description: 'All of the choices.',
+          items: {
+            type: 'object',
+            properties: {
+              choice: {
+                type: 'string',
+              }
+            }
+          }
         }
       },
       required: ['question', 'choices'],
