@@ -23,7 +23,7 @@ export class Lyvo {
   private lyvoConfig: LyvoConfig;
   private toolRegistry = new ToolRegistry();
   private workflowGeneratorMap = new Map<Workflow, WorkflowGenerator>();
-  private prompt: string = "";
+  public prompt: string = "";
 
   constructor(llmConfig: LLMConfig, lyvoConfig?: LyvoConfig) {
     console.info("using Lyvo@" + process.env.COMMIT_HASH);
