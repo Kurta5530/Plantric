@@ -1,5 +1,5 @@
 import { ExecutionLogger, LogOptions } from "@/utils/execution-logger";
-import { Workflow, WorkflowNode, NodeInput, ExecutionContext, LLMProvider, WorkflowCallback, WorkflowSummary } from "../types";
+import { Workflow, WorkflowNode, NodeInput, ExecutionContext, LLMProvider, WorkflowCallback, WorkflowSummary, Message } from "../types";
 import { LyvoConfig, WorkflowResult } from "../types/lyvo.types";
 import { summarizeWorkflow } from "@/common/summarize-workflow";
 
@@ -46,12 +46,12 @@ export class WorkflowImpl implements Workflow {
     const executed = new Set<string>();
     const executing = new Set<string>();
 
-    const executeNode = async (nodeId: string): Promise<void> => {
+    const executeNode = async (nodeId: string): Promise<Message[]> => {
       if (this.abort) {
         throw new Error("Abort");
       }
       if (executed.has(nodeId)) {
-        return;
+        return [];
       }
 
       if (executing.has(nodeId)) {
@@ -104,15 +104,23 @@ export class WorkflowImpl implements Workflow {
       if (context.__abort) {
         throw new Error("Abort");
       } else if (context.__skip) {
-        return;
+        return [];
       }
 
-      node.output.value = await node.action.execute(node.input, node.output, context);
-
+      const action_executing_result = await node.action.execute(node.input, node.output, context);
+      node.output.value = action_executing_result.nodeOutput;
+      
+      const action_reacts = action_executing_result.reacts;
+      console.log("debug `action_reacts`...");
+      console.log(action_reacts);
+      console.log("debug `action_reacts`...done");
+      
       executing.delete(nodeId);
       executed.add(nodeId);
 
       callback && await callback.hooks.afterSubtask?.(node, context, node.output?.value);
+
+      return action_reacts;
     };
 
     // Execute all terminal nodes (nodes with no dependents)
@@ -120,7 +128,7 @@ export class WorkflowImpl implements Workflow {
       !this.nodes.some(n => n.dependencies.includes(node.id))
     );
 
-    await Promise.all(terminalNodes.map(node => executeNode(node.id)));
+    const all_reacts = await Promise.all(terminalNodes.map(node => executeNode(node.id)));
 
     callback && await callback.hooks.afterWorkflow?.(this, this.variables);
 
@@ -136,13 +144,15 @@ export class WorkflowImpl implements Workflow {
     // Special context variables
     console.log("debug special context variables...");
 
-    const workflowTranscript = this.variables.get("workflow_transcript") as string | undefined;
-    console.log(workflowTranscript);
-
+    let workflowPayload = this.variables.get("workflow_transcript") as string | undefined;
+    console.log(workflowPayload);
+    if (!workflowPayload) {
+      workflowPayload = workflowSummary?.payload;
+    }
     return {
       isSuccessful: workflowSummary?.isSuccessful,
       summary: workflowSummary?.summary,
-      payload: workflowTranscript,
+      payload: workflowPayload,
     };
   }
 

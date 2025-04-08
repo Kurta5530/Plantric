@@ -101,7 +101,7 @@ export class Lyvo {
   }
 
   public async execute(workflow: Workflow): Promise<WorkflowResult> {
-    let prompt = `Your ultimate task is: """${this.prompt}""". If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.`;
+    let prompt = this.prompt;
     const json = {
       "id": "workflow_id",
       "name": prompt,
