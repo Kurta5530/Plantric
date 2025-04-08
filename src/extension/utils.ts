@@ -156,14 +156,15 @@ export async function waitForTabComplete(
   timeout: number = 15_000
 ): Promise<chrome.tabs.Tab> {
   return new Promise(async (resolve, reject) => {
-    let tab = await chromeProxy.tabs.get(tabId);
-    if (tab.status === 'complete') {
-      resolve(tab);
-      return;
-    }
-    const time = setTimeout(() => {
+    const time = setTimeout(async () => {
       chromeProxy.tabs.onUpdated.removeListener(listener);
-      reject();
+      let tab = await chromeProxy.tabs.get(tabId);
+      if (tab.status === 'complete') {
+        console.warn('Timeout: waitForTabComplete, but tab is already complete.');
+        resolve(tab);
+      } else {
+        reject('Timeout: waitForTabComplete');
+      }
     }, timeout);
     const listener = async (updatedTabId: number, changeInfo: any, tab: chrome.tabs.Tab) => {
       if (updatedTabId === tabId && changeInfo.status === 'complete') {
@@ -172,6 +173,12 @@ export async function waitForTabComplete(
         resolve(tab);
       }
     };
+    let tab = await chromeProxy.tabs.get(tabId);
+    if (tab.status === 'complete') {
+      resolve(tab);
+      clearTimeout(time);
+      return;
+    }
     chromeProxy.tabs.onUpdated.addListener(listener);
   });
 }
