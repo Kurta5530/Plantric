@@ -1,5 +1,5 @@
 import { Workflow } from "./workflow.types";
-import { LLMProvider } from "./llm.types";
+import { LLMProvider, Message } from "./llm.types";
 import { NodeOutput, WorkflowCallback } from "./workflow.types";
 import { NodeInput } from "./workflow.types";
 import { LyvoConfig } from "./lyvo.types";
@@ -45,7 +45,7 @@ export interface Action {
   type: 'prompt' | 'script' | 'hybrid';
   name: string;
   description: string;
-  execute: (input: NodeInput, output: NodeOutput, context: ExecutionContext) => Promise<unknown>;
+  execute: (input: NodeInput, output: NodeOutput, context: ExecutionContext) => Promise<{nodeOutput: unknown, reacts: Message[]}>;
   tools: Array<Tool<any, any>>; // Allow both Tool objects and tool names
   llmProvider?: LLMProvider;
 }

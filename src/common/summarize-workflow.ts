@@ -9,7 +9,7 @@ export async function summarizeWorkflow(
   const messages: Message[] = [
     {
       role: 'system',
-      content: '',
+      content: 'The user has completed a workflow. You need to invoke the `summarize_workflow` function using the information provided by the user to execute the summary task.',
     },
     {
       role: 'user',
