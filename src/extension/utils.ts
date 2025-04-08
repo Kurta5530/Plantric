@@ -130,14 +130,18 @@ export async function open_new_tab(
       const window = await chromeProxy.windows.getCurrent();
       windowId = window.id;
     }
+    console.log("windowId: " + windowId);
     let tab = await chromeProxy.tabs.create({
       url: url,
       windowId: windowId,
     });
+    console.log("chromeProxy.tabs.create() done");
     tabId = tab.id as number;
   }
   let tab = await waitForTabComplete(chromeProxy, tabId);
+  console.log("waitForTabComplete() done");
   await sleep(200);
+  console.log("sleep() done");
   return tab;
 }
 
@@ -157,8 +161,11 @@ export async function waitForTabComplete(
 ): Promise<chrome.tabs.Tab> {
   return new Promise(async (resolve, reject) => {
     const time = setTimeout(async () => {
+      console.log("listener(#1)=", listener);
       chromeProxy.tabs.onUpdated.removeListener(listener);
+      console.log("tabId(#1)=", tabId);
       let tab = await chromeProxy.tabs.get(tabId);
+      console.log("tab(#1)=", tab);
       if (tab.status === 'complete') {
         console.warn('Timeout: waitForTabComplete, but tab is already complete.');
         resolve(tab);
@@ -166,19 +173,25 @@ export async function waitForTabComplete(
         reject('Timeout: waitForTabComplete');
       }
     }, timeout);
+    console.log("setTimeout done");
     const listener = async (updatedTabId: number, changeInfo: any, tab: chrome.tabs.Tab) => {
+      console.log("listener start...");
       if (updatedTabId === tabId && changeInfo.status === 'complete') {
+        console.log("listener(#2)=", listener);
         chromeProxy.tabs.onUpdated.removeListener(listener);
         clearTimeout(time);
         resolve(tab);
       }
     };
+    console.log("tabId(#2)=", tabId);
     let tab = await chromeProxy.tabs.get(tabId);
+    console.log("tab(#2)=", tab);
     if (tab.status === 'complete') {
       resolve(tab);
       clearTimeout(time);
       return;
     }
+    console.log("listener(#3)=", listener);
     chromeProxy.tabs.onUpdated.addListener(listener);
   });
 }
