@@ -39,7 +39,7 @@ export class Lyvo {
     }
     const defaultLyvoConfig: LyvoConfig = {
       workingWindowId: undefined,
-      chromeProxy: chrome,
+      chromeProxy: typeof chrome === 'undefined' ? undefined : chrome,
       callback: undefined,
     };
     return {
