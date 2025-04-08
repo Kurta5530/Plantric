@@ -326,7 +326,7 @@ export class ActionImpl implements Action {
     output: NodeOutput,
     context: ExecutionContext,
     outputSchema?: unknown
-  ): Promise<unknown> {
+  ): Promise<{nodeOutput: unknown, reacts: Message[]}> {
     this.logger = context.logger;
     console.log(`Executing action started: ${this.name}`);
     // Create return tool with output schema
@@ -460,7 +460,7 @@ export class ActionImpl implements Action {
     const outputParams = context.variables.get(outputKey) as any;
     if (!outputParams) {
       console.warn("outputParams is `undefined`, action return `{}`");
-      return {}
+      return { nodeOutput: {}, reacts: messages };
     }
     context.variables.delete(outputKey);
 
@@ -471,10 +471,10 @@ export class ActionImpl implements Action {
 
     if (outputValue === undefined) {
       console.warn('Action completed without returning a value');
-      return {};
+      return { nodeOutput: {}, reacts: messages };
     }
 
-    return outputValue;
+    return { nodeOutput: outputValue, reacts: messages };
   }
 
   private formatSystemPrompt(): string {
