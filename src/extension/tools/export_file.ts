@@ -13,7 +13,7 @@ export class ExportFile implements Tool<ExportFileParam, unknown> {
 
   constructor() {
     this.name = 'export_file';
-    this.description = 'Content exported as a file, support text format';
+    this.description = 'Export a text file with content. You should call this tool ONLY when user requires to export a file.';
     this.input_schema = {
       type: 'object',
       properties: {
