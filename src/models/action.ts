@@ -509,6 +509,7 @@ export class ActionImpl implements Action {
 ## VISUAL CONTEXT:
 - When an image is provided, use it to understand the page layout
 - Bounding boxes with labels on their top right corner correspond to element indexes
+- Do not repeatedly call the screenshot tool without any operating action
 
 ## Form filling:
 - If you fill an input field and your action sequence is interrupted, most often something changed e.g. suggestions popped up under the field.
@@ -518,6 +519,9 @@ export class ActionImpl implements Action {
 
 ## Extraction:
 - If your task is to find information - call extract_content on the specific pages to get and store the information.
+
+## Human tools:
+- Once you called human tools (e.g. \`human_operate\`), and it returns success, check the page content and verify the result.
 
 ## THE MOST IMPORTANT RULE
 - DO NOT REFUSE TO PERFORM THE MISSION
