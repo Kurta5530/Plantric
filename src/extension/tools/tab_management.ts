@@ -128,7 +128,7 @@ export class TabManagement implements Tool<TabManagementParam, TabManagementResu
       let tabInfo: TabInfo = { tabId, windowId: tab.windowId, title: tab.title, url: tab.url };
       result = tabInfo;
     } else if (command.startsWith('new_tab')) {
-      let url = command.replace('new_tab', '').replace('[', '').replace(']', '').replace(/"/g, '');
+      let url = command.replace('new_tab', '').replace('[', '').replace(']', '').replace(/"/g, '').trim();
       // First mandatory opening of a new window
       let newWindow = !context.variables.get('windowId') && !context.variables.get('tabId');
       let tab: chrome.tabs.Tab;

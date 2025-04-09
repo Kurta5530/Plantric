@@ -45,7 +45,7 @@ export class OpenUrl implements Tool<OpenUrlParam, OpenUrlResult> {
     }
 
     // 提取参数
-    let url = params.url;
+    let url = params.url.trim();
     let newWindow = params.newWindow;
     console.log('URL to open:', url);
     console.log('Initial newWindow value:', newWindow);
