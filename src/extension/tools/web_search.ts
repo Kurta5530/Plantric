@@ -44,7 +44,7 @@ export class WebSearch implements Tool<WebSearchParam, WebSearchResult[]> {
     if (typeof params !== 'object' || params === null || !params.query) {
       throw new Error('Invalid parameters. Expected an object with a "query" property.');
     }
-    let url = params.url;
+    let url = params.url?.trim();
     let query = params.query;
     let maxResults = params.maxResults;
     if (!url) {
