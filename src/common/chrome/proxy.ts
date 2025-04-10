@@ -25,38 +25,33 @@ export function createChromeApiProxy(mockClass: any): any {
   console.log("debug mockClass:");
   console.log(mockClass);
 
-  return new Proxy(chrome, {
-    get(target: any, prop: string | symbol) {
-      if (typeof prop === "string") {
-        // If the property is 'tabs' or 'windows', create a nested proxy
-        if (prop === "tabs" || prop === "windows") {
-          return new Proxy(target[prop], {
-            get(targetProp: any, method: string | symbol) {
-              if (typeof method === "string") {
-                // Construct the mock method name (e.g., 'tabs_create')
-                const mockMethodName = `${prop}_${method}`;
-                // Check if the mock method exists
-                const mockMethod = (mockClass as any)[mockMethodName];
-                if (mockMethod) {
-                  // If the mock method exists, return it
-                  return mockMethod;
-                } else {
-                  // Otherwise, return the original Chrome API method
-                  return targetProp[method];
-                }
-              } else {
-                return targetProp[method];
-              }
-            }
-          });
+  // Helper function to recursively create nested proxies
+  function createNestedProxy(target: any, path: (string | symbol)[]): any {
+    return new Proxy(target, {
+      get(targetProp: any, prop: string | symbol) {
+        // Construct the full path of the current property
+        const currentPath = [...path, prop];
+        const mockMethodName = currentPath.join("_");
+
+        // Check if the mock method exists in the chromeProxy
+        const mockMethod = (mockClass as any)[mockMethodName];
+        if (mockMethod) {
+          // If the mock method exists, return it
+          return mockMethod;
         } else {
-          // For other properties, return the original Chrome property
-          return target[prop];
+          // Otherwise, create a nested proxy if the property is an object
+          if (typeof targetProp[prop] === "object" && targetProp[prop] !== null) {
+            return createNestedProxy(targetProp[prop], currentPath);
+          } else {
+            // Return the original property/method
+            return targetProp[prop];
+          }
         }
-      } else {
-        // If the property is not a string, return the original property
-        return target[prop];
       }
-    }
-  });
+    });
+  }
+
+  // Create the initial proxy for the `chrome` object
+  const chromeProxy = createNestedProxy(chrome, []);
+  return chromeProxy;
 }
