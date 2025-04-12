@@ -24,6 +24,7 @@ export class Lyvo {
   private toolRegistry = new ToolRegistry();
   private workflowGeneratorMap = new Map<Workflow, WorkflowGenerator>();
   public prompt: string = "";
+  public tabs: chrome.tabs.Tab[] = [];
 
   constructor(llmConfig: LLMConfig, lyvoConfig?: LyvoConfig) {
     console.info("using Lyvo@" + process.env.COMMIT_HASH);
@@ -78,8 +79,9 @@ export class Lyvo {
     tools.forEach(tool => this.toolRegistry.registerTool(tool));
   }
 
-  public async generate(prompt: string, param?: LyvoInvokeParam): Promise<Workflow> {
+  public async generate(prompt: string, tabs: chrome.tabs.Tab[] = [], param?: LyvoInvokeParam): Promise<Workflow> {
     this.prompt = prompt;
+    this.tabs = tabs;
     let toolRegistry = this.toolRegistry;
     if (param && param.tools && param.tools.length > 0) {
       toolRegistry = new ToolRegistry();

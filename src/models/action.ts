@@ -57,6 +57,7 @@ export class ActionImpl implements Action {
   private writeContextTool: WriteContextTool;
   private toolResults: Map<string, any> = new Map();
   private logger: ExecutionLogger = new ExecutionLogger();
+  public tabs: chrome.tabs.Tab[] = [];
 
   constructor(
     public type: 'prompt', // Only support prompt type
@@ -341,7 +342,7 @@ export class ActionImpl implements Action {
     // Prepare initial messages
     const messages: Message[] = [
       { role: 'system', content: this.formatSystemPrompt() },
-      { role: 'user', content: this.formatUserPrompt(this.name, this.description) },
+      { role: 'user', content: this.formatUserPrompt(this.name, this.description, this.tabs) },
     ];
 
     this.logger.logActionStart(this.name, input, context);
@@ -530,10 +531,13 @@ export class ActionImpl implements Action {
 `;
   }
 
-  private formatUserPrompt(name: string, description: string): string {
+  private formatUserPrompt(name: string, description: string, tabs: chrome.tabs.Tab[]): string { // include title & URL
     let  prompt = `${name} -- ${description}`;
     prompt = `Your ultimate task is: """${prompt}""". If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.`;
-    return `You are executing a subtask in the workflow. The subtask description is as follows: ${prompt}`;
+    if (tabs.length > 0) {
+      prompt += "\n\nYou should complete the task with the following tabs firstly: " + tabs.map((tab) => `- TabID=${tab.id}: ${tab.title} (${tab.url})`).join('\n');
+    }
+    return prompt;
   }
 
   // Static factory method
