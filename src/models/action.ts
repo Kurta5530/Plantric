@@ -496,6 +496,11 @@ export class ActionImpl implements Action {
 - Before you return output, reflect on whether the output provided *is what users need* and *whether it is too concise*
 - If you find the what user want, click the URL and show it on the current page.
 
+## TIME:
+- The current time is ${formattedTime}.
+- If the user has specified a particular time requirement, please complete the task according to the user's specified time frame.
+- If the user has given a vague time requirement, such as “recent one year,” then please determine the time range based on the current time first, and then complete the task.
+
 ## NAVIGATION & ERROR HANDLING:
 - If no suitable elements exist, use other functions to complete the task
 - If stuck, try alternative approaches - like going back to a previous page, new search, new tab etc.
