@@ -339,10 +339,14 @@ export class ActionImpl implements Action {
     context.tools?.forEach((tool) => toolMap.set(tool.name, tool));
     toolMap.set(returnTool.name, returnTool);
 
+    // get already existing tabs as task background
+    const currentWindow = await context.lyvoConfig.chromeProxy.windows.getCurrent();
+    const existingTabs: chrome.tabs.Tab[] = await context.lyvoConfig.chromeProxy.tabs.query({ windowId: currentWindow.id });
+
     // Prepare initial messages
     const messages: Message[] = [
       { role: 'system', content: this.formatSystemPrompt() },
-      { role: 'user', content: this.formatUserPrompt(this.name, this.description, this.tabs) },
+      { role: 'user', content: this.formatUserPrompt(this.name, this.description, this.tabs, existingTabs) },
     ];
 
     this.logger.logActionStart(this.name, input, context);
@@ -531,11 +535,19 @@ export class ActionImpl implements Action {
 `;
   }
 
-  private formatUserPrompt(name: string, description: string, tabs: chrome.tabs.Tab[]): string { // include title & URL
+  private formatUserPrompt(
+    name: string,
+    description: string,
+    mentionedTabs: chrome.tabs.Tab[],
+    existingTabs: chrome.tabs.Tab[],
+  ): string {
     let  prompt = `${name} -- ${description}`;
     prompt = `Your ultimate task is: """${prompt}""". If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.`;
-    if (tabs.length > 0) {
-      prompt += "\n\nYou should complete the task with the following tabs firstly: " + tabs.map((tab) => `- TabID=${tab.id}: ${tab.title} (${tab.url})`).join('\n');
+    if (existingTabs.length > 0) {
+      prompt += "\n\nYou should complete the task with the following tabs:\n" + existingTabs.map((tab) => `- TabID=${tab.id}: ${tab.title} (${tab.url})`).join('\n');
+    }
+    if (mentionedTabs.length > 0) {
+      prompt += "\n\nYou should consider the following tabs firstly:\n" + mentionedTabs.map((tab) => `- TabID=${tab.id}: ${tab.title} (${tab.url})`).join('\n');
     }
     return prompt;
   }
