@@ -25,6 +25,7 @@ export class Lyvo {
   private workflowGeneratorMap = new Map<Workflow, WorkflowGenerator>();
   public prompt: string = "";
   public tabs: chrome.tabs.Tab[] = [];
+  public workflow?: Workflow = undefined;
 
   constructor(llmConfig: LLMConfig, lyvoConfig?: LyvoConfig) {
     console.info("using Lyvo@" + process.env.COMMIT_HASH);
@@ -99,6 +100,7 @@ export class Lyvo {
     this.workflowGeneratorMap.set(workflow, generator);
     console.log("the workflow returned by generate");
     console.log(workflow);
+    this.workflow = workflow;
     return workflow;
   }
 
@@ -147,6 +149,7 @@ export class Lyvo {
     
     const generator = new WorkflowGenerator(this.llmProvider, this.toolRegistry);  
     workflow = await generator.generateWorkflowFromJson(json, this.lyvoConfig);
+    this.workflow = workflow;
 
     // Inject LLM provider at workflow level
     workflow.llmProvider = this.llmProvider;
@@ -172,8 +175,12 @@ export class Lyvo {
     return result;
   }
 
-  public async cancel(workflow: Workflow): Promise<void> {
-    return await workflow.cancel();
+  public async cancel(): Promise<void> {
+    if (this.workflow) {
+      return await this.workflow.cancel();
+    } else {
+      throw Error("`Lyvo` instance do not have a `workflow` member");
+    }
   }
 
 
