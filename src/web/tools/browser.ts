@@ -283,3 +283,107 @@ function simulateMouseEvent(
   }
   return true;
 }
+
+export function protect_form_fields(): boolean {
+  try {
+    const fieldSelectors = ['input', 'textarea', 'select'];
+    const savedFormData: Record<string, any> = {};
+    
+    const saveFormData = () => {
+      document.querySelectorAll(fieldSelectors.join(', ')).forEach(element => {
+        const el = element as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+        const key = el.name || el.id || el.getAttribute('data-testid') || 
+                   (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement ? el.placeholder : '');
+        
+        if (key && el.value) {
+          savedFormData[key] = el.value;
+          
+          const attributes = ['aria-label', 'data-field', 'data-id'];
+          for (const attr of attributes) {
+            const attrValue = el.getAttribute(attr);
+            if (attrValue) {
+              savedFormData[`attr_${attr}_${attrValue}`] = el.value;
+            }
+          }
+        }
+      });
+      
+      console.log('Form data saved:', Object.keys(savedFormData).length);
+    };
+    
+    const restoreFormData = () => {
+      setTimeout(() => {
+        for (const key in savedFormData) {
+          if (key.startsWith('attr_')) continue;
+          
+          const selector = `[name="${key}"], #${key}, [data-testid="${key}"]`;
+          const inputSelector = `input[placeholder="${key}"]`;
+          
+          let element = document.querySelector(selector) as HTMLInputElement | null;
+          if (!element) {
+            element = document.querySelector(inputSelector) as HTMLInputElement | null;
+          }
+          
+          if (element && element.value === '' && savedFormData[key]) {
+            console.log('Restoring field:', key);
+            element.value = savedFormData[key];
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+            element.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+        
+        for (const key in savedFormData) {
+          if (!key.startsWith('attr_')) continue;
+          
+          const [_, attrName, ...attrValueParts] = key.split('_');
+          const attrValue = attrValueParts.join('_');
+          
+          const selector = `[${attrName}="${attrValue}"]`;
+          const element = document.querySelector(selector) as HTMLInputElement | null;
+          
+          if (element && element.value === '' && savedFormData[key]) {
+            console.log(`Restoring field by ${attrName}:`, attrValue);
+            element.value = savedFormData[key];
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+            element.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+      }, 50);
+    };
+    
+    document.addEventListener('input', function(e) {
+      if (e.target instanceof HTMLElement && 
+          (e.target.tagName === 'INPUT' || 
+           e.target.tagName === 'TEXTAREA' || 
+           e.target.tagName === 'SELECT')) {
+        saveFormData();
+      }
+    });
+    
+    document.addEventListener('click', function(e) {
+      saveFormData();
+      
+      if (e.target instanceof HTMLElement) {
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'BUTTON' || 
+            target.closest('button') || 
+            target.closest('[role="button"]') ||
+            target.closest('input[type="submit"]') ||
+            target.closest('input[type="button"]')) {
+          console.log('Button click detected, preparing to protect form data');
+          
+          restoreFormData();
+          setTimeout(restoreFormData, 300);
+        }
+      }
+    });
+    
+    setTimeout(saveFormData, 1000);
+    
+    console.log('Form protection enabled');
+    return true;
+  } catch (e) {
+    console.error('Failed to enable form protection:', e);
+    return false;
+  }
+}
