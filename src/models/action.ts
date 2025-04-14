@@ -1,6 +1,6 @@
 // src/models/action.ts
 
-import { Action, Tool, ExecutionContext, InputSchema } from '../types/action.types';
+import { Action, Tool, ExecutionContext, InputSchema, Property } from '../types/action.types';
 import { NodeInput, NodeOutput } from '../types/workflow.types';
 import {
   LLMProvider,
@@ -9,6 +9,7 @@ import {
   LLMStreamHandler,
   ToolDefinition,
   LLMResponse,
+  ToolCall,
 } from '../types/llm.types';
 import { ExecutionLogger } from '@/utils/execution-logger';
 import { WriteContextTool } from '@/common/tools/write_context';
@@ -89,6 +90,8 @@ export class ActionImpl implements Action {
     let hasToolUse = false;
     let roundMessages: Message[] = [];
 
+    params.tools = params.tools?.map(this.wrapToolInputSchema);
+
     while (!context.signal?.aborted) {
       this.logger = context.logger;
       roundMessages = [];
@@ -166,8 +169,15 @@ export class ActionImpl implements Action {
                 };
                 return;
               }
+
+              // unwrap the toolCall
+              let unwrapped = this.unwrapToolCall(toolCall);
+              let input = unwrapped.toolCall.input;
+              console.log("unwrapped", unwrapped);
+              context.callback?.hooks.onLlmMessageUserSidePrompt?.(unwrapped.userSidePrompt);
+
               // Execute the tool
-              let result = await tool.execute(context, toolCall.input);
+              let result = await tool.execute(context, input);
               // afterToolUse
               if (context.callback && context.callback.hooks.afterToolUse) {
                 let modified_result = await context.callback.hooks.afterToolUse(
@@ -589,5 +599,53 @@ export class ActionImpl implements Action {
     llmConfig?: LLMParameters
   ): Action {
     return new ActionImpl('prompt', name, description, tools, llmProvider, llmConfig);
+  }
+
+  private wrapToolInputSchema(definition: ToolDefinition): ToolDefinition {
+    console.log(definition);
+    (definition.input_schema as InputSchema) = {
+      type: "object",
+      properties: {
+        // comment for backup
+        // observation: {
+        //   "type": "string",
+        //   "description": 'Your observation of the previous steps. Should start with "In the previous step, I\'ve ...".',
+        // },
+        // thinking: {
+        //   "type": "string",
+        //   "description": 'Your thinking draft. Should start with "As observation before, now I should ...".',
+        // },
+        userSidePrompt: {
+          "type": "string",
+          "description": 'The user-side prompt, showing why calling this tool. Should start with "I\'m calling the ...(tool) to ...(target)". Rememeber to keep the same language of the ultimate task.',
+        },
+        toolCall: (definition.input_schema as Property),
+      },
+      required: [
+        // comment for backup
+        // "observation",
+        // "thinking",
+        "userSidePrompt",
+        "toolCall",
+      ],
+    };
+    console.log(definition);
+    return definition;
+  }
+
+  private unwrapToolCall(toolCall: ToolCall) {
+    console.log(toolCall);
+    const result = {
+      observation: toolCall.input.observation as string,
+      thinking: toolCall.input.thinking as string,
+      userSidePrompt: toolCall.input.userSidePrompt as string,
+      toolCall: {
+        id: toolCall.id,
+        name: toolCall.name,
+        input: toolCall.input.toolCall,
+      } as ToolCall,
+    }
+    console.log(result);
+    return result;
   }
 }
