@@ -90,7 +90,8 @@ export class ActionImpl implements Action {
     let hasToolUse = false;
     let roundMessages: Message[] = [];
 
-    params.tools = params.tools?.map(this.wrapToolInputSchema);
+    let params_copy: LLMParameters = JSON.parse(JSON.stringify(params));
+    params_copy.tools = params_copy.tools?.map(this.wrapToolInputSchema);
 
     while (!context.signal?.aborted) {
       this.logger = context.logger;
@@ -174,7 +175,11 @@ export class ActionImpl implements Action {
               let unwrapped = this.unwrapToolCall(toolCall);
               let input = unwrapped.toolCall.input;
               console.log("unwrapped", unwrapped);
-              context.callback?.hooks.onLlmMessageUserSidePrompt?.(unwrapped.userSidePrompt);
+              if (unwrapped.userSidePrompt) {
+                context.callback?.hooks.onLlmMessageUserSidePrompt?.(unwrapped.userSidePrompt);
+              } else {
+                console.warn("LLM returns without `userSidePrompt`");
+              }
 
               // Execute the tool
               let result = await tool.execute(context, input);
@@ -259,7 +264,7 @@ export class ActionImpl implements Action {
         throw new Error('LLM provider not set');
       }
       try {
-        await this.llmProvider.generateStream(messages, params, handler);
+        await this.llmProvider.generateStream(messages, params_copy, handler);
       } catch (e) {
         console.warn("an error occurs when LLM generate response");
         console.warn(e);
@@ -602,7 +607,6 @@ export class ActionImpl implements Action {
   }
 
   private wrapToolInputSchema(definition: ToolDefinition): ToolDefinition {
-    console.log(definition);
     (definition.input_schema as InputSchema) = {
       type: "object",
       properties: {
@@ -629,23 +633,20 @@ export class ActionImpl implements Action {
         "toolCall",
       ],
     };
-    console.log(definition);
     return definition;
   }
 
   private unwrapToolCall(toolCall: ToolCall) {
-    console.log(toolCall);
     const result = {
-      observation: toolCall.input.observation as string,
-      thinking: toolCall.input.thinking as string,
-      userSidePrompt: toolCall.input.userSidePrompt as string,
+      observation: toolCall.input.observation as string | undefined,
+      thinking: toolCall.input.thinking as string | undefined,
+      userSidePrompt: toolCall.input.userSidePrompt as string | undefined,
       toolCall: {
         id: toolCall.id,
         name: toolCall.name,
         input: toolCall.input.toolCall,
       } as ToolCall,
     }
-    console.log(result);
     return result;
   }
 }
