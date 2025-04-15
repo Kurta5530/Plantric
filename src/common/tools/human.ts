@@ -17,7 +17,7 @@ export class HumanInputText implements Tool<HumanInputTextInput, HumanInputTextR
 
   constructor() {
     this.name = 'human_input_text';
-    this.description = 'When you are unsure about the details of your next action, call me and ask the user for details in the "question" field. The user will provide you with a text as an answer.';
+    this.description = 'When you are unsure about the details of your next action or need the user to perform a local action, call me and ask the user for details in the "question" field. The user will provide you with a text as an answer.';
     this.input_schema = {
       type: 'object',
       properties: {
@@ -43,13 +43,13 @@ export class HumanInputText implements Tool<HumanInputTextInput, HumanInputTextR
         answer = await onHumanInputText(question);
       } catch (e) {
         console.error(e);
-        return {status: "Error: Cannot get user's answer.", answer: ""};
+        return { status: "Error: Cannot get user's answer.", answer: "" };
       }
       console.log("answer: " + answer);
-      return {status: "OK", answer: answer};
+      return { status: "OK", answer: answer };
     } else {
       console.error("`onHumanInputText` not implemented");
-      return {status: "Error: Cannot get user's answer.", answer: ""};
+      return { status: "Error: Cannot get user's answer.", answer: "" };
     }
   }
 }
@@ -101,13 +101,13 @@ export class HumanInputSingleChoice implements Tool<HumanInputSingleChoiceInput,
         answer = await onHumanInputSingleChoice(question, choices);
       } catch (e) {
         console.error(e);
-        return {status: "Error: Cannot get user's answer.", answer: ""};
+        return { status: "Error: Cannot get user's answer.", answer: "" };
       }
       console.log("answer: " + answer);
-      return {status: "OK", answer: answer};
+      return { status: "OK", answer: answer };
     } else {
       console.error("`onHumanInputSingleChoice` not implemented");
-      return {status: "Error: Cannot get user's answer.", answer: ""};
+      return { status: "Error: Cannot get user's answer.", answer: "" };
     }
   }
 }
@@ -159,13 +159,13 @@ export class HumanInputMultipleChoice implements Tool<HumanInputMultipleChoiceIn
         answer = await onHumanInputMultipleChoice(question, choices)
       } catch (e) {
         console.error(e);
-        return {status: "`onHumanInputMultipleChoice` not implemented", answer: []};
+        return { status: "`onHumanInputMultipleChoice` not implemented", answer: [] };
       }
       console.log("answer: " + answer);
-      return {status: "OK", answer: answer};
+      return { status: "OK", answer: answer };
     } else {
       console.error("Cannot get user's answer.");
-      return {status: "Error: Cannot get user's answer.", answer: []};
+      return { status: "Error: Cannot get user's answer.", answer: [] };
     }
   }
 }
@@ -177,7 +177,13 @@ export class HumanOperate implements Tool<HumanOperateInput, HumanOperateResult>
 
   constructor() {
     this.name = 'human_operate';
-    this.description = 'When you encounter operations necessitating login, CAPTCHA verification, or any other tasks beyond your reach, kindly invoke this tool, relinquish control to the user, and elucidate the reasons behind this action.\n\nBefore executing the final step of any task that entails external repercussions, such as submitting purchases, deleting entries, editing data, scheduling appointments, sending messages, managing accounts, moving files, and the like, seek the user\'s definitive confirmation.';
+    this.description = `Use this tool when you are unable to continue a task that requires user assistance.
+Usage scenarios include:
+1. Authentication (such as logging in, entering a verification code, etc.)
+2. External system operations (such as uploading files, selecting a file save location, scanning documents, taking photos, paying, authorization, etc.)
+When calling this tool to transfer control to the user, please explain in detail:
+1. Why user intervention is required
+2. What operations the user needs to perform`;
     this.input_schema = {
       type: 'object',
       properties: {
@@ -203,13 +209,13 @@ export class HumanOperate implements Tool<HumanOperateInput, HumanOperateResult>
         userOperation = await onHumanOperate(reason);
       } catch (e) {
         console.error(e);
-        return {status: "`onHumanOperate` not implemented", userOperation: ""};
+        return { status: "`onHumanOperate` not implemented", userOperation: "" };
       }
       console.log("userOperation: " + userOperation);
-      return {status: "OK", userOperation: userOperation};
+      return { status: "OK", userOperation: userOperation };
     } else {
       console.error("Cannot get user's operation.");
-      return {status: "Error: Cannot get user's operation.", userOperation: ""};
+      return { status: "Error: Cannot get user's operation.", userOperation: "" };
     }
   }
 }
