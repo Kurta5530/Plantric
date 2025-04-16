@@ -1,11 +1,9 @@
 import { ScreenshotResult } from '../../types/tools.types';
 import { getPageSize } from '../utils';
 
-const isFellou = (
-  typeof chrome !== 'undefined' ?
-    typeof (chrome as any).browseruse == 'object' :
-    undefined
-);
+function isFellouBrowser(chromeProxy: any): boolean {
+  return typeof chromeProxy.browseruse == 'object';
+}
 
 export async function type(
   chromeProxy: any,
@@ -13,6 +11,7 @@ export async function type(
   text: string,
   coordinate?: [number, number]
 ): Promise<any> {
+  const isFellou = isFellouBrowser(chromeProxy);
   console.log('Sending type message to tab:', tabId, { text, coordinate }, isFellou ? ' > fellou' : '');
   try {
     if (!coordinate) {
@@ -26,9 +25,9 @@ export async function type(
         enter = true;
         text = text.substring(0, text.length - 1);
       }
-      response = await (chrome as any).browseruse.type(tabId, text);
+      response = await chromeProxy.browseruse.type(tabId, text);
       if (enter) {
-        await (chrome as any).browseruse.keyboard.press(tabId, 'Enter');
+        await chromeProxy.browseruse.keyboard.press(tabId, 'Enter');
       }
     } else {
       response = await chromeProxy.tabs.sendMessage(tabId, {
@@ -52,6 +51,7 @@ export async function type_by(
   xpath?: string,
   highlightIndex?: number
 ): Promise<any> {
+  const isFellou = isFellouBrowser(chromeProxy);
   console.log('Sending type_by message to tab:', tabId, { text, xpath, highlightIndex }, isFellou ? ' > fellou' : '');
   try {
     let response: any;
@@ -61,9 +61,9 @@ export async function type_by(
         enter = true;
         text = text.substring(0, text.length - 1);
       }
-      response = await (chrome as any).browseruse.handle.type(tabId, build_fellou_handle_js(xpath, highlightIndex), text);
+      response = await chromeProxy.browseruse.handle.type(tabId, build_fellou_handle_js(xpath, highlightIndex), text);
       if (enter) {
-        await (chrome as any).browseruse.keyboard.press(tabId, 'Enter');
+        await chromeProxy.browseruse.keyboard.press(tabId, 'Enter');
       }
     } else {
       response = await chromeProxy.tabs.sendMessage(tabId, {
@@ -87,11 +87,12 @@ export async function enter_by(
   xpath?: string,
   highlightIndex?: number
 ): Promise<any> {
+  const isFellou = isFellouBrowser(chromeProxy);
   console.log('Sending enter_by message to tab:', tabId, { xpath, highlightIndex }, isFellou ? ' > fellou' : '');
   try {
     let response: any;
     if (isFellou) {
-      response = await (chrome as any).browseruse.keyboard.press(tabId, 'Enter');
+      response = await chromeProxy.browseruse.keyboard.press(tabId, 'Enter');
     } else {
       response = await chromeProxy.tabs.sendMessage(tabId, {
         type: 'computer:type',
@@ -109,6 +110,7 @@ export async function enter_by(
 }
 
 export async function clear_input(chromeProxy: any, tabId: number, coordinate?: [number, number]): Promise<any> {
+  const isFellou = isFellouBrowser(chromeProxy);
   console.log('Sending clear_input message to tab:', tabId, { coordinate }, isFellou ? ' > fellou' : '');
   try {
     if (!coordinate) {
@@ -117,8 +119,8 @@ export async function clear_input(chromeProxy: any, tabId: number, coordinate?: 
     await mouse_move(chromeProxy, tabId, coordinate);
     let response: any;
     if (isFellou) {
-      await (chrome as any).browseruse.mouse.click(tabId, coordinate[0], coordinate[1], { count: 3 });
-      response = await (chrome as any).browseruse.keyboard.press(tabId, 'Backspace');
+      await chromeProxy.browseruse.mouse.click(tabId, coordinate[0], coordinate[1], { count: 3 });
+      response = await chromeProxy.browseruse.keyboard.press(tabId, 'Backspace');
     } else {
       response = await chromeProxy.tabs.sendMessage(tabId, {
         type: 'computer:type',
@@ -140,12 +142,13 @@ export async function clear_input_by(
   xpath?: string,
   highlightIndex?: number
 ): Promise<any> {
+  const isFellou = isFellouBrowser(chromeProxy);
   console.log('Sending clear_input_by message to tab:', tabId, { xpath, highlightIndex }, isFellou ? ' > fellou' : '');
   try {
     let response: any;
     if (isFellou) {
-      await (chrome as any).browseruse.handle.click(tabId, build_fellou_handle_js(xpath, highlightIndex), { count: 3 });
-      response = await (chrome as any).browseruse.keyboard.press(tabId, 'Backspace');
+      await chromeProxy.browseruse.handle.click(tabId, build_fellou_handle_js(xpath, highlightIndex), { count: 3 });
+      response = await chromeProxy.browseruse.keyboard.press(tabId, 'Backspace');
     } else {
       response = await chromeProxy.tabs.sendMessage(tabId, {
         type: 'computer:type',
@@ -163,10 +166,11 @@ export async function clear_input_by(
 }
 
 export async function mouse_move(chromeProxy: any, tabId: number, coordinate: [number, number]): Promise<any> {
+  const isFellou = isFellouBrowser(chromeProxy);
   console.log('Sending mouse_move message to tab:', tabId, { coordinate }, isFellou ? ' > fellou' : '');
   let response: any;
   if (isFellou) {
-    response = await (chrome as any).browseruse.mouse.move(tabId, coordinate[0], coordinate[1]);
+    response = await chromeProxy.browseruse.mouse.move(tabId, coordinate[0], coordinate[1]);
   } else {
     response = await chromeProxy.tabs.sendMessage(tabId, {
       type: 'computer:mouse_move',
@@ -178,13 +182,14 @@ export async function mouse_move(chromeProxy: any, tabId: number, coordinate: [n
 }
 
 export async function left_click(chromeProxy: any, tabId: number, coordinate?: [number, number]): Promise<any> {
+  const isFellou = isFellouBrowser(chromeProxy);
   console.log('Sending left_click message to tab:', tabId, { coordinate }, isFellou ? ' > fellou' : '');
   if (!coordinate) {
     coordinate = (await cursor_position(chromeProxy, tabId)).coordinate;
   }
   let response: any;
   if (isFellou) {
-    response = await (chrome as any).browseruse.mouse.click(tabId, coordinate[0], coordinate[1]);
+    response = await chromeProxy.browseruse.mouse.click(tabId, coordinate[0], coordinate[1]);
   } else {
     response = await chromeProxy.tabs.sendMessage(tabId, {
       type: 'computer:left_click',
@@ -201,10 +206,11 @@ export async function left_click_by(
   xpath?: string,
   highlightIndex?: number
 ): Promise<any> {
+  const isFellou = isFellouBrowser(chromeProxy);
   console.log('Sending left_click_by message to tab:', tabId, { xpath, highlightIndex }, isFellou ? ' > fellou' : '');
   let response: any;
   if (isFellou) {
-    response = await (chrome as any).browseruse.handle.click(tabId, build_fellou_handle_js(xpath, highlightIndex));
+    response = await chromeProxy.browseruse.handle.click(tabId, build_fellou_handle_js(xpath, highlightIndex));
   } else {
     response = await chromeProxy.tabs.sendMessage(tabId, {
       type: 'computer:left_click',
@@ -217,13 +223,14 @@ export async function left_click_by(
 }
 
 export async function right_click(chromeProxy: any, tabId: number, coordinate?: [number, number]): Promise<any> {
+  const isFellou = isFellouBrowser(chromeProxy);
   console.log('Sending right_click message to tab:', tabId, { coordinate }, isFellou ? ' > fellou' : '');
   if (!coordinate) {
     coordinate = (await cursor_position(chromeProxy, tabId)).coordinate;
   }
   let response: any;
   if (isFellou) {
-    response = await (chrome as any).browseruse.mouse.click(tabId, coordinate[0], coordinate[1], { button: 'right' });
+    response = await chromeProxy.browseruse.mouse.click(tabId, coordinate[0], coordinate[1], { button: 'right' });
   } else {
     const response = await chromeProxy.tabs.sendMessage(tabId, {
       type: 'computer:right_click',
@@ -240,10 +247,11 @@ export async function right_click_by(
   xpath?: string,
   highlightIndex?: number
 ): Promise<any> {
+  const isFellou = isFellouBrowser(chromeProxy);
   console.log('Sending right_click_by message to tab:', tabId, { xpath, highlightIndex }, isFellou ? ' > fellou' : '');
   let response: any;
   if (isFellou) {
-    response = await (chrome as any).browseruse.handle.click(tabId, build_fellou_handle_js(xpath, highlightIndex), { button: 'right' });
+    response = await chromeProxy.browseruse.handle.click(tabId, build_fellou_handle_js(xpath, highlightIndex), { button: 'right' });
   } else {
     const response = await chromeProxy.tabs.sendMessage(tabId, {
       type: 'computer:right_click',
@@ -256,13 +264,14 @@ export async function right_click_by(
 }
 
 export async function double_click(chromeProxy: any, tabId: number, coordinate?: [number, number]): Promise<any> {
+  const isFellou = isFellouBrowser(chromeProxy);
   console.log('Sending double_click message to tab:', tabId, { coordinate }, isFellou ? ' > fellou' : '');
   if (!coordinate) {
     coordinate = (await cursor_position(chromeProxy, tabId)).coordinate;
   }
   let response: any;
   if (isFellou) {
-    response = await (chrome as any).browseruse.mouse.click(tabId, coordinate[0], coordinate[1], { count: 2 });
+    response = await chromeProxy.browseruse.mouse.click(tabId, coordinate[0], coordinate[1], { count: 2 });
   } else {
     response = await chromeProxy.tabs.sendMessage(tabId, {
       type: 'computer:double_click',
@@ -279,10 +288,11 @@ export async function double_click_by(
   xpath?: string,
   highlightIndex?: number
 ): Promise<any> {
+  const isFellou = isFellouBrowser(chromeProxy);
   console.log('Sending double_click_by message to tab:', tabId, { xpath, highlightIndex }, isFellou ? ' > fellou' : '');
   let response: any;
   if (isFellou) {
-    response = await (chrome as any).browseruse.mouse.click(tabId, build_fellou_handle_js(xpath, highlightIndex), { count: 2 });
+    response = await chromeProxy.browseruse.mouse.click(tabId, build_fellou_handle_js(xpath, highlightIndex), { count: 2 });
   } else {
     response = await chromeProxy.tabs.sendMessage(tabId, {
       type: 'computer:double_click',
