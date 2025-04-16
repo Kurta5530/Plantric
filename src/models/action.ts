@@ -535,15 +535,16 @@ export class ActionImpl implements Action {
 - If the user has specified a particular time requirement, please complete the task according to the user's specified time frame.
 - If the user has given a vague time requirement, such as “recent one year,” then please determine the time range based on the current time first, and then complete the task.
 
-## NAVIGATION & ERROR HANDLING:
+## NAVIGATION:
 - If no suitable elements exist, use other functions to complete the task
 - If stuck, try alternative approaches - like going back to a previous page, new search, new tab etc.
 - Handle popups/cookies by accepting or closing them
 - Use scroll to find elements you are looking for
 - If you want to research something, open a new tab instead of using the current tab
-- If captcha pops up, try to solve it - else try a different approach
-- If login pops up, use 'human_operate' to let user handle it
-- Finally, as backup method, use 'human_operate' to handle any error that you tried many times
+
+## HUMAN OPERATE:
+- If login pr captcha pops up, use 'human_operate' to let user handle it
+- As backup method, use 'human_operate' to handle any error that you tried many times
 
 ## TASK COMPLETION:
 - Use the 'return_output' action as the last action as soon as the ultimate task is complete
