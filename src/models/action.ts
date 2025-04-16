@@ -593,7 +593,8 @@ export class ActionImpl implements Action {
     mentionedTabs: chrome.tabs.Tab[],
     existingTabs: chrome.tabs.Tab[]
   ): string {
-    let prompt = `${name} -- ${description}`;
+    let prompt = `${name} -- The steps you can follow are ${description}`;
+
     prompt = `Your ultimate task is: """${prompt}""". If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.`;
     if (existingTabs.length > 0) {
       prompt +=
