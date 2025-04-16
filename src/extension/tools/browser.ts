@@ -1,7 +1,11 @@
 import { ScreenshotResult } from '../../types/tools.types';
 import { getPageSize } from '../utils';
 
-const isFellou = typeof (chrome as any).browseruse == 'object';
+const isFellou = (
+  typeof chrome !== 'undefined' ?
+    typeof (chrome as any).browseruse == 'object' :
+    undefined
+);
 
 export async function type(
   chromeProxy: any,
