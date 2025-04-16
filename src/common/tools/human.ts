@@ -212,7 +212,11 @@ When calling this tool to transfer control to the user, please explain in detail
         return { status: "`onHumanOperate` not implemented", userOperation: "" };
       }
       console.log("userOperation: " + userOperation);
-      return { status: "OK", userOperation: userOperation };
+      if (userOperation == "") {
+        return { status: "OK", userOperation: "Done. Please take a screenshot to ensure the result." };
+      } else {
+        return { status: "OK", userOperation: userOperation + "\n\nPlease take a screenshot to ensure the result."};
+      }
     } else {
       console.error("Cannot get user's operation.");
       return { status: "Error: Cannot get user's operation.", userOperation: "" };
