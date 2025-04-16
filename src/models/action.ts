@@ -542,6 +542,8 @@ export class ActionImpl implements Action {
 - Use scroll to find elements you are looking for
 - If you want to research something, open a new tab instead of using the current tab
 - If captcha pops up, try to solve it - else try a different approach
+- If login pops up, use 'human_operate' to let user handle it
+- Finally, as backup method, use 'human_operate' to handle any error that you tried many times
 
 ## TASK COMPLETION:
 - Use the 'return_output' action as the last action as soon as the ultimate task is complete
