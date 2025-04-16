@@ -2,7 +2,9 @@ import { ScreenshotResult } from '../../types/tools.types';
 import { getPageSize } from '../utils';
 
 function isFellouBrowser(chromeProxy: any): boolean {
-  return typeof chromeProxy.browseruse == 'object';
+  const result =  typeof chromeProxy.browseruse == 'object';
+  console.log("isFellouBrowser", result);
+  return result;
 }
 
 export async function type(
