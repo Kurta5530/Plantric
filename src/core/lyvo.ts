@@ -120,7 +120,6 @@ export class Lyvo {
             "description": prompt,
             "tools": [
               "browser_use",
-              "cancel_workflow",
               "document_agent",
               "export_file",
               "extract_content",
