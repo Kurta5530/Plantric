@@ -1,6 +1,8 @@
 import { ExecutionContext } from '../types/action.types';
 
 export async function getWindowId(context: ExecutionContext): Promise<number> {
+  console.log("getWindowId()...");
+  console.log("context: ", context);
   let windowId = context.variables.get('windowId') as any;
   if (windowId) {
     try {
@@ -33,11 +35,29 @@ export async function getWindowId(context: ExecutionContext): Promise<number> {
   if (!windowId) {
     console.warn("`getWindowId()` returns " + windowId);
   }
-
+  console.log("getWindowId()...done");
+  console.log("windowId: ", windowId);
   return windowId as number;
 }
 
+export function getSelectorXpath(index: number | undefined, selectorMap: any): string | undefined {
+  console.log("getSelectorXpath()...");
+  console.log("index: ", index);
+  console.log("selectorMap: ", selectorMap);
+  let selectorXpath;
+  if (index != null && selectorMap) {
+    selectorXpath = selectorMap[index]?.xpath;
+    if (!selectorXpath) {
+      throw new Error('Element does not exist');
+    }
+  }
+  console.log("selectorXpath: ", selectorXpath);
+  return selectorXpath;
+}
+
 export async function getTabId(context: ExecutionContext): Promise<number> {
+  console.log("getTabId()...");
+  console.log("context: ", context);
   let tabId = context.variables.get('tabId') as any;
   if (tabId) {
     try {
@@ -72,7 +92,12 @@ export async function getTabId(context: ExecutionContext): Promise<number> {
     }
     context.variables.set('tabId', tabId);
   }
-
+  
+  if (!tabId || !Number.isInteger(tabId)) {
+    throw new Error('Could not get valid tab ID');
+  }
+  console.log("getTabId()...done");
+  console.log("tabId: ", tabId);
   return tabId;
 }
 
