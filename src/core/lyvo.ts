@@ -123,16 +123,22 @@ export class Lyvo {
             "name": prompt,
             "description": description,
             "tools": [
-              "browser_use",
+              "input_text",
+              "click",
+              "right_click",
+              "double_click",
+              "scroll_to",
+              // "get_dropdown_options", // disabled for never been used
+              // "select_dropdown_option", // disabled for never been used
               "document_agent",
               "export_file",
               "extract_content",
               "open_url",
               "tab_management",
               "web_search",
-              "human_input_text",
-              "human_input_single_choice",
-              "human_input_multiple_choice",
+              // "human_input_text", // disabled for never been used
+              // "human_input_single_choice", // disabled for never been used
+              // "human_input_multiple_choice", // disabled for never been used
               "human_operate",
             ],
           },

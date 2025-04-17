@@ -6,198 +6,272 @@ import * as browser from './browser';
 /**
  * Browser Use for general
  */
-export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
-  name: string;
-  description: string;
+abstract class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
+  abstract name: string;
+  abstract description: string;
+  abstract required(): string[];
   input_schema: InputSchema;
 
   constructor() {
-    this.name = 'browser_use';
-    this.description = `Use structured commands to interact with the browser, manipulating page elements through screenshots and webpage element extraction.
-* This is a browser GUI interface where you need to analyze webpages by taking screenshots and extracting page element structures, and specify action sequences to complete designated tasks.
-* Before any operation, you must first call the \`screenshot_extract_element\` command, which will return the browser page screenshot and structured element information, both specially processed.
-* ELEMENT INTERACTION:
-   - Only use indexes that exist in the provided element list
-   - Each element has a unique index number (e.g., "[33]:<button>")
-   - Elements marked with "[]:" are non-interactive (for context only)
-* NAVIGATION & ERROR HANDLING:
-   - If no suitable elements exist, use other functions to complete the task
-   - If stuck, try alternative approaches
-   - Handle popups/cookies by accepting or closing them
-   - Use scroll to find elements you are looking for`;
-    this.input_schema = {
+    const required = this.required();
+    let input_schema: any = {
       type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          description: `The action to perform. The available actions are:
-* \`screenshot_extract_element\`: Take a screenshot of the web page and extract operable elements.
-  - Screenshots are used to understand page layouts, with labeled bounding boxes corresponding to element indexes. Each bounding box and its label share the same color, with labels typically positioned in the top-right corner of the box.
-  - Screenshots help verify element positions and relationships. Labels may sometimes overlap, so extracted elements are used to verify the correct elements.
-  - In addition to screenshots, simplified information about interactive elements is returned, with element indexes corresponding to those in the screenshots.
-* \`input_text\`: Enter a string in the interactive element, If you need to press the Enter key, please end with '\\n'.
-* \`click\`: Click to element.
-* \`right_click\`: Right-click on the element.
-* \`double_click\`: Double-click on the element.
-* \`scroll_to\`: Scroll to the specified element.
-* \`extract_content\`: Extract the text content of the current webpage.
-* \`get_dropdown_options\`: Get all options from a native dropdown element.
-* \`select_dropdown_option\`: Select dropdown option for interactive element index by the text of the option you want to select.`,
-          enum: [
-            'screenshot_extract_element',
-            'input_text',
-            'click',
-            'right_click',
-            'double_click',
-            'scroll_to',
-            'extract_content',
-            'get_dropdown_options',
-            'select_dropdown_option',
-          ],
-        },
-        index: {
-          type: 'integer',
-          description:
-            'index of element, Operation elements must pass the corresponding index of the element',
-        },
-        text: {
-          type: 'string',
-          description: 'Required by `action=input_text` and `action=select_dropdown_option`',
-        },
-      },
-      required: ['action'],
+      properties: {},
     };
+    if (required.includes("index")) {
+      input_schema.properties.index = {
+        type: 'integer',
+        description: 'The index of element, Operation elements must pass the corresponding index of the element',
+      };
+    }
+    if (required.includes("text")) {
+      input_schema.properties.text = {
+        type: 'string',
+        description: 'The input text.',
+      };
+    }
+    input_schema.required = required;
+    this.input_schema = input_schema;
   }
 
-  /**
-   * browser
-   *
-   * @param {*} params { action: 'input_text', index: 1, text: 'string' }
-   * @returns > { success: true, image?: { type: 'base64', media_type: 'image/jpeg', data: '/9j...' }, text?: string }
-   */
-  async execute(context: ExecutionContext, params: BrowserUseParam): Promise<BrowserUseResult> {
-    console.log("execute 'browser_use'...");
-    try {
-      if (params === null || !params.action) {
-        throw new Error('Invalid parameters. Expected an object with a "action" property.');
+  checkParams(params: BrowserUseParam): void {
+    if (this.input_schema.required) {
+      for (const key of this.input_schema.required) {
+        if (!(key in params)) {
+          throw new Error(`'${key}' parameter is missing but required`);
+        }
       }
-      const tabId = await getTabId(context);
-      const windowId = await getWindowId(context);
-      const selector_xpath = getSelectorXpath(params.index, context.selectorMap);
-      let result;
-      switch (params.action) {
-        case 'input_text':
-          if (params.index == null) {
-            throw new Error('index parameter is required');
-          }
-          if (params.text == null) {
-            throw new Error('text parameter is required');
-          }
-          await browser.clear_input_by(context.lyvoConfig.chromeProxy, tabId, selector_xpath, params.index);
-          result = await browser.type_by(context.lyvoConfig.chromeProxy, tabId, params.text, selector_xpath, params.index);
-          await sleep(200);
-          break;
-        case 'click':
-          if (params.index == null) {
-            throw new Error('index parameter is required');
-          }
-          result = await browser.left_click_by(context.lyvoConfig.chromeProxy, tabId, selector_xpath, params.index);
-          await sleep(100);
-          break;
-        case 'right_click':
-          if (params.index == null) {
-            throw new Error('index parameter is required');
-          }
-          result = await browser.right_click_by(context.lyvoConfig.chromeProxy, tabId, selector_xpath, params.index);
-          await sleep(100);
-          break;
-        case 'double_click':
-          if (params.index == null) {
-            throw new Error('index parameter is required');
-          }
-          result = await browser.double_click_by(context.lyvoConfig.chromeProxy, tabId, selector_xpath, params.index);
-          await sleep(100);
-          break;
-        case 'scroll_to':
-          if (params.index == null) {
-            throw new Error('index parameter is required');
-          }
-          result = await browser.scroll_to_by(context.lyvoConfig.chromeProxy, tabId, selector_xpath, params.index);
-          await sleep(500);
-          break;
-        case 'extract_content':
-          let tab = await context.lyvoConfig.chromeProxy.tabs.get(tabId);
-          await injectScript(context.lyvoConfig.chromeProxy, tabId);
-          await sleep(200);
-          let content = await executeScript(context.lyvoConfig.chromeProxy, tabId, () => {
-            return lyvo.extractHtmlContent();
-          }, []);
-          result = {
-            title: tab.title,
-            url: tab.url,
-            content: content,
-          };
-          break;
-        case 'get_dropdown_options':
-          if (params.index == null) {
-            throw new Error('index parameter is required');
-          }
-          result = await browser.get_dropdown_options(context.lyvoConfig.chromeProxy, tabId, selector_xpath, params.index);
-          break;
-        case 'select_dropdown_option':
-          if (params.index == null) {
-            throw new Error('index parameter is required');
-          }
-          if (params.text == null) {
-            throw new Error('text parameter is required');
-          }
-          result = await browser.select_dropdown_option(
-            context.lyvoConfig.chromeProxy,
-            tabId,
-            params.text,
-            selector_xpath,
-            params.index
-          );
-          break;
-        case 'screenshot_extract_element':
-          console.log("execute 'screenshot_extract_element'...");
-          await sleep(100);
-          console.log("injectScript...");
-          await injectScript(context.lyvoConfig.chromeProxy, tabId, 'build_dom_tree.js');
-          await sleep(100);
-          console.log("executeScript...");
-          let element_result = await executeScript(context.lyvoConfig.chromeProxy, tabId, () => {
-            return (window as any).get_clickable_elements(true);
-          }, []);
-          context.selector_map = element_result.selector_map;
-          console.log("browser.screenshot...");
-          let screenshot = await browser.screenshot(context.lyvoConfig.chromeProxy, windowId, true);
-          console.log("executeScript #2...");
-          await executeScript(context.lyvoConfig.chromeProxy, tabId, () => {
-            return (window as any).remove_highlight();
-          }, []);
-          result = { image: screenshot.image, text: element_result.element_str };
-          console.log("execute 'screenshot_extract_element'...done");
-          break;
-        default:
-          throw Error(
-            `Invalid parameters. The "${params.action}" value is not included in the "action" enumeration.`
-          );
-      }
-      console.log("execute 'browser_use'...done, result=");
-      console.log(result);
-      if (result) {
-        return { success: true, ...result };
-      } else {
-        return { success: false };
-      }
-    } catch (e: any) {
-      console.error('Browser use error:', e);
-      return { success: false, error: e?.message };
     }
+  }
+
+  async execute(context: ExecutionContext, params: BrowserUseParam): Promise<BrowserUseResult> {
+    this.checkParams(params);
+    const tabId = await getTabId(context);
+    const windowId = await getWindowId(context);
+    const selector_xpath = getSelectorXpath(params.index, context.selectorMap);
+    this.executeWithArgs(context, params, tabId, windowId, selector_xpath);
+    const result = this.screenshotExtractElement(context, tabId, windowId);
+    return result;
+  }
+
+  abstract executeWithArgs(
+    context: ExecutionContext,
+    params: BrowserUseParam,
+    tabId: number,
+    windowId: number,
+    selectorXpath: string | undefined,
+  ): Promise<void>;
+
+  async screenshotExtractElement(
+    context: ExecutionContext,
+    tabId: number,
+    windowId: number,
+  ): Promise<BrowserUseResult> {
+    console.log("execute 'screenshot_extract_element'...");
+    await sleep(100);
+    console.log("injectScript...");
+    await injectScript(context.lyvoConfig.chromeProxy, tabId, 'build_dom_tree.js');
+    await sleep(100);
+    console.log("executeScript...");
+    let element_result = await executeScript(context.lyvoConfig.chromeProxy, tabId, () => {
+      return (window as any).get_clickable_elements(true);
+    }, []);
+    context.selector_map = element_result.selector_map;
+    console.log("browser.screenshot...");
+    let screenshot = await browser.screenshot(context.lyvoConfig.chromeProxy, windowId, true);
+    console.log("executeScript #2...");
+    await executeScript(context.lyvoConfig.chromeProxy, tabId, () => {
+      return (window as any).remove_highlight();
+    }, []);
+    const result = { image: screenshot.image, text: element_result.element_str };
+    console.log("execute 'screenshot_extract_element'...done");
+    return result;
   }
 
   destroy(context: ExecutionContext) {
     delete context.selector_map;
+  }
+}
+
+export class InputText extends BrowserUse {
+  name: string = 'input_text';
+  description: string = `Enter a string in the interactive element, If you need to press the Enter key, please end with '\\n'`;
+
+  required(): string[] {
+    return ["index", "text"];
+  }
+
+  async executeWithArgs(
+    context: ExecutionContext,
+    params: BrowserUseParam,
+    tabId: number,
+    windowId: number,
+    selectorXpath: string | undefined,
+  ): Promise<void> {
+    await browser.clear_input_by(context.lyvoConfig.chromeProxy, tabId, selectorXpath, params.index);
+    const result = await browser.type_by(context.lyvoConfig.chromeProxy, tabId, params.text as string, selectorXpath, params.index);
+    await sleep(200);
+    console.log("tool result", result);
+  }
+}
+
+export class Click extends BrowserUse {
+  name: string = 'click';
+  description: string = `Click to element.`;
+
+  required(): string[] {
+    return ["index"];
+  }
+
+  async executeWithArgs(
+    context: ExecutionContext,
+    params: BrowserUseParam,
+    tabId: number,
+    windowId: number,
+    selectorXpath: string | undefined,
+  ): Promise<void> {
+    await browser.left_click_by(context.lyvoConfig.chromeProxy, tabId, selectorXpath, params.index);
+    await sleep(100);
+  }
+}
+
+export class RightClick extends BrowserUse {
+  name: string = 'right_click';
+  description: string = `Right-click on the element.`;
+
+  required(): string[] {
+    return ["index"];
+  }
+
+  async executeWithArgs(
+    context: ExecutionContext,
+    params: BrowserUseParam,
+    tabId: number,
+    windowId: number,
+    selectorXpath: string | undefined,
+  ): Promise<void> {
+    await browser.right_click_by(context.lyvoConfig.chromeProxy, tabId, selectorXpath, params.index);
+    await sleep(100);
+  }
+}
+
+export class DoubleClick extends BrowserUse {
+  name: string = 'double_click';
+  description: string = `Double-click on the element.`;
+
+  required(): string[] {
+    return ["index"];
+  }
+
+  async executeWithArgs(
+    context: ExecutionContext,
+    params: BrowserUseParam,
+    tabId: number,
+    windowId: number,
+    selectorXpath: string | undefined,
+  ): Promise<void> {
+    await browser.right_click_by(context.lyvoConfig.chromeProxy, tabId, selectorXpath, params.index);
+    await sleep(100);
+  }
+}
+
+export class ScrollTo extends BrowserUse {
+  name: string = 'scroll_to';
+  description: string = `Scroll to the specified element.`;
+
+  required(): string[] {
+    return ["index"];
+  }
+
+  async executeWithArgs(
+    context: ExecutionContext,
+    params: BrowserUseParam,
+    tabId: number,
+    windowId: number,
+    selectorXpath: string | undefined,
+  ): Promise<void> {
+    await browser.scroll_to_by(context.lyvoConfig.chromeProxy, tabId, selectorXpath, params.index);
+    await sleep(500);
+  }
+}
+
+// duplication of src\extension\tools\extract_content.ts
+// export class ExtractContent extends BrowserUse {
+//   name: string = 'extract_content';
+//   description: string = `Extract the text content of the current webpage.`;
+
+//   required(): string[] {
+//     return ["index"];
+//   }
+
+//   async executeWithArgs(
+//     context: ExecutionContext,
+//     params: BrowserUseParam,
+//     tabId: number,
+//     windowId: number,
+//     selectorXpath: string | undefined,
+//   ): Promise<void> {
+//     let tab = await context.lyvoConfig.chromeProxy.tabs.get(tabId);
+//     await injectScript(context.lyvoConfig.chromeProxy, tabId);
+//     await sleep(200);
+//     let content = await executeScript(context.lyvoConfig.chromeProxy, tabId, () => {
+//       return lyvo.extractHtmlContent();
+//     }, []);
+//     const result = {
+//       title: tab.title,
+//       url: tab.url,
+//       content: content,
+//     };
+//     return result;
+//   }
+// }
+
+export class GetDropdownOptions extends BrowserUse {
+  name: string = 'get_dropdown_options';
+  description: string = `Get all options from a native dropdown element.`;
+
+  required(): string[] {
+    return ["index"];
+  }
+
+  async executeWithArgs(
+    context: ExecutionContext,
+    params: BrowserUseParam,
+    tabId: number,
+    windowId: number,
+    selectorXpath: string | undefined,
+  ): Promise<void> {
+    browser.get_dropdown_options(context.lyvoConfig.chromeProxy, tabId, selectorXpath, params.index); await sleep(500);
+  }
+}
+
+export class SelectDropdownOption extends BrowserUse {
+  name: string = 'select_dropdown_option';
+  description: string = `Select dropdown option for interactive element index by the text of the option you want to select.`;
+
+  required(): string[] {
+    return ["index", "text"];
+  }
+
+  async executeWithArgs(
+    context: ExecutionContext,
+    params: BrowserUseParam,
+    tabId: number,
+    windowId: number,
+    selectorXpath: string | undefined,
+  ): Promise<void> {
+    if (params.index == null) {
+      throw new Error('index parameter is required');
+    }
+    if (params.text == null) {
+      throw new Error('text parameter is required');
+    }
+    await browser.select_dropdown_option(
+      context.lyvoConfig.chromeProxy,
+      tabId,
+      params.text,
+      selectorXpath,
+      params.index
+    );
   }
 }

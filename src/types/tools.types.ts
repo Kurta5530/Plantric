@@ -11,12 +11,23 @@ export interface ComputerUseResult {
 }
 
 export interface BrowserUseParam {
-  action: string;
   index?: number;
   text?: string;
 }
 
 export interface BrowserUseResult {
+  image?: ScreenshotImage;
+  text?: string;
+  [key: string]: any;
+}
+
+export interface BrowserUseParamOld {
+  action: string;
+  index?: number;
+  text?: string;
+}
+
+export interface BrowserUseResultOld {
   success: boolean;
   image?: ScreenshotImage;
   text?: string;
