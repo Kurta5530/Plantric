@@ -103,6 +103,7 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
         }
       }
       let result;
+      console.log("switch cases...");
       switch (params.action) {
         case 'input_text':
           if (params.index == null) {
@@ -204,11 +205,13 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
       }
       console.log("execute 'browser_use'...done, result=");
       console.log(result);
-      if (result) {
-        return { success: true, ...result };
-      } else {
-        return { success: false };
+      if (params.action != "screenshot_extract_element") {
+        console.log("as this action is has not screenshoted, take it now...");
+        let instance = new BrowserUse();
+        result = await instance.execute(context, { action: "screenshot_extract_element" });
+        console.log("as this action is has not screenshoted, take it now...done");
       }
+      return result
     } catch (e: any) {
       console.error('Browser use error:', e);
       return { success: false, error: e?.message };
