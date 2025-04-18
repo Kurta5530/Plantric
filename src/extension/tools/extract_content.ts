@@ -27,10 +27,10 @@ export class ExtractContent implements Tool<any, ExtractContentResult> {
    */
   async execute(context: ExecutionContext, params: any): Promise<ExtractContentResult> {
     let tabId = await getTabId(context);
-    let tab = await chrome.tabs.get(tabId);
-    await injectScript(tabId);
+    let tab = await context.lyvoConfig.chromeProxy.tabs.get(tabId);
+    await injectScript(context.lyvoConfig.chromeProxy, tabId);
     await sleep(500);
-    let content = await executeScript(tabId, () => {
+    let content = await executeScript(context.lyvoConfig.chromeProxy, tabId, () => {
       return lyvo.extractHtmlContent();
     }, []);
     return {

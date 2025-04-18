@@ -35,7 +35,7 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
   - Screenshots are used to understand page layouts, with labeled bounding boxes corresponding to element indexes. Each bounding box and its label share the same color, with labels typically positioned in the top-right corner of the box.
   - Screenshots help verify element positions and relationships. Labels may sometimes overlap, so extracted elements are used to verify the correct elements.
   - In addition to screenshots, simplified information about interactive elements is returned, with element indexes corresponding to those in the screenshots.
-* \`input_text\`: Enter a string in the interactive element.
+* \`input_text\`: Enter a string in the interactive element, If you need to press the Enter key, please end with '\\n'. For search tasks, you MUST end with '\\n' to simulate pressing the Enter key.
 * \`click\`: Click to element.
 * \`right_click\`: Right-click on the element.
 * \`double_click\`: Double-click on the element.
@@ -76,13 +76,16 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
    * @returns > { success: true, image?: { type: 'base64', media_type: 'image/jpeg', data: '/9j...' }, text?: string }
    */
   async execute(context: ExecutionContext, params: BrowserUseParam): Promise<BrowserUseResult> {
+    console.log("execute 'browser_use'...");
     try {
       if (params === null || !params.action) {
         throw new Error('Invalid parameters. Expected an object with a "action" property.');
       }
       let tabId: number;
       try {
+        console.log("getTabId(context)...");
         tabId = await getTabId(context);
+        console.log("getTabId(context)...done");
         if (!tabId || !Number.isInteger(tabId)) {
           throw new Error('Could not get valid tab ID');
         }
@@ -100,6 +103,7 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
         }
       }
       let result;
+      console.log("switch cases...");
       switch (params.action) {
         case 'input_text':
           if (params.index == null) {
@@ -108,43 +112,43 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           if (params.text == null) {
             throw new Error('text parameter is required');
           }
-          await browser.clear_input_by(tabId, selector_xpath, params.index);
-          result = await browser.type_by(tabId, params.text, selector_xpath, params.index);
+          await browser.clear_input_by(context.lyvoConfig.chromeProxy, tabId, selector_xpath, params.index);
+          result = await browser.type_by(context.lyvoConfig.chromeProxy, tabId, params.text, selector_xpath, params.index);
           await sleep(200);
           break;
         case 'click':
           if (params.index == null) {
             throw new Error('index parameter is required');
           }
-          result = await browser.left_click_by(tabId, selector_xpath, params.index);
+          result = await browser.left_click_by(context.lyvoConfig.chromeProxy, tabId, selector_xpath, params.index);
           await sleep(100);
           break;
         case 'right_click':
           if (params.index == null) {
             throw new Error('index parameter is required');
           }
-          result = await browser.right_click_by(tabId, selector_xpath, params.index);
+          result = await browser.right_click_by(context.lyvoConfig.chromeProxy, tabId, selector_xpath, params.index);
           await sleep(100);
           break;
         case 'double_click':
           if (params.index == null) {
             throw new Error('index parameter is required');
           }
-          result = await browser.double_click_by(tabId, selector_xpath, params.index);
+          result = await browser.double_click_by(context.lyvoConfig.chromeProxy, tabId, selector_xpath, params.index);
           await sleep(100);
           break;
         case 'scroll_to':
           if (params.index == null) {
             throw new Error('index parameter is required');
           }
-          result = await browser.scroll_to_by(tabId, selector_xpath, params.index);
+          result = await browser.scroll_to_by(context.lyvoConfig.chromeProxy, tabId, selector_xpath, params.index);
           await sleep(500);
           break;
         case 'extract_content':
-          let tab = await chrome.tabs.get(tabId);
-          await injectScript(tabId);
+          let tab = await context.lyvoConfig.chromeProxy.tabs.get(tabId);
+          await injectScript(context.lyvoConfig.chromeProxy, tabId);
           await sleep(200);
-          let content = await executeScript(tabId, () => {
+          let content = await executeScript(context.lyvoConfig.chromeProxy, tabId, () => {
             return lyvo.extractHtmlContent();
           }, []);
           result = {
@@ -157,7 +161,7 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           if (params.index == null) {
             throw new Error('index parameter is required');
           }
-          result = await browser.get_dropdown_options(tabId, selector_xpath, params.index);
+          result = await browser.get_dropdown_options(context.lyvoConfig.chromeProxy, tabId, selector_xpath, params.index);
           break;
         case 'select_dropdown_option':
           if (params.index == null) {
@@ -167,6 +171,7 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
             throw new Error('text parameter is required');
           }
           result = await browser.select_dropdown_option(
+            context.lyvoConfig.chromeProxy, 
             tabId,
             params.text,
             selector_xpath,
@@ -174,29 +179,39 @@ export class BrowserUse implements Tool<BrowserUseParam, BrowserUseResult> {
           );
           break;
         case 'screenshot_extract_element':
+          console.log("execute 'screenshot_extract_element'...");
           await sleep(100);
-          await injectScript(tabId, 'build_dom_tree.js');
+          console.log("injectScript...");
+          await injectScript(context.lyvoConfig.chromeProxy, tabId, 'build_dom_tree.js');
           await sleep(100);
-          let element_result = await executeScript(tabId, () => {
+          console.log("executeScript...");
+          let element_result = await executeScript(context.lyvoConfig.chromeProxy, tabId, () => {
             return (window as any).get_clickable_elements(true);
           }, []);
           context.selector_map = element_result.selector_map;
-          let screenshot = await browser.screenshot(windowId, true);
-          await executeScript(tabId, () => {
+          console.log("browser.screenshot...");
+          let screenshot = await browser.screenshot(context.lyvoConfig.chromeProxy, windowId, true);
+          console.log("executeScript #2...");
+          await executeScript(context.lyvoConfig.chromeProxy, tabId, () => {
             return (window as any).remove_highlight();
           }, []);
           result = { image: screenshot.image, text: element_result.element_str };
+          console.log("execute 'screenshot_extract_element'...done");
           break;
         default:
           throw Error(
             `Invalid parameters. The "${params.action}" value is not included in the "action" enumeration.`
           );
       }
-      if (result) {
-        return { success: true, ...result };
-      } else {
-        return { success: false };
+      console.log("execute 'browser_use'...done, result=");
+      console.log(result);
+      if (params.action != "screenshot_extract_element") {
+        console.log("as this action is has not screenshoted, take it now...");
+        let instance = new BrowserUse();
+        result = await instance.execute(context, { action: "screenshot_extract_element" });
+        console.log("as this action is has not screenshoted, take it now...done");
       }
+      return result
     } catch (e: any) {
       console.error('Browser use error:', e);
       return { success: false, error: e?.message };

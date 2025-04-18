@@ -1,6 +1,6 @@
 // src/models/action.ts
 
-import { Action, Tool, ExecutionContext, InputSchema } from '../types/action.types';
+import { Action, Tool, ExecutionContext, InputSchema, Property } from '../types/action.types';
 import { NodeInput, NodeOutput } from '../types/workflow.types';
 import {
   LLMProvider,
@@ -9,44 +9,10 @@ import {
   LLMStreamHandler,
   ToolDefinition,
   LLMResponse,
+  ToolCall,
 } from '../types/llm.types';
 import { ExecutionLogger } from '@/utils/execution-logger';
-
-/**
- * Special tool that allows LLM to write values to context
- */
-class WriteContextTool implements Tool<any, any> {
-  name = 'write_context';
-  description =
-    'Write a value to the global workflow context. Use this to store important intermediate results, but only when a piece of information is essential for future reference but missing from the final output specification of the current action.';
-  input_schema = {
-    type: 'object',
-    properties: {
-      key: {
-        type: 'string',
-        description: 'The key to store the value under',
-      },
-      value: {
-        type: 'string',
-        description: 'The value to store (must be JSON stringified if object/array)',
-      },
-    },
-    required: ['key', 'value'],
-  } as InputSchema;
-
-  async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
-    const { key, value } = params as { key: string; value: string };
-    try {
-      // Try to parse the value as JSON
-      const parsedValue = JSON.parse(value);
-      context.variables.set(key, parsedValue);
-    } catch {
-      // If parsing fails, store as string
-      context.variables.set(key, value);
-    }
-    return { success: true, key, value };
-  }
-}
+import { WriteContextTool } from '@/common/tools/write_context';
 
 function createReturnTool(
   actionName: string,
@@ -79,16 +45,20 @@ function createReturnTool(
 
     async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
       context.variables.set(`__action_${actionName}_output`, params);
+      console.info('debug the output...');
+      console.log(params);
+      console.info('debug the output...done');
       return { success: true };
     },
   };
 }
 
 export class ActionImpl implements Action {
-  private readonly maxRounds: number = 10; // Default max rounds
+  private readonly maxRounds: number = 100; // Default max rounds
   private writeContextTool: WriteContextTool;
   private toolResults: Map<string, any> = new Map();
   private logger: ExecutionLogger = new ExecutionLogger();
+  public tabs: chrome.tabs.Tab[] = [];
 
   constructor(
     public type: 'prompt', // Only support prompt type
@@ -116,99 +86,117 @@ export class ActionImpl implements Action {
     hasToolUse: boolean;
     roundMessages: Message[];
   }> {
-    this.logger = context.logger;
-    const roundMessages: Message[] = [];
-    let hasToolUse = false;
     let response: LLMResponse | null = null;
+    let hasToolUse = false;
+    let roundMessages: Message[] = [];
 
-    // Buffer to collect into roundMessages
-    let assistantTextMessage = '';
-    let toolUseMessage: Message | null = null;
-    let toolResultMessage: Message | null = null;
+    let params_copy: LLMParameters = JSON.parse(JSON.stringify(params));
+    params_copy.tools = params_copy.tools?.map(this.wrapToolInputSchema);
 
-    // Track tool execution promise
-    let toolExecutionPromise: Promise<void> | null = null;
+    while (!context.signal?.aborted) {
+      this.logger = context.logger;
+      roundMessages = [];
+      hasToolUse = false;
+      response = null;
 
-    // Listen for abort signal
-    if (context.signal) {
-      context.signal.addEventListener('abort', () => {
-        context.__abort = true;
-      });
-    }
+      // Buffer to collect into roundMessages
+      let assistantTextMessage = '';
+      let toolUseMessage: Message | null = null;
+      let toolResultMessage: Message | null = null;
 
-    const handler: LLMStreamHandler = {
-      onContent: (content) => {
-        if (content.trim()) {
-          assistantTextMessage += content;
-        }
-      },
-      onToolUse: async (toolCall) => {
-        this.logger.log('info', `Assistant: ${assistantTextMessage}`);
-        this.logger.logToolExecution(toolCall.name, toolCall.input, context);
-        hasToolUse = true;
+      // Track tool execution promise
+      let toolExecutionPromise: Promise<void> | null = null;
 
-        const tool = toolMap.get(toolCall.name);
-        if (!tool) {
-          throw new Error(`Tool not found: ${toolCall.name}`);
-        }
+      // Listen for abort signal
+      if (context.signal) {
+        context.signal.addEventListener('abort', () => {
+          context.__abort = true;
+        });
+      }
 
-        toolUseMessage = {
-          role: 'assistant',
-          content: [
-            {
-              type: 'tool_use',
-              id: toolCall.id,
-              name: tool.name,
-              input: toolCall.input,
-            },
-          ],
-        };
+      const handler: LLMStreamHandler = {
+        onContent: (content) => {
+          if (content.trim()) {
+            assistantTextMessage += content;
+          }
+        },
+        onToolUse: async (toolCall) => {
+          this.logger.log('info', `Assistant: ${assistantTextMessage}`);
+          this.logger.logToolExecution(toolCall.name, toolCall.input, context);
+          hasToolUse = true;
 
-        // Store the promise of tool execution
-        toolExecutionPromise = (async () => {
-          try {
-            // beforeToolUse
-            context.__skip = false;
-            if (context.callback && context.callback.hooks.beforeToolUse) {
-              let modified_input = await context.callback.hooks.beforeToolUse(
-                tool,
-                context,
-                toolCall.input
-              );
-              if (modified_input) {
-                toolCall.input = modified_input;
+          const tool = toolMap.get(toolCall.name);
+          if (!tool) {
+            throw new Error(`Tool not found: ${toolCall.name}`);
+          }
+
+          toolUseMessage = {
+            role: 'assistant',
+            content: [
+              {
+                type: 'tool_use',
+                id: toolCall.id,
+                name: tool.name,
+                input: toolCall.input,
+              },
+            ],
+          };
+
+          // Store the promise of tool execution
+          toolExecutionPromise = (async () => {
+            try {
+              // beforeToolUse
+              context.__skip = false;
+              if (context.callback && context.callback.hooks.beforeToolUse) {
+                let modified_input = await context.callback.hooks.beforeToolUse(
+                  tool,
+                  context,
+                  toolCall.input
+                );
+                if (modified_input) {
+                  toolCall.input = modified_input;
+                }
               }
-            }
-            if (context.__skip || context.__abort || context.signal?.aborted) {
-              toolResultMessage = {
-                role: 'user',
-                content: [
-                  {
-                    type: 'tool_result',
-                    tool_use_id: toolCall.id,
-                    content: 'skip',
-                  },
-                ],
-              };
-              return;
-            }
-            // Execute the tool
-            let result = await tool.execute(context, toolCall.input);
-            // afterToolUse
-            if (context.callback && context.callback.hooks.afterToolUse) {
-              let modified_result = await context.callback.hooks.afterToolUse(
-                tool,
-                context,
-                result
-              );
-              if (modified_result) {
-                result = modified_result;
+              if (context.__skip || context.__abort || context.signal?.aborted) {
+                toolResultMessage = {
+                  role: 'user',
+                  content: [
+                    {
+                      type: 'tool_result',
+                      tool_use_id: toolCall.id,
+                      content: 'skip',
+                    },
+                  ],
+                };
+                return;
               }
-            }
 
-            const result_has_image: boolean = result && result.image;
-            const resultContent =
-              result_has_image
+              // unwrap the toolCall
+              let unwrapped = this.unwrapToolCall(toolCall);
+              let input = unwrapped.toolCall.input;
+              console.log("unwrapped", unwrapped);
+              if (unwrapped.userSidePrompt) {
+                context.callback?.hooks.onLlmMessageUserSidePrompt?.(unwrapped.userSidePrompt);
+              } else {
+                console.warn("LLM returns without `userSidePrompt`");
+              }
+
+              // Execute the tool
+              let result = await tool.execute(context, input);
+              // afterToolUse
+              if (context.callback && context.callback.hooks.afterToolUse) {
+                let modified_result = await context.callback.hooks.afterToolUse(
+                  tool,
+                  context,
+                  result
+                );
+                if (modified_result) {
+                  result = modified_result;
+                }
+              }
+
+              const result_has_image: boolean = result && result.image;
+              const resultContent = result_has_image
                 ? {
                     type: 'tool_result',
                     tool_use_id: toolCall.id,
@@ -224,79 +212,86 @@ export class ActionImpl implements Action {
                     tool_use_id: toolCall.id,
                     content: [{ type: 'text', text: JSON.stringify(result) }],
                   };
-            const resultContentText =
-              result_has_image
+              const resultContentText = result_has_image
                 ? result.text
                   ? result.text + ' [Image]'
                   : '[Image]'
                 : JSON.stringify(result);
-            const resultMessage: Message = {
-              role: 'user',
-              content: [resultContent],
-            };
-            toolResultMessage = resultMessage;
-            this.logger.logToolResult(tool.name, result, context);
-            // Store tool results except for the return_output tool
-            if (tool.name !== 'return_output') {
-              this.toolResults.set(toolCall.id, resultContentText);
+              const resultMessage: Message = {
+                role: 'user',
+                content: [resultContent],
+              };
+              toolResultMessage = resultMessage;
+              this.logger.logToolResult(tool.name, result, context);
+              // Store tool results except for the return_output tool
+              if (tool.name !== 'return_output') {
+                this.toolResults.set(toolCall.id, resultContentText);
+              }
+            } catch (err) {
+              console.log('An error occurred when calling tool:');
+              console.log(err);
+              const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+              const errorResult: Message = {
+                role: 'user',
+                content: [
+                  {
+                    type: 'tool_result',
+                    tool_use_id: toolCall.id,
+                    content: [{ type: 'text', text: `Error: ${errorMessage}` }],
+                    is_error: true,
+                  },
+                ],
+              };
+              toolResultMessage = errorResult;
+              this.logger.logError(err as Error, context);
             }
-          } catch (err) {
-            console.log("An error occurred when calling tool:");
-            console.log(err);
-            const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-            const errorResult: Message = {
-              role: 'user',
-              content: [
-                {
-                  type: 'tool_result',
-                  tool_use_id: toolCall.id,
-                  content: [{ type: 'text', text: `Error: ${errorMessage}` }],
-                  is_error: true,
-                },
-              ],
-            };
-            toolResultMessage = errorResult;
-            this.logger.logError(err as Error, context);
-          }
-        })();
-      },
-      onComplete: (llmResponse) => {
-        response = llmResponse;
-      },
-      onError: (error) => {
-        console.error('Stream Error:', error);
-        console.log('Last message array sent to LLM:', JSON.stringify(messages, null, 2));
-      },
-    };
+          })();
+        },
+        onComplete: (llmResponse) => {
+          response = llmResponse;
+        },
+        onError: (error) => {
+          // console.error('Stream Error:', error);
+          // console.log('Last message array sent to LLM:', JSON.stringify(messages, null, 2));
+          throw error;
+        },
+      };
 
-    this.handleHistoryImageMessages(messages);
+      this.handleHistoryImageMessages(messages);
 
-    // Wait for stream to complete
-    if (!this.llmProvider) {
-      throw new Error('LLM provider not set');
-    }
-    await this.llmProvider.generateStream(messages, params, handler);
+      // Wait for stream to complete
+      if (!this.llmProvider) {
+        throw new Error('LLM provider not set');
+      }
+      try {
+        await this.llmProvider.generateStream(messages, params_copy, handler);
+      } catch (e) {
+        console.warn("an error occurs when LLM generate response");
+        console.warn(e);
+        continue;
+      }
 
-    // Wait for tool execution to complete if it was started
-    if (toolExecutionPromise) {
-      await toolExecutionPromise;
-    }
+      // Wait for tool execution to complete if it was started
+      if (toolExecutionPromise) {
+        await toolExecutionPromise;
+      }
 
-    if (context.__abort) {
-      throw new Error('Abort');
-    }
+      if (context.__abort) {
+        throw new Error('Abort');
+      }
 
-    // Add messages in the correct order after everything is complete
-    if (assistantTextMessage) {
-      roundMessages.push({ role: 'assistant', content: assistantTextMessage });
+      // Add messages in the correct order after everything is complete
+      if (assistantTextMessage) {
+        roundMessages.push({ role: 'assistant', content: assistantTextMessage });
+      }
+      if (toolUseMessage) {
+        roundMessages.push(toolUseMessage);
+      }
+      if (toolResultMessage) {
+        roundMessages.push(toolResultMessage);
+      }
+      break;
     }
-    if (toolUseMessage) {
-      roundMessages.push(toolUseMessage);
-    }
-    if (toolResultMessage) {
-      roundMessages.push(toolResultMessage);
-    }
-
     return { response, hasToolUse, roundMessages };
   }
 
@@ -335,13 +330,13 @@ export class ActionImpl implements Action {
 
     const finalImageCount = this.countImages(messages);
     if (initialImageCount !== finalImageCount) {
-      this.logger.log("info", `Removed ${initialImageCount - finalImageCount} images from history`);
+      this.logger.log('info', `Removed ${initialImageCount - finalImageCount} images from history`);
     }
   }
 
   private countImages(messages: Message[]): number {
     let count = 0;
-    messages.forEach(msg => {
+    messages.forEach((msg) => {
       if (Array.isArray(msg.content)) {
         msg.content.forEach((item: any) => {
           if (item.type === 'tool_result' && Array.isArray(item.content)) {
@@ -358,7 +353,7 @@ export class ActionImpl implements Action {
     output: NodeOutput,
     context: ExecutionContext,
     outputSchema?: unknown
-  ): Promise<unknown> {
+  ): Promise<{ nodeOutput: unknown; reacts: Message[] }> {
     this.logger = context.logger;
     console.log(`Executing action started: ${this.name}`);
     // Create return tool with output schema
@@ -370,10 +365,19 @@ export class ActionImpl implements Action {
     context.tools?.forEach((tool) => toolMap.set(tool.name, tool));
     toolMap.set(returnTool.name, returnTool);
 
+    // get already existing tabs as task background
+    const currentWindow = await context.lyvoConfig.chromeProxy.windows.getCurrent();
+    const existingTabs: chrome.tabs.Tab[] = await context.lyvoConfig.chromeProxy.tabs.query({
+      windowId: currentWindow.id,
+    });
+
     // Prepare initial messages
     const messages: Message[] = [
       { role: 'system', content: this.formatSystemPrompt() },
-      { role: 'user', content: this.formatUserPrompt(context, input) },
+      {
+        role: 'user',
+        content: this.formatUserPrompt(this.name, this.description, this.tabs, existingTabs),
+      },
     ];
 
     this.logger.logActionStart(this.name, input, context);
@@ -425,7 +429,10 @@ export class ActionImpl implements Action {
       if (!hasToolUse && response) {
         // LLM sent a message without using tools - request explicit return
         this.logger.log('info', `Assistant: ${response.textContent}`);
-        this.logger.log('warn', 'LLM sent a message without using tools; requesting explicit return');
+        this.logger.log(
+          'warn',
+          'LLM sent a message without using tools; requesting explicit return'
+        );
         const returnOnlyParams = {
           ...params,
           tools: [
@@ -490,6 +497,10 @@ export class ActionImpl implements Action {
     // Get and clean up output value
     const outputKey = `__action_${this.name}_output`;
     const outputParams = context.variables.get(outputKey) as any;
+    if (!outputParams) {
+      console.warn('outputParams is `undefined`, action return `{}`');
+      return { nodeOutput: {}, reacts: messages };
+    }
     context.variables.delete(outputKey);
 
     // Get output value, first checking for use_tool_result
@@ -499,45 +510,113 @@ export class ActionImpl implements Action {
 
     if (outputValue === undefined) {
       console.warn('Action completed without returning a value');
-      return {};
+      return { nodeOutput: {}, reacts: messages };
     }
 
-    return outputValue;
+    return { nodeOutput: outputValue, reacts: messages };
   }
 
   private formatSystemPrompt(): string {
-    return `You are a subtask executor. You need to complete the subtask specified by the user, which is a consisting part of the overall task. Help the user by calling the tools provided.
+    const now = new Date();
+    const formattedTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    console.log('Now is ' + formattedTime);
+    return `You are an AI agent designed to automate browser tasks. Your goal is to accomplish the ultimate task following the rules. Now is ${formattedTime}.
 
-    Remember to:
-    1. Use tools when needed to accomplish the task
-    2. Think step by step about what needs to be done
-    3. Return the output of the subtask using the 'return_output' tool when you are done; prefer using the 'tool_use_id' parameter to refer to the output of a tool call over providing a long text as the value
-    4. Use the context to store important information for later reference, but use it sparingly: most of the time, the output of the subtask should be sufficient for the next steps
-    5. If there are any unclear points during the task execution, please use the human-related tool to inquire with the user
-    6. If user intervention is required during the task execution, please use the human-related tool to transfer the operation rights to the user
-    `;
+## GENERIC:
+- Your tool calling must be always JSON with the specified format.
+- You should have a screenshot after every action to make sure the tools executed successfully.
+- User's requirement maybe not prefect, but user will not give you any further information, you should explore by yourself and follow the common sense
+- If you encountered a problem (e.g. be required to login), try to bypass it or explore other ways and links
+- Before you return output, reflect on whether the output provided *is what users need* and *whether it is too concise*
+- If you find the what user want, click the URL and show it on the current page.
+
+## TIME:
+- The current time is ${formattedTime}.
+- If the user has specified a particular time requirement, please complete the task according to the user's specified time frame.
+- If the user has given a vague time requirement, such as “recent one year,” then please determine the time range based on the current time first, and then complete the task.
+
+## NAVIGATION:
+- If no suitable elements exist, use other functions to complete the task
+- If stuck, try alternative approaches - like going back to a previous page, new search, new tab etc.
+- Handle popups/cookies by accepting or closing them
+- Use scroll to find elements you are looking for
+- If you want to research something, open a new tab instead of using the current tab
+
+## HUMAN OPERATE:
+- When you need to log in or enter a verification code:
+1. First check if the user is logged in
+
+Please determine whether a user is logged in based on the front-end page elements. The analysis can be conducted from the following aspects:
+User Information Display Area: After logging in, the page will display user information such as avatar, username, and personal center links; if not logged in, it will show a login/register button.
+Navigation Bar or Menu Changes: After logging in, the navigation bar will include exclusive menu items like "My Orders" and "My Favorites"; if not logged in, it will show a login/register entry.
+
+2. If logged in, continue to perform the task normally
+3. If not logged in or encountering a verification code interface, immediately use the 'human_operate' tool to transfer the operation rights to the user
+4. On the login/verification code interface, do not use any automatic input tools (such as 'input_text') to fill in the password or verification code
+5. Wait for the user to complete the login/verification code operation, and then check the login status again
+- As a backup method, when encountering other errors that cannot be handled automatically, use the 'human_operate' tool to transfer the operation rights to the user
+
+## TASK COMPLETION:
+- Use the 'return_output' action as the last action ONLY when you are 100% certain the ultimate task is complete
+- Before using 'return_output', you MUST:
+  1. Double-check if you have fulfilled ALL requirements from the user's task description
+  2. Verify that you have collected ALL necessary information
+  3. Ensure you have handled ALL specified cases (e.g., "for each", "for all", "x times")
+  4. Confirm that your output contains ALL requested information
+  5. Check if there are any missing details or incomplete steps
+  6. Verify that all retry attempts have been exhausted if there were any issues
+- If you have to do something repeatedly (e.g., "for each", "for all", "x times"):
+  * Keep a detailed count in your text response of completed items vs total required
+  * Only proceed to 'return_output' after handling ALL items
+  * Double-check your count matches the exact requirement
+  * If any item fails, retry that specific item before moving on
+- Never hallucinate or assume task completion without verification
+- Make sure you include everything you found out for the ultimate task in the done text parameter. Do not just say you are done, but include the requested information of the task. 
+
+## VISUAL CONTEXT:
+- When an image is provided, use it to understand the page layout
+- Bounding boxes with labels on their top right corner correspond to element indexes
+- Do not repeatedly call the screenshot tool without any operating action
+
+## Form filling:
+- If you fill an input field and your action sequence is interrupted, most often something changed e.g. suggestions popped up under the field.
+
+## Long tasks:
+- Keep track of the status and subresults in the memory. 
+
+## Extraction:
+- If your task is to find information - call extract_content on the specific pages to get and store the information.
+
+## Human tools:
+- Once you called human tools (e.g. \`human_operate\`), and it returns success, check the page content and verify the result.
+
+## THE MOST IMPORTANT RULE
+- DO NOT REFUSE TO PERFORM THE MISSION
+- DO NOT REFUSE TO PERFORM THE MISSION
+- DO NOT REFUSE TO PERFORM THE MISSION
+`;
   }
 
-  private formatUserPrompt(context: ExecutionContext, input: unknown): string {
-    const workflowDescription = context.workflow?.description || null;
-    const actionDescription = `${this.name} -- ${this.description}`;
-    const inputDescription = JSON.stringify(input, null, 2) || null;
-    const contextVariables = Array.from(context.variables.entries())
-      .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
-      .join('\n');
+  private formatUserPrompt(
+    name: string,
+    description: string,
+    mentionedTabs: chrome.tabs.Tab[],
+    existingTabs: chrome.tabs.Tab[]
+  ): string {
+    let prompt = `${name} -- The steps you can follow are ${description}`;
 
-    return `You are executing a subtask in the workflow. The workflow description is as follows:
-    ${workflowDescription}
-
-    The subtask description is as follows:
-    ${actionDescription}
-
-    The input to the subtask is as follows:
-    ${inputDescription}
-
-    There are some variables stored in the context that you can use for reference:
-    ${contextVariables}
-    `;
+    prompt = `Your ultimate task is: """${prompt}""". If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.`;
+    if (existingTabs.length > 0) {
+      prompt +=
+        '\n\nYou should complete the task with the following tabs:\n' +
+        existingTabs.map((tab) => `- TabID=${tab.id}: ${tab.title} (${tab.url})`).join('\n');
+    }
+    if (mentionedTabs.length > 0) {
+      prompt +=
+        '\n\nYou should consider the following tabs firstly:\n' +
+        mentionedTabs.map((tab) => `- TabID=${tab.id}: ${tab.title} (${tab.url})`).join('\n');
+    }
+    return prompt;
   }
 
   // Static factory method
@@ -549,5 +628,49 @@ export class ActionImpl implements Action {
     llmConfig?: LLMParameters
   ): Action {
     return new ActionImpl('prompt', name, description, tools, llmProvider, llmConfig);
+  }
+
+  private wrapToolInputSchema(definition: ToolDefinition): ToolDefinition {
+    (definition.input_schema as InputSchema) = {
+      type: "object",
+      properties: {
+        // comment for backup
+        // observation: {
+        //   "type": "string",
+        //   "description": 'Your observation of the previous steps. Should start with "In the previous step, I\'ve ...".',
+        // },
+        // thinking: {
+        //   "type": "string",
+        //   "description": 'Your thinking draft. Should start with "As observation before, now I should ...".',
+        // },
+        userSidePrompt: {
+          "type": "string",
+          "description": 'The user-side prompt, showing why calling this tool. Should start with "I\'m calling the ...(tool) to ...(target)". Rememeber to keep the same language of the ultimate task.',
+        },
+        toolCall: (definition.input_schema as Property),
+      },
+      required: [
+        // comment for backup
+        // "observation",
+        // "thinking",
+        "userSidePrompt",
+        "toolCall",
+      ],
+    };
+    return definition;
+  }
+
+  private unwrapToolCall(toolCall: ToolCall) {
+    const result = {
+      observation: toolCall.input.observation as string | undefined,
+      thinking: toolCall.input.thinking as string | undefined,
+      userSidePrompt: toolCall.input.userSidePrompt as string | undefined,
+      toolCall: {
+        id: toolCall.id,
+        name: toolCall.name,
+        input: toolCall.input.toolCall,
+      } as ToolCall,
+    }
+    return result;
   }
 }

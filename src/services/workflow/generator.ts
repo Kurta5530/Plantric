@@ -19,6 +19,10 @@ export class WorkflowGenerator {
     return this.doGenerateWorkflow(prompt, false, lyvoConfig);
   }
 
+  async generateWorkflowFromJson(json: any, lyvoConfig: LyvoConfig): Promise<Workflow> {
+    return this.createWorkflowFromData(json, lyvoConfig);
+  }
+
   async modifyWorkflow(prompt: string, lyvoConfig: LyvoConfig): Promise<Workflow> {
     return this.doGenerateWorkflow(prompt, true, lyvoConfig);
   }
@@ -54,7 +58,9 @@ export class WorkflowGenerator {
       toolChoice: { type: 'tool', name: 'generate_workflow' },
     };
 
+    console.time('Workflow Generation Time'); // 开始计时
     const response = await this.llmProvider.generateText(messages, params);
+    console.timeEnd('Workflow Generation Time'); // 结束计时并输出时间差
 
     if (!response.toolCalls.length || !response.toolCalls[0].input.workflow) {
       messages.pop();
@@ -87,38 +93,18 @@ export class WorkflowGenerator {
 
     const workflowData = response.toolCalls[0].input.workflow as any;
 
-    // Forcibly add special tools
-    const specialTools = [
-      "cancel_workflow",
-      "human_input_text",
-      "human_operate",
-    ]
-    for (const node of workflowData.nodes) {
-      for (const tool of specialTools) {
-        if (!node.action.tools.includes(tool)) {
-          node.action.tools.push(tool);
-        }
-      }
-    }
+    // debug
+    console.log("Debug the workflow...")
+    console.log({ ...workflowData});
+    console.log("Debug the workflow...Done")    
 
-    // Validate all tools exist
-    for (const node of workflowData.nodes) {
-      if (!this.toolRegistry.hasTools(node.action.tools)) {
-        throw new Error(`Workflow contains undefined tools: ${node.action.tools}`);
-      }
-    }
 
     // Generate a new UUID if not provided
     if (!workflowData.id) {
       workflowData.id = uuidv4();
     }
 
-    // debug
-    console.log("Debug the workflow...")
-    console.log(workflowData);
-    console.log("Debug the workflow...Done")    
-    
-    return this.createWorkflowFromData(workflowData, lyvoConfig);
+    return this.createFastWorkflowFromData(workflowData, lyvoConfig);
   }
 
   private createWorkflowFromData(data: any, lyvoConfig: LyvoConfig): Workflow {
@@ -126,6 +112,7 @@ export class WorkflowGenerator {
       data.id,
       data.name,
       lyvoConfig,
+      data,
       data.description || '',
       [],
       new Map(Object.entries(data.variables || {})),
@@ -139,7 +126,13 @@ export class WorkflowGenerator {
     // Add nodes to workflow
     if (Array.isArray(data.nodes)) {
       data.nodes.forEach((nodeData: any) => {
-        const tools = nodeData.action.tools.map((toolName: string) =>
+        const tools = nodeData.action.tools.filter((toolName: string) => {
+          let hasTool = this.toolRegistry.hasTools([toolName]);
+          if (!hasTool) {
+            console.warn(`The [${toolName}] tool does not exist.`);
+          }
+          return hasTool;
+        }).map((toolName: string) =>
           this.toolRegistry.getTool(toolName)
         );
 
@@ -147,6 +140,49 @@ export class WorkflowGenerator {
           nodeData.action.name,
           nodeData.action.description,
           tools,
+          this.llmProvider,
+          { maxTokens: 8192 }
+        );
+
+        const node = {
+          id: nodeData.id,
+          name: nodeData.name || nodeData.id,
+          input: nodeData.input || { type: 'any', schema: {}, value: undefined },
+          output: nodeData.output || { type: 'any', schema: {}, value: undefined },
+          action: action,
+          dependencies: nodeData.dependencies || [],
+        };
+        workflow.addNode(node);
+      });
+    }
+
+    return workflow;
+  }
+
+  private createFastWorkflowFromData(data: any, lyvoConfig: LyvoConfig): Workflow {
+    const workflow = new WorkflowImpl(
+      data.id,
+      data.name,
+      lyvoConfig,
+      data,
+      data.description || '',
+      [],
+      new Map(Object.entries(data.variables || {})),
+      this.llmProvider,
+      {
+        logLevel: 'info',
+        includeTimestamp: true,
+      }
+    );
+
+    // Add nodes to workflow
+    if (Array.isArray(data.nodes)) {
+      data.nodes.forEach((nodeData: any) => {
+
+        const action = ActionImpl.createPromptAction(
+          nodeData.action.name,
+          nodeData.action.description,
+          [this.toolRegistry.getTool('browser_use')],
           this.llmProvider,
           { maxTokens: 8192 }
         );

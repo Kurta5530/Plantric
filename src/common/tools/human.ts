@@ -7,8 +7,8 @@ import {
   HumanInputMultipleChoiceResult,
   HumanOperateInput,
   HumanOperateResult,
-} from '../types/tools.types';
-import { Tool, InputSchema, ExecutionContext } from '../types/action.types';
+} from '../../types/tools.types';
+import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
 
 export class HumanInputText implements Tool<HumanInputTextInput, HumanInputTextResult> {
   name: string;
@@ -17,7 +17,7 @@ export class HumanInputText implements Tool<HumanInputTextInput, HumanInputTextR
 
   constructor() {
     this.name = 'human_input_text';
-    this.description = 'When you are unsure about the details of your next action, call me and ask the user for details in the "question" field. The user will provide you with a text as an answer.';
+    this.description = 'When you are unsure about the details of your next action or need the user to perform a local action, call me and ask the user for details in the "question" field. The user will provide you with a text as an answer.';
     this.input_schema = {
       type: 'object',
       properties: {
@@ -36,13 +36,20 @@ export class HumanInputText implements Tool<HumanInputTextInput, HumanInputTextR
     }
     const question = params.question;
     console.log("question: " + question);
-    let answer = await context.callback?.hooks.onHumanInputText?.(question);
-    if (!answer) {
-      console.error("Cannot get user's answer.");
-      return {status: "Error: Cannot get user's answer.", answer: ""};
-    } else {
+    let onHumanInputText = context.callback?.hooks.onHumanInputText;
+    if (onHumanInputText) {
+      let answer;
+      try {
+        answer = await onHumanInputText(question);
+      } catch (e) {
+        console.error(e);
+        return { status: "Error: Cannot get user's answer.", answer: "" };
+      }
       console.log("answer: " + answer);
-      return {status: "OK", answer: answer};
+      return { status: "OK", answer: answer };
+    } else {
+      console.error("`onHumanInputText` not implemented");
+      return { status: "Error: Cannot get user's answer.", answer: "" };
     }
   }
 }
@@ -65,6 +72,14 @@ export class HumanInputSingleChoice implements Tool<HumanInputSingleChoiceInput,
         choices: {
           type: 'array',
           description: 'All of the choices.',
+          items: {
+            type: 'object',
+            properties: {
+              choice: {
+                type: 'string',
+              }
+            }
+          }
         }
       },
       required: ['question', 'choices'],
@@ -76,16 +91,23 @@ export class HumanInputSingleChoice implements Tool<HumanInputSingleChoiceInput,
       throw new Error('Invalid parameters. Expected an object with a "question" and "choices" property.');
     }
     const question = params.question;
-    const choices = params.choices;
+    const choices = params.choices.map((e) => e.choice);
     console.log("question: " + question);
     console.log("choices: " + choices);
-    let answer = await context.callback?.hooks.onHumanInputSingleChoice?.(question, choices);
-    if (!answer) {
-      console.error("Cannot get user's answer.");
-      return {status: "Error: Cannot get user's answer.", answer: ""};
-    } else {
+    let onHumanInputSingleChoice = context.callback?.hooks.onHumanInputSingleChoice;
+    if (onHumanInputSingleChoice) {
+      let answer;
+      try {
+        answer = await onHumanInputSingleChoice(question, choices);
+      } catch (e) {
+        console.error(e);
+        return { status: "Error: Cannot get user's answer.", answer: "" };
+      }
       console.log("answer: " + answer);
-      return {status: "OK", answer: answer};
+      return { status: "OK", answer: answer };
+    } else {
+      console.error("`onHumanInputSingleChoice` not implemented");
+      return { status: "Error: Cannot get user's answer.", answer: "" };
     }
   }
 }
@@ -108,6 +130,14 @@ export class HumanInputMultipleChoice implements Tool<HumanInputMultipleChoiceIn
         choices: {
           type: 'array',
           description: 'All of the choices.',
+          items: {
+            type: 'object',
+            properties: {
+              choice: {
+                type: 'string',
+              }
+            }
+          }
         }
       },
       required: ['question', 'choices'],
@@ -119,16 +149,23 @@ export class HumanInputMultipleChoice implements Tool<HumanInputMultipleChoiceIn
       throw new Error('Invalid parameters. Expected an object with a "question" and "choices" property.');
     }
     const question = params.question;
-    const choices = params.choices;
+    const choices = params.choices.map((e) => e.choice);
     console.log("question: " + question);
     console.log("choices: " + choices);
-    let answer = await context.callback?.hooks.onHumanInputMultipleChoice?.(question, choices);
-    if (!answer) {
-      console.error("Cannot get user's answer.");
-      return {status: "Error: Cannot get user's answer.", answer: []};
-    } else {
+    let onHumanInputMultipleChoice = context.callback?.hooks.onHumanInputMultipleChoice;
+    if (onHumanInputMultipleChoice) {
+      let answer;
+      try {
+        answer = await onHumanInputMultipleChoice(question, choices)
+      } catch (e) {
+        console.error(e);
+        return { status: "`onHumanInputMultipleChoice` not implemented", answer: [] };
+      }
       console.log("answer: " + answer);
-      return {status: "OK", answer: answer};
+      return { status: "OK", answer: answer };
+    } else {
+      console.error("Cannot get user's answer.");
+      return { status: "Error: Cannot get user's answer.", answer: [] };
     }
   }
 }
@@ -140,7 +177,13 @@ export class HumanOperate implements Tool<HumanOperateInput, HumanOperateResult>
 
   constructor() {
     this.name = 'human_operate';
-    this.description = 'When you encounter operations that require login, CAPTCHA verification, or other tasks that you cannot complete, please call this tool, transfer control to the user, and explain why.';
+    this.description = `Use this tool when you are unable to continue a task that requires user assistance.
+Usage scenarios include:
+1. Authentication (such as logging in, entering a verification code, etc.)
+2. External system operations (such as uploading files, selecting a file save location, scanning documents, taking photos, paying, authorization, etc.)
+When calling this tool to transfer control to the user, please explain in detail:
+1. Why user intervention is required
+2. What operations the user needs to perform`;
     this.input_schema = {
       type: 'object',
       properties: {
@@ -159,13 +202,24 @@ export class HumanOperate implements Tool<HumanOperateInput, HumanOperateResult>
     }
     const reason = params.reason;
     console.log("reason: " + reason);
-    let userOperation = await context.callback?.hooks.onHumanOperate?.(reason);
-    if (!userOperation) {
-      console.error("Cannot get user's operation.");
-      return {status: "Error: Cannot get user's operation.", userOperation: ""};
-    } else {
+    let onHumanOperate = context.callback?.hooks.onHumanOperate;
+    if (onHumanOperate) {
+      let userOperation;
+      try {
+        userOperation = await onHumanOperate(reason);
+      } catch (e) {
+        console.error(e);
+        return { status: "`onHumanOperate` not implemented", userOperation: "" };
+      }
       console.log("userOperation: " + userOperation);
-      return {status: "OK", userOperation: userOperation};
+      if (userOperation == "") {
+        return { status: "OK", userOperation: "Done. Please take a screenshot to ensure the result." };
+      } else {
+        return { status: "OK", userOperation: userOperation + "\n\nPlease take a screenshot to ensure the result."};
+      }
+    } else {
+      console.error("Cannot get user's operation.");
+      return { status: "Error: Cannot get user's operation.", userOperation: "" };
     }
   }
 }

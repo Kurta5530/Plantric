@@ -1,6 +1,5 @@
+import { LLMProviderFactory } from '../services/llm/provider-factory';
 import { WorkflowGenerator } from '../services/workflow/generator';
-import { ClaudeProvider } from '../services/llm/claude-provider';
-import { OpenaiProvider } from '../services/llm/openai-provider';
 import {
   LLMConfig,
   LyvoConfig,
@@ -8,11 +7,9 @@ import {
   LLMProvider,
   Tool,
   Workflow,
-  ClaudeConfig,
-  OpenaiConfig,
   WorkflowCallback,
-  NodeOutput,
   ExecutionContext,
+  WorkflowResult
 } from '../types';
 import { ToolRegistry } from './tool-registry';
 
@@ -26,46 +23,66 @@ export class Lyvo {
   private lyvoConfig: LyvoConfig;
   private toolRegistry = new ToolRegistry();
   private workflowGeneratorMap = new Map<Workflow, WorkflowGenerator>();
+  public prompt: string = "";
+  public tabs: chrome.tabs.Tab[] = [];
+  public workflow?: Workflow = undefined;
 
   constructor(llmConfig: LLMConfig, lyvoConfig?: LyvoConfig) {
-    if (typeof llmConfig == 'string') {
-      this.llmProvider = new ClaudeProvider(llmConfig);
-    } else if ('llm' in llmConfig) {
-      if (llmConfig.llm == 'claude') {
-        let claudeConfig = llmConfig as ClaudeConfig;
-        this.llmProvider = new ClaudeProvider(
-          claudeConfig.apiKey,
-          claudeConfig.modelName,
-          claudeConfig.options
-        );
-      } else if (llmConfig.llm == 'openai') {
-        let openaiConfig = llmConfig as OpenaiConfig;
-        this.llmProvider = new OpenaiProvider(
-          openaiConfig.apiKey,
-          openaiConfig.modelName,
-          openaiConfig.options
-        );
-      } else {
-        let msg: string = 'Unknown parameter: llm > ' + llmConfig['llm'];
-        console.error(msg)
-        throw new Error(msg);
-      }
-    } else {
-      this.llmProvider = llmConfig as LLMProvider;
-    }
-
-    if (lyvoConfig) {
-      this.lyvoConfig = lyvoConfig;
-    } else {
-      this.lyvoConfig = {
-        workingWindowId: undefined,
-      };
-    }
-
-    Lyvo.tools.forEach((tool) => this.toolRegistry.registerTool(tool));
+    console.info("using Lyvo@" + process.env.COMMIT_HASH);
+    console.warn("this version is POC, should not used for production");
+    this.llmProvider = LLMProviderFactory.buildLLMProvider(llmConfig);
+    this.lyvoConfig = this.buildLyvoConfig(lyvoConfig);
+    this.registerTools();
   }
 
-  public async generate(prompt: string, param?: LyvoInvokeParam): Promise<Workflow> {
+  private buildLyvoConfig(lyvoConfig: Partial<LyvoConfig> | undefined): LyvoConfig {
+    if (!lyvoConfig) {
+      console.warn("`lyvoConfig` is missing when construct `Lyvo` instance");
+    }
+    const defaultLyvoConfig: LyvoConfig = {
+      workingWindowId: undefined,
+      chromeProxy: typeof chrome === 'undefined' ? undefined : chrome,
+      callback: undefined,
+    };
+    return {
+      ...defaultLyvoConfig,
+      ...lyvoConfig,
+    };
+  }
+
+  private registerTools() {
+    let tools = Array.from(Lyvo.tools.entries()).map(([_key, tool]) => tool);
+
+    // filter human tools by callbacks
+    const callback = this.lyvoConfig.callback;
+    if (callback) {
+      const hooks = callback.hooks;
+
+      // these tools could not work without corresponding hook
+      const tool2isHookExists: { [key: string]: boolean } = {
+        "human_input_text": Boolean(hooks.onHumanInputText),
+        "human_input_single_choice": Boolean(hooks.onHumanInputSingleChoice),
+        "human_input_multiple_choice": Boolean(hooks.onHumanInputMultipleChoice),
+        "human_operate": Boolean(hooks.onHumanOperate),
+      };
+      tools = tools.filter(tool => {
+        if (tool.name in tool2isHookExists) {
+          let isHookExists = tool2isHookExists[tool.name]
+          return isHookExists;
+        } else {
+          return true;
+        }
+      });
+    } else {
+      console.warn("`lyvoConfig.callback` is missing when construct `Lyvo` instance.")
+    }
+    
+    tools.forEach(tool => this.toolRegistry.registerTool(tool));
+  }
+
+  public async generate(prompt: string, tabs: chrome.tabs.Tab[] = [], param?: LyvoInvokeParam): Promise<Workflow> {
+    this.prompt = prompt;
+    this.tabs = tabs;
     let toolRegistry = this.toolRegistry;
     if (param && param.tools && param.tools.length > 0) {
       toolRegistry = new ToolRegistry();
@@ -81,10 +98,60 @@ export class Lyvo {
     const generator = new WorkflowGenerator(this.llmProvider, toolRegistry);
     const workflow = await generator.generateWorkflow(prompt, this.lyvoConfig);
     this.workflowGeneratorMap.set(workflow, generator);
+    console.log("the workflow returned by generate");
+    console.log(workflow);
+    this.workflow = workflow;
     return workflow;
   }
 
-  public async execute(workflow: Workflow, callback?: WorkflowCallback): Promise<NodeOutput[]> {
+  public async execute(workflow: Workflow): Promise<WorkflowResult> {
+    let prompt = this.prompt;
+    let description ="";
+    workflow.nodes.forEach(node => {
+      description += node.name + "\n";
+    })
+    const json = {
+      "id": "workflow_id",
+      "name": prompt,
+      "description": prompt,
+      "nodes": [
+        {
+          "id": "sub_task_id",
+          "type": "action",
+          "action": {
+            "type": "prompt",
+            "name": prompt,
+            "description": description,
+            "tools": [
+              "browser_use",
+              "document_agent",
+              "export_file",
+              "extract_content",
+              "open_url",
+              "tab_management",
+              "web_search",
+              "human_input_text",
+              "human_input_single_choice",
+              "human_input_multiple_choice",
+              "human_operate",
+            ],
+          },
+          "dependencies": []
+        },
+      ],
+    };
+    console.log("debug the workflow...");
+    console.log(json);
+    console.log("debug the workflow...done");
+    
+    console.log("debug the LLMProvider...");
+    console.log(this.llmProvider);
+    console.log("debug the LLMProvider...done");
+    
+    const generator = new WorkflowGenerator(this.llmProvider, this.toolRegistry);  
+    workflow = await generator.generateWorkflowFromJson(json, this.lyvoConfig);
+    this.workflow = workflow;
+
     // Inject LLM provider at workflow level
     workflow.llmProvider = this.llmProvider;
 
@@ -104,11 +171,17 @@ export class Lyvo {
       }
     }
 
-    return await workflow.execute(callback);
+    const result = await workflow.execute(this.lyvoConfig.callback);
+    console.log(result);
+    return result;
   }
 
-  public async cancel(workflow: Workflow): Promise<void> {
-    return await workflow.cancel();
+  public async cancel(): Promise<void> {
+    if (this.workflow) {
+      return await this.workflow.cancel();
+    } else {
+      throw Error("`Lyvo` instance do not have a `workflow` member");
+    }
   }
 
 

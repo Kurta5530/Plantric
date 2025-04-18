@@ -2,6 +2,7 @@ import { Action, ExecutionContext, Tool } from "./action.types";
 import { LLMProvider } from "./llm.types";
 import { ExecutionLogger } from "@/utils/execution-logger";
 import { ExportFileParam } from "./tools.types";
+import { WorkflowResult } from "./lyvo.types";
 
 export interface NodeOutput {
   name: string;
@@ -32,12 +33,13 @@ export interface Workflow {
   llmProvider?: LLMProvider;
 
   setLogger(logger: ExecutionLogger): void;
-  execute(callback?: WorkflowCallback): Promise<NodeOutput[]>;
+  execute(callback?: WorkflowCallback): Promise<WorkflowResult>;
   cancel(): Promise<void>;
   addNode(node: WorkflowNode): void;
   removeNode(nodeId: string): void;
   getNode(nodeId: string): WorkflowNode;
   validateDAG(): boolean;
+  getRawWorkflowJson(): string,
 }
 
 export interface WorkflowCallback {
@@ -50,6 +52,7 @@ export interface WorkflowCallback {
     afterWorkflow?: (workflow: Workflow, variables: Map<string, unknown>) => Promise<void>;
     onTabCreated?: (tabId: number) => Promise<void>;
     onLlmMessage?: (textContent: string) => Promise<void>;
+    onLlmMessageUserSidePrompt?: (text: string) => Promise<void>;
     onHumanInputText?: (question: string) => Promise<string>;
     onHumanInputSingleChoice?: (question: string, choices: string[]) => Promise<string>;
     onHumanInputMultipleChoice?: (question: string, choices: string[]) => Promise<string[]>;

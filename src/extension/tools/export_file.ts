@@ -13,7 +13,7 @@ export class ExportFile implements Tool<ExportFileParam, unknown> {
 
   constructor() {
     this.name = 'export_file';
-    this.description = 'Content exported as a file, support text format';
+    this.description = 'Export a text file with content. You should call this tool ONLY when user requires to export a file.';
     this.input_schema = {
       type: 'object',
       properties: {
@@ -77,7 +77,7 @@ export class ExportFile implements Tool<ExportFileParam, unknown> {
     }
     try {
       let tabId = await getTabId(context);
-      await chrome.scripting.executeScript({
+      await context.lyvoConfig.chromeProxy.scripting.executeScript({
         target: { tabId: tabId as number },
         func: exportFile,
         args: [filename, type, params.content],
@@ -86,19 +86,19 @@ export class ExportFile implements Tool<ExportFileParam, unknown> {
       let tab;
       const url = 'https://www.google.com';
       if (context.lyvoConfig.workingWindowId) {
-        tab = await open_new_tab(url, false, context.lyvoConfig.workingWindowId);
+        tab = await open_new_tab(context.lyvoConfig.chromeProxy, url, false, context.lyvoConfig.workingWindowId);
       } else {
-        tab = await open_new_tab(url, true);
+        tab = await open_new_tab(context.lyvoConfig.chromeProxy, url, true);
       }
       context.callback?.hooks?.onTabCreated?.(tab.id as number);
       let tabId = tab.id as number;
-      await chrome.scripting.executeScript({
+      await context.lyvoConfig.chromeProxy.scripting.executeScript({
         target: { tabId: tabId as number },
         func: exportFile,
         args: [filename, type, params.content],
       });
       await sleep(5000);
-      await chrome.tabs.remove(tabId);
+      await context.lyvoConfig.chromeProxy.tabs.remove(tabId);
     }
     return { success: true };
   }
