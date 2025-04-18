@@ -29,7 +29,7 @@ export function createWorkflowGenerationTool(registry: ToolRegistry) {
   return {
     name: 'generate_workflow',
     description: `Generate a workflow following the Lyvo framework DSL schema.
-The workflow must  ensure proper dependencies between nodes.The number of nodes cannot exceed four.`,
+The workflow must  ensure proper dependencies between nodes.`,
     input_schema: {
       type: 'object',
       properties: {

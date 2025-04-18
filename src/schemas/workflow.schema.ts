@@ -4,7 +4,7 @@ export const workflowSchema = {
   properties: {
     thinking: {
       type: "string",
-      description: 'Your thinking draft. Should start with "OK, now user requires me to ...". Just show your thinking process, DO NOT show the specificed steps,Remember DO NOT output more than 20 words total! You can use markdown format without code block.',
+      description: 'Your thinking draft. Should start with "OK, now user requires me to ...". Just show your thinking process, DO NOT show the specificed steps,Remember DO NOT output more than 50 words total! You can use markdown format without code block.',
     },
     id: { type: "string" },
     name: { type: "string" },
