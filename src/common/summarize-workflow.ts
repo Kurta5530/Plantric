@@ -49,12 +49,19 @@ ${JSON.stringify(nodeOutputs)}
             type: 'string',
             description: 'Your summary in one paragraph with fluent and natural language, including task status and outcome of the task.',
           },
-          payload: {
+          isDocumentGenerationTask: {
+            type: 'boolean',
+            description: `Please determine the task type based on the following description:
+- 'true' if this task is Information Collection and Document Generation Tasks: Tasks that require collecting information and generating a document (such as a report, draft, summary, etc.).
+- 'false' if this task is Interaction and Operation Tasks: Tasks that only require interaction with the environment to complete a specific operation, without the need to generate a long document.
+`
+          },
+          document: {
             type: 'string',
-            description: 'If the workflow has to give a output like a report or a draft, use the `payload`. If the workflow do not have any output (like click a link), leave it blank.'
+            description: `If 'isDocumentGenerationTask' is 'true', write the human-readable document here. Else, leave it 'null'.`
           }
         },
-        required: ['isSuccessful', 'summary'],
+        required: ['isSuccessful', 'summary', 'isDocumentGenerationTask'],
       },
     }],
     toolChoice: { type: 'tool', name: 'summarize_workflow' },
@@ -65,6 +72,6 @@ ${JSON.stringify(nodeOutputs)}
   return {
     isSuccessful: response.toolCalls[0].input.isSuccessful as boolean,
     summary: response.toolCalls[0].input.summary as string,
-    payload: response.toolCalls[0].input.payload as string | undefined,
+    payload: response.toolCalls[0].input.document as string | undefined,
   };
 }
