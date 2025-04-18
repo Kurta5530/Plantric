@@ -545,6 +545,11 @@ export class ActionImpl implements Action {
 ## HUMAN OPERATE:
 - When you need to log in or enter a verification code:
 1. First check if the user is logged in
+
+Please determine whether a user is logged in based on the front-end page elements. The analysis can be conducted from the following aspects:
+User Information Display Area: After logging in, the page will display user information such as avatar, username, and personal center links; if not logged in, it will show a login/register button.
+Navigation Bar or Menu Changes: After logging in, the navigation bar will include exclusive menu items like "My Orders" and "My Favorites"; if not logged in, it will show a login/register entry.
+
 2. If logged in, continue to perform the task normally
 3. If not logged in or encountering a verification code interface, immediately use the 'human_operate' tool to transfer the operation rights to the user
 4. On the login/verification code interface, do not use any automatic input tools (such as 'input_text') to fill in the password or verification code
