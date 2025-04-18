@@ -209,11 +209,11 @@ async function doDetailLinkGroups(
             type: 'page:getDetailLinks',
             keyword: searchs[i].keyword,
           });
-          if (!detailLinks || !detailLinks.links) {
-            // TODO error
-            detailLinks = { links: [] };
-          }
           console.log('detailLinks: ', detailLinks);
+          if (!detailLinks || !detailLinks.links) {
+            console.error("detailLinks is empty");
+            throw new Error("An error occurs when calling `web_search`, please try again.");
+          }
           let links = detailLinks.links.slice(0, detailsMaxNum);
           detailLinkGroups.push({ url, links, filename });
           countDownLatch.countDown();
