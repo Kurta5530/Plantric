@@ -121,7 +121,7 @@ export class ActionImpl implements Action {
 
       const handler: LLMStreamHandler = {
         onContent: (content) => {
-          if (content.trim()) {
+          if (content && content.trim()) {
             assistantTextMessage += content;
           }
         },
