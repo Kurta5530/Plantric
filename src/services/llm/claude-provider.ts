@@ -92,6 +92,10 @@ export class ClaudeProvider implements LLMProvider {
           return (s.content[0] as any).text as string;
         }
       })[0];
+    const toolChoice = params.toolChoice as Anthropic.ToolChoice
+    if (toolChoice) {
+      toolChoice.disable_parallel_tool_use = true
+    }
     const response = await this.client.messages.create({
       system,
       model: params.model || this.defaultModel,
@@ -99,7 +103,7 @@ export class ClaudeProvider implements LLMProvider {
       temperature: params.temperature,
       messages: messages.filter((s) => s.role != 'system') as Anthropic.MessageParam[],
       tools: params.tools as Anthropic.Tool[],
-      tool_choice: params.toolChoice as Anthropic.ToolChoice,
+      tool_choice: toolChoice,
     });
 
     return this.processResponse(response);
@@ -119,6 +123,10 @@ export class ClaudeProvider implements LLMProvider {
           return (s.content[0] as any).text as string;
         }
       })[0];
+    const toolChoice = params.toolChoice as Anthropic.ToolChoice
+    if (toolChoice) {
+      toolChoice.disable_parallel_tool_use = true
+    }
     const stream = await this.client.messages.stream({
       system,
       model: params.model || this.defaultModel,
@@ -126,7 +134,7 @@ export class ClaudeProvider implements LLMProvider {
       temperature: params.temperature,
       messages: messages.filter((s) => s.role != 'system') as Anthropic.MessageParam[],
       tools: params.tools as Anthropic.Tool[],
-      tool_choice: params.toolChoice as Anthropic.ToolChoice,
+      tool_choice: toolChoice,
     });
 
     handler.onStart?.();
