@@ -1,16 +1,18 @@
-import { OpenUrlParam, OpenUrlResult } from '../../types/tools.types';
+import { BrowserUseParam, OpenUrlParam, OpenUrlResult } from '../../types/tools.types';
 import { Tool, InputSchema, ExecutionContext } from '../../types/action.types';
 import { getWindowId, open_new_tab } from '../utils';
+import { ToolReturnsScreenshot } from './tool_returns_screenshot';
 
 /**
  * Open Url
  */
-export class OpenUrl implements Tool<OpenUrlParam, OpenUrlResult> {
+export class OpenUrl extends ToolReturnsScreenshot<OpenUrlParam> {
   name: string;
   description: string;
   input_schema: InputSchema;
 
   constructor() {
+    super();
     this.name = 'open_url';
     this.description = 'Open the specified URL link in browser window';
     this.input_schema = {
@@ -35,7 +37,7 @@ export class OpenUrl implements Tool<OpenUrlParam, OpenUrlResult> {
    * @param {*} params { url: 'https://www.google.com', newWindow: true }
    * @returns > { tabId, windowId, title, success: true }
    */
-  async execute(context: ExecutionContext, params: OpenUrlParam): Promise<OpenUrlResult> {
+  async realExecute(context: ExecutionContext, params: OpenUrlParam): Promise<OpenUrlResult> {
     console.log('Starting execute function with context:', context, 'and params:', params);
 
     // 参数验证
@@ -66,14 +68,14 @@ export class OpenUrl implements Tool<OpenUrlParam, OpenUrlResult> {
     let tab: chrome.tabs.Tab;
     if (newWindow) {
       console.log('Opening new tab in a new window.');
-      tab = await open_new_tab(context.lyvoConfig.chromeProxy, url, true);
+      tab = await open_new_tab(context.lyvoConfig.chromeProxy, url);
       context.callback?.hooks?.onTabCreated?.(tab.id as number);
       console.log('New tab created in a new window:', tab);
     } else {
       let windowId = context.lyvoConfig.workingWindowId ? context.lyvoConfig.workingWindowId : await getWindowId(context);
       console.log('Using existing window with ID:', windowId);
       try {
-        tab = await open_new_tab(context.lyvoConfig.chromeProxy, url, false, windowId);
+        tab = await open_new_tab(context.lyvoConfig.chromeProxy, url, windowId);
         console.log("Calling hook...")
         context.callback?.hooks?.onTabCreated?.(tab.id as number);
         console.log('New tab created in existing window:', tab);
