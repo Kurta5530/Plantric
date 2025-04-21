@@ -210,6 +210,7 @@ export class OpenaiProvider implements LLMProvider {
       messages: _messages,
       tools: tools,
       tool_choice: tool_choice,
+      parallel_tool_calls: false,
     };
   }
 

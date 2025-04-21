@@ -121,7 +121,7 @@ export class ActionImpl implements Action {
 
       const handler: LLMStreamHandler = {
         onContent: (content) => {
-          if (content.trim()) {
+          if (content && content.trim()) {
             assistantTextMessage += content;
           }
         },
@@ -132,6 +132,27 @@ export class ActionImpl implements Action {
 
           const tool = toolMap.get(toolCall.name);
           if (!tool) {
+            toolUseMessage = {
+              role: 'assistant',
+              content: [
+                {
+                  type: 'tool_use',
+                  id: toolCall.id,
+                  name: toolCall.name,
+                  input: toolCall.input,
+                },
+              ],
+            };
+            toolResultMessage = {
+              role: 'user',
+              content: [
+                {
+                  type: 'tool_result',
+                  tool_use_id: toolCall.id,
+                  content: `Error: \`${toolCall.name}\` tool not found.`,
+                },
+              ],
+            };
             throw new Error(`Tool not found: ${toolCall.name}`);
           }
 
