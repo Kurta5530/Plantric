@@ -23,7 +23,7 @@ export class HumanInputText implements Tool<HumanInputTextInput, HumanInputTextR
       properties: {
         question: {
           type: 'string',
-          description: 'Ask the user here.',
+          description: 'Ask the user here. Should follow the format: "Please input ...".',
         },
       },
       required: ['question'],
@@ -67,7 +67,7 @@ export class HumanInputSingleChoice implements Tool<HumanInputSingleChoiceInput,
       properties: {
         question: {
           type: 'string',
-          description: 'Ask the user here.',
+          description: 'Ask the user here. Should follow the format: "Please select ...".',
         },
         choices: {
           type: 'array',
@@ -125,7 +125,7 @@ export class HumanInputMultipleChoice implements Tool<HumanInputMultipleChoiceIn
       properties: {
         question: {
           type: 'string',
-          description: 'Ask the user here.',
+          description: 'Ask the user here. Should follow the format: "Please select ...".',
         },
         choices: {
           type: 'array',
@@ -177,10 +177,12 @@ export class HumanOperate implements Tool<HumanOperateInput, HumanOperateResult>
 
   constructor() {
     this.name = 'human_operate';
-    this.description = `Use this tool when you are unable to continue a task that requires user assistance.
-Usage scenarios include:
+    this.description = `Use this tool when one of following appears:
 1. Authentication (such as logging in, entering a verification code, etc.)
 2. External system operations (such as uploading files, selecting a file save location, scanning documents, taking photos, paying, authorization, etc.)
+
+NOTE: You should ONLY use this tool in the scenarios above.
+
 When calling this tool to transfer control to the user, please explain in detail:
 1. Why user intervention is required
 2. What operations the user needs to perform`;
@@ -189,7 +191,7 @@ When calling this tool to transfer control to the user, please explain in detail
       properties: {
         reason: {
           type: 'string',
-          description: 'The reason why you need to transfer control.',
+          description: 'The reason why you need to transfer control. Should follow the format: "Please ..., and click the "Completed" button to continue.".',
         },
       },
       required: ['reason'],
