@@ -398,11 +398,38 @@ export class ActionImpl implements Action {
     });
 
     // Prepare initial messages
+    let content: string;
+    if (window == undefined || window.debugHumanToolMagicNumber == undefined) {
+      throw Error(`set 'window.debugHumanToolMagicNumber' to 1, 2, 3 or 4 to debug:
+1. 'human_input_text'
+2. 'human_input_single_choice'
+3. 'human_input_multiple_choice'
+4. 'human_operate'`);
+    }
+    else if (window.debugHumanToolMagicNumber == 1) {
+      content = "Use the `human_input_text` tool to ask user input a color he/she like.";
+    }
+    else if (window.debugHumanToolMagicNumber == 2) {
+      content = "Use the `human_input_single_choice` tool with question `2+2=?` and 3 choices: `2`, `3`, `4`";
+    }
+    else if (window.debugHumanToolMagicNumber == 3) {
+      content = "Use the `human_input_multiple_choice` tool with question `2+2<?` and 3 choices: `2`, `3`, `4`";
+    }
+    else if (window.debugHumanToolMagicNumber == 4) {
+      content = "Use the `human_operate` tool to let user operate.";
+    } else {
+      console.error("unexpected 'window.debugHumanToolMagicNumber':", window.debugHumanToolMagicNumber);
+      throw Error(`set 'window.debugHumanToolMagicNumber' to 1, 2, 3 or 4 to debug:
+1. 'human_input_text'
+2. 'human_input_single_choice'
+3. 'human_input_multiple_choice'
+4. 'human_operate'`);
+    }
     const messages: Message[] = [
-      { role: 'system', content: this.formatSystemPrompt() },
+      { role: 'system', content: "" },
       {
         role: 'user',
-        content: this.formatUserPrompt(this.name, this.description, this.tabs, existingTabs),
+        content: content,
       },
     ];
 
