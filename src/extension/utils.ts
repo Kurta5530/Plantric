@@ -1,3 +1,4 @@
+import { logger } from '@/common/log';
 import { ExecutionContext } from '../types/action.types';
 
 export async function getWindowId(context: ExecutionContext): Promise<number> {
@@ -31,13 +32,14 @@ export async function getWindowId(context: ExecutionContext): Promise<number> {
   }
 
   if (!windowId) {
-    console.warn("`getWindowId()` returns " + windowId);
+    logger.warn("`getWindowId()` returns " + windowId);
   }
 
   return windowId as number;
 }
 
 export async function getTabId(context: ExecutionContext): Promise<number> {
+  logger.debug("debug the getTabId()...");
   let tabId = context.variables.get('tabId') as any;
   if (tabId) {
     try {
@@ -49,22 +51,22 @@ export async function getTabId(context: ExecutionContext): Promise<number> {
   }
 
   if (!tabId) {
-    console.log("tabId is empty");
+    logger.debug("tabId is empty");
     let windowId = await getWindowId(context);
-    console.log(`windowId=${windowId}`);
+    logger.debug(`windowId=${windowId}`);
     if (windowId) {
       try {
         tabId = await getCurrentTabId(context.lyvoConfig.chromeProxy, windowId);
-        console.log("getCurrentTabId(context.lyvoConfig.chromeProxy, windowId) returns " + tabId);
+        logger.debug("getCurrentTabId(context.lyvoConfig.chromeProxy, windowId) returns " + tabId);
       } catch (e) {
         tabId = await getCurrentTabId(context.lyvoConfig.chromeProxy);
-        console.log("getCurrentTabId(context.lyvoConfig.chromeProxy, windowId) throws an error");
-        console.log("getCurrentTabId(context.lyvoConfig.chromeProxy) returns " + tabId);
+        logger.debug("getCurrentTabId(context.lyvoConfig.chromeProxy, windowId) throws an error");
+        logger.debug("getCurrentTabId(context.lyvoConfig.chromeProxy) returns " + tabId);
         context.variables.delete('windowId');
       }
     } else {
       tabId = await getCurrentTabId(context.lyvoConfig.chromeProxy);
-      console.log("getCurrentTabId(context.lyvoConfig.chromeProxy) #2 returns " + tabId);
+      logger.debug("getCurrentTabId(context.lyvoConfig.chromeProxy) #2 returns " + tabId);
     }
 
     if (!tabId) {
@@ -73,31 +75,33 @@ export async function getTabId(context: ExecutionContext): Promise<number> {
     context.variables.set('tabId', tabId);
   }
 
+  logger.debug(`debug the getTabId()...returns ${tabId}`);
   return tabId;
 }
 
 export function getCurrentTabId(chromeProxy: any, windowId?: number | undefined): Promise<number | undefined> {
   return new Promise((resolve, reject) => {
-    console.debug("[getCurrentTabId] get the active tabId on: ", { windowId });
+    logger.debug("debug the Promise in getCurrentTabId()...");
+    logger.debug("get the active tabId on: ", { windowId });
     let queryInfo: chrome.tabs.QueryInfo;
     if (windowId !== undefined) {
-      console.debug(`[getCurrentTabId] get the active tab in window (windowId=${windowId})...`);
+      logger.debug(`get the active tab in window (windowId=${windowId})...`);
       queryInfo = { windowId, active: true };
     } else {
-      console.debug(`[getCurrentTabId] get the active tabId on current window`);
+      logger.debug(`get the active tabId on current window`);
       queryInfo = { active: true, currentWindow: true };
     }
     chrome.tabs.query(queryInfo, (tabs: chrome.tabs.Tab[]) => {
       if (chromeProxy.runtime.lastError) {
-        console.error(`[getCurrentTabId] failed to get: `, chromeProxy.runtime.lastError);
+        logger.error(`failed to get: `, chromeProxy.runtime.lastError);
         reject(chromeProxy.runtime.lastError);
         return;
       }
       if (tabs.length > 0) {
-        console.debug(`[getCurrentTabId] found the tab, ID=${tabs[0].id}`);
+        logger.debug(`found the tab, ID=${tabs[0].id}`);
         resolve(tabs[0].id);
       } else {
-        console.debug(`[getCurrentTabId] cannot find the tab, returns undefined`);
+        logger.debug(`cannot find the tab, returns undefined`);
         resolve(undefined);
       }
     });
@@ -113,17 +117,17 @@ export async function open_new_tab(
     const window = await chromeProxy.windows.getCurrent();
     windowId = window.id;
   }
-  console.log("windowId: " + windowId);
+  logger.debug("windowId: " + windowId);
   let tab = await chromeProxy.tabs.create({
     url: url,
     windowId: windowId,
   });
-  console.log("chromeProxy.tabs.create() done");
+  logger.debug("chromeProxy.tabs.create() done");
   let tabId = tab.id as number;
   let completedTab = await waitForTabComplete(chromeProxy, tabId);
-  console.log("waitForTabComplete() done");
+  logger.debug("waitForTabComplete() done");
   await sleep(200);
-  console.log("sleep() done");
+  logger.debug("sleep() done");
   return completedTab;
 }
 
@@ -142,40 +146,42 @@ export async function waitForTabComplete(
   timeout: number = 30_000
 ): Promise<chrome.tabs.Tab> {
   return new Promise(async (resolve, reject) => {
+    logger.debug("debug waitForTabComplete()...");
     const time = setTimeout(async () => {
-      console.log("listener(#1)=", listener);
+      logger.debug("listener(#1)=", listener);
       chromeProxy.tabs.onUpdated.removeListener(listener);
-      console.log("tabId(#1)=", tabId);
+      logger.debug("tabId(#1)=", tabId);
       let tab = await chromeProxy.tabs.get(tabId);
-      console.log("tab(#1)=", tab);
+      logger.debug("tab(#1)=", tab);
       if (tab.status === 'complete') {
-        console.warn('Timeout: waitForTabComplete, but tab is already complete.');
+        logger.warn('Timeout: waitForTabComplete, but tab is already complete.');
         resolve(tab);
       } else {
-        console.warn("Timeout: waitForTabComplete, and tab is not complete");
+        logger.warn("Timeout: waitForTabComplete, and tab is not complete");
         resolve(tab);
       }
     }, timeout);
-    console.log("setTimeout done");
+    logger.debug("setTimeout done");
     const listener = async (updatedTabId: number, changeInfo: any, tab: chrome.tabs.Tab) => {
-      console.log("listener start...");
+      logger.debug("listener start...");
       if (updatedTabId === tabId && changeInfo.status === 'complete') {
-        console.log("listener(#2)=", listener);
+        logger.debug("listener(#2)=", listener);
         chromeProxy.tabs.onUpdated.removeListener(listener);
         clearTimeout(time);
         resolve(tab);
       }
     };
-    console.log("tabId(#2)=", tabId);
+    logger.debug("tabId(#2)=", tabId);
     let tab = await chromeProxy.tabs.get(tabId);
-    console.log("tab(#2)=", tab);
+    logger.debug("tab(#2)=", tab);
     if (tab.status === 'complete') {
       resolve(tab);
       clearTimeout(time);
       return;
     }
-    console.log("listener(#3)=", listener);
+    logger.debug("listener(#3)=", listener);
     chromeProxy.tabs.onUpdated.addListener(listener);
+    logger.debug("debug waitForTabComplete()...done");
   });
 }
 
@@ -249,7 +255,7 @@ export class MsgEvent {
           await result;
         }
       } catch (e) {
-        console.error(e);
+        logger.error(e);
       }
     }
   }

@@ -9,9 +9,13 @@ import {
   Workflow,
   WorkflowCallback,
   ExecutionContext,
-  WorkflowResult
+  WorkflowResult,
+  LogtailConfig
 } from '../types';
 import { ToolRegistry } from './tool-registry';
+import { logger } from '../common/log';
+import { ILogObj, Logger } from 'tslog';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Lyvo core
@@ -28,22 +32,52 @@ export class Lyvo {
   public workflow?: Workflow = undefined;
 
   constructor(llmConfig: LLMConfig, lyvoConfig?: LyvoConfig) {
-    console.info("using Lyvo@" + process.env.COMMIT_HASH);
-    console.warn("this version is POC, should not used for production");
     this.llmProvider = LLMProviderFactory.buildLLMProvider(llmConfig);
     this.lyvoConfig = this.buildLyvoConfig(lyvoConfig);
+    this.registerLogger(logger, this.lyvoConfig?.logtailConfig);
     this.registerTools();
+    logger.info("using Lyvo@" + process.env.COMMIT_HASH);
+  }
+
+  private registerLogger(logger: Logger<ILogObj>, logtailConfig: LogtailConfig | undefined) {
+    if (!logtailConfig) {
+      return;
+    }
+    const { Node: Logtail } = require("@logtail/js");
+    const logtail = new Logtail(logtailConfig?.sourceToken, {
+      endpoint: `https://${logtailConfig?.ingestingHost}`,
+    });
+    const loggerInstaceUUID = uuidv4();
+    const logtailTransport = (logObj: ILogObj) => {
+      const cloneLogObj = JSON.parse(JSON.stringify(logObj));
+      if (cloneLogObj._meta) {
+        delete cloneLogObj._meta;
+      }
+      const message = {
+        logObj: cloneLogObj,
+        logObjMeta: logObj._meta,
+        loggerInstaceUUID,
+      };
+      const level = (logObj._meta as any).logLevelName.toLowerCase();
+      logtail.log(message, level);
+    };
+    logger.attachTransport((logObj) => { logtailTransport(logObj) });
+    logger.info(`uuid=${loggerInstaceUUID}`);
   }
 
   private buildLyvoConfig(lyvoConfig: Partial<LyvoConfig> | undefined): LyvoConfig {
     if (!lyvoConfig) {
-      console.warn("`lyvoConfig` is missing when construct `Lyvo` instance");
+      logger.warn("`lyvoConfig` is missing when construct `Lyvo` instance");
     }
     const defaultLyvoConfig: LyvoConfig = {
       workingWindowId: undefined,
       chromeProxy: typeof chrome === 'undefined' ? undefined : chrome,
       callback: undefined,
       patchServerUrl: "http://127.0.0.1:8000/lyvo",
+      logtailConfig: {
+        sourceToken: "v2K4fowTDC95wZgrWPuVqSmV",
+        ingestingHost: "s1271080.eu-nbg-2.betterstackdata.com",
+      }
     };
     return {
       ...defaultLyvoConfig,
@@ -75,13 +109,14 @@ export class Lyvo {
         }
       });
     } else {
-      console.warn("`lyvoConfig.callback` is missing when construct `Lyvo` instance.")
+      logger.warn("`lyvoConfig.callback` is missing when construct `Lyvo` instance.")
     }
     
     tools.forEach(tool => this.toolRegistry.registerTool(tool));
   }
 
   public async generate(prompt: string, tabs: chrome.tabs.Tab[] = [], param?: LyvoInvokeParam): Promise<Workflow> {
+    logger.info("workflow generating...");
     this.prompt = prompt;
     this.tabs = tabs;
     let toolRegistry = this.toolRegistry;
@@ -99,13 +134,13 @@ export class Lyvo {
     const generator = new WorkflowGenerator(this.llmProvider, toolRegistry);
     const workflow = await generator.generateWorkflow(prompt, this.lyvoConfig);
     this.workflowGeneratorMap.set(workflow, generator);
-    console.log("the workflow returned by generate");
-    console.log(workflow);
     this.workflow = workflow;
+    logger.info("workflow generating...done");
     return workflow;
   }
 
   public async execute(workflow: Workflow): Promise<WorkflowResult> {
+    logger.info("workflow executing...");
     let prompt = this.prompt;
     let description ="";
     workflow.nodes.forEach(node => {
@@ -141,13 +176,11 @@ export class Lyvo {
         },
       ],
     };
-    console.log("debug the workflow...");
-    console.log(json);
-    console.log("debug the workflow...done");
-    
-    console.log("debug the LLMProvider...");
-    console.log(this.llmProvider);
-    console.log("debug the LLMProvider...done");
+    logger.debug("workflow", json);    
+    logger.debug("LLMProvider", {
+      client: (typeof this.llmProvider.client),
+      defaultModel: this.llmProvider.defaultModel,
+    });
     
     const generator = new WorkflowGenerator(this.llmProvider, this.toolRegistry);  
     workflow = await generator.generateWorkflowFromJson(json, this.lyvoConfig);
@@ -173,7 +206,8 @@ export class Lyvo {
     }
 
     const result = await workflow.execute(this.lyvoConfig.callback);
-    console.log(result);
+    logger.debug(result);
+    logger.info("workflow executing...done");
     return result;
   }
 
