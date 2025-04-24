@@ -44,7 +44,7 @@ function createReturnTool(
             'The output value. Only provide a value if the previous tool result is not suitable for the output description. Otherwise, leave this as null.',
         },
       } as unknown,
-      required: ['use_tool_result', 'value'],
+      required: ['isSuccessful', 'use_tool_result', 'value'],
     } as InputSchema,
 
     async execute(context: ExecutionContext, params: unknown): Promise<unknown> {
