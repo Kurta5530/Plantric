@@ -26,8 +26,8 @@ interface PartialToolUse {
 }
 
 export class OpenaiProvider implements LLMProvider {
-  private client: OpenAI;
-  private defaultModel = 'gpt-4o';
+  client: OpenAI;
+  defaultModel = 'gpt-4o';
 
   constructor(client: OpenAI, defaultModel?: string);
   constructor(options: ClientOptions, defaultModel?: string);
