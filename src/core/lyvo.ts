@@ -13,6 +13,7 @@ import {
 } from '../types';
 import { ToolRegistry } from './tool-registry';
 import { logger } from '../common/log';
+import { ILogObj, Logger } from 'tslog';
 
 /**
  * Lyvo core
@@ -33,6 +34,10 @@ export class Lyvo {
     this.lyvoConfig = this.buildLyvoConfig(lyvoConfig);
     this.registerTools();
     logger.info("using Lyvo@" + process.env.COMMIT_HASH);
+  }
+
+  public static getLogger(): Logger<ILogObj> {
+    return logger;
   }
 
   private buildLyvoConfig(lyvoConfig: Partial<LyvoConfig> | undefined): LyvoConfig {
