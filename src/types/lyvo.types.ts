@@ -22,17 +22,11 @@ export type ClaudeApiKey = string;
 
 export type LLMConfig = ClaudeApiKey | ClaudeConfig | OpenaiConfig | LLMProvider;
 
-export interface LogtailConfig {
-  sourceToken: string,
-  ingestingHost: string,
-}
-
 export interface LyvoConfig {
   workingWindowId?: number,
   chromeProxy?: any, // should be original `chrome` or a proxy created by `createChromeApiProxy()`
   callback?: WorkflowCallback,
   patchServerUrl?: string,
-  logtailConfig?: LogtailConfig,
 }
 
 

@@ -10,12 +10,10 @@ import {
   WorkflowCallback,
   ExecutionContext,
   WorkflowResult,
-  LogtailConfig
 } from '../types';
 import { ToolRegistry } from './tool-registry';
 import { logger } from '../common/log';
 import { ILogObj, Logger } from 'tslog';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Lyvo core
@@ -34,35 +32,12 @@ export class Lyvo {
   constructor(llmConfig: LLMConfig, lyvoConfig?: LyvoConfig) {
     this.llmProvider = LLMProviderFactory.buildLLMProvider(llmConfig);
     this.lyvoConfig = this.buildLyvoConfig(lyvoConfig);
-    this.registerLogger(logger, this.lyvoConfig?.logtailConfig);
     this.registerTools();
     logger.info("using Lyvo@" + process.env.COMMIT_HASH);
   }
 
-  private registerLogger(logger: Logger<ILogObj>, logtailConfig: LogtailConfig | undefined) {
-    if (!logtailConfig) {
-      return;
-    }
-    const { Node: Logtail } = require("@logtail/js");
-    const logtail = new Logtail(logtailConfig?.sourceToken, {
-      endpoint: `https://${logtailConfig?.ingestingHost}`,
-    });
-    const loggerInstaceUUID = uuidv4();
-    const logtailTransport = (logObj: ILogObj) => {
-      const cloneLogObj = JSON.parse(JSON.stringify(logObj));
-      if (cloneLogObj._meta) {
-        delete cloneLogObj._meta;
-      }
-      const message = {
-        logObj: cloneLogObj,
-        logObjMeta: logObj._meta,
-        loggerInstaceUUID,
-      };
-      const level = (logObj._meta as any).logLevelName.toLowerCase();
-      logtail.log(message, level);
-    };
-    logger.attachTransport((logObj) => { logtailTransport(logObj) });
-    logger.info(`uuid=${loggerInstaceUUID}`);
+  public static getLogger(): Logger<ILogObj> {
+    return logger;
   }
 
   private buildLyvoConfig(lyvoConfig: Partial<LyvoConfig> | undefined): LyvoConfig {
@@ -74,10 +49,6 @@ export class Lyvo {
       chromeProxy: typeof chrome === 'undefined' ? undefined : chrome,
       callback: undefined,
       patchServerUrl: "http://127.0.0.1:8000/lyvo",
-      logtailConfig: {
-        sourceToken: "v2K4fowTDC95wZgrWPuVqSmV",
-        ingestingHost: "s1271080.eu-nbg-2.betterstackdata.com",
-      }
     };
     return {
       ...defaultLyvoConfig,
