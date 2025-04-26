@@ -34,6 +34,7 @@ export class Lyvo {
     this.lyvoConfig = this.buildLyvoConfig(lyvoConfig);
     this.registerTools();
     logger.info("using Lyvo@" + process.env.COMMIT_HASH);
+    logger.debug("caller's lyvoConfig:", lyvoConfig);
   }
 
   public static getLogger(): Logger<ILogObj> {
@@ -86,7 +87,7 @@ export class Lyvo {
   }
 
   public async generate(prompt: string, tabs: chrome.tabs.Tab[] = [], param?: LyvoInvokeParam): Promise<Workflow> {
-    logger.info("workflow generating...");
+    logger.info("workflow generating...", prompt);
     this.prompt = prompt;
     this.tabs = tabs;
     let toolRegistry = this.toolRegistry;
