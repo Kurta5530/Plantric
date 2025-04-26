@@ -428,7 +428,7 @@ export class ActionImpl implements Action {
       { role: 'system', content: this.formatSystemPrompt() },
       {
         role: 'user',
-        content: this.formatUserPrompt(this.name, this.description, this.tabs, existingTabs, patchs),
+        content: this.formatUserPrompt(this.name, this.description, this.tabs, [], patchs), // TODO: existingTabs is passed by Fellou, should fix in the future
       },
     ];
 
