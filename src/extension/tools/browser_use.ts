@@ -125,7 +125,7 @@ export class BrowserUse extends ToolReturnsScreenshot<BrowserUseParam> {
             throw new Error('index parameter is required');
           }
           result = await browser.left_click_by(context.lyvoConfig.chromeProxy, tabId, selector_xpath, params.index);
-          await sleep(100);
+          await sleep(5100);
           break;
         case 'right_click':
           if (params.index == null) {
