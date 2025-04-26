@@ -674,7 +674,7 @@ Once you called human tools (e.g. 'human_operate'), and it returns success, chec
     existingTabs: chrome.tabs.Tab[],
     patchItems: PatchItem[],
   ): string {
-    let prompt = `${name} -- The steps you can follow are ${description}`;
+    let prompt = name;
 
     prompt = `<ultimate-task>${prompt}<ultimate-task><rule>If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.</rule>`;
     if (existingTabs.length > 0) {
