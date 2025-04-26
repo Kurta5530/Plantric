@@ -73,7 +73,7 @@ export async function getTabId(context: ExecutionContext): Promise<number> {
     if (!tabId) {
       throw new Error('Could not find a valid tab');
     }
-    context.variables.set('tabId', tabId);
+    // context.variables.set('tabId', tabId);
   }
 
   logger.debug(`debug the getTabId()...returns ${tabId}`);

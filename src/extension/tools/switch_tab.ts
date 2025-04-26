@@ -36,8 +36,8 @@ export class SwitchTab implements Tool<SwitchTabParam, TabManagementResult> {
     let result: TabManagementResult;
     let tabId = parseInt(String(params.tabId));
     let tab = await context.lyvoConfig.chromeProxy.tabs.update(tabId, { active: true });
-    context.variables.set('tabId', tab.id);
-    context.variables.set('windowId', tab.windowId);
+    // context.variables.set('tabId', tab.id);
+    // context.variables.set('windowId', tab.windowId);
     let tabInfo: TabInfo = { tabId, windowId: tab.windowId, title: tab.title, url: tab.url };
     result = tabInfo;
     return result;

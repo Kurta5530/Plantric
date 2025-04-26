@@ -106,8 +106,8 @@ export class TabManagement implements Tool<TabManagementParam, TabManagementResu
         await context.lyvoConfig.chromeProxy.tabs.update(tab.id as number, { active: true });
       }
       let newTabId = tab.id;
-      context.variables.set('tabId', tab.id);
-      context.variables.set('windowId', tab.windowId);
+      // context.variables.set('tabId', tab.id);
+      // context.variables.set('windowId', tab.windowId);
       let closeTabInfo: CloseTabInfo = { closedTabId, newTabId, newTabTitle: tab.title };
       result = closeTabInfo;
     } else {
