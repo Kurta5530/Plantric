@@ -756,6 +756,10 @@ Once you called human tools (e.g. 'human_operate'), and it returns success, chec
           "type": "string",
           "description": 'Your thinking draft.',
         },
+        counter: {
+          "type": "string",
+          "description": "Rrecord repetitive tasks (eg finding *5* positions, executing *7* times). Should follow the format: 'Doing something x time (y/x).",
+        },
         userSidePrompt: {
           "type": "string",
           "description": 'The user-side prompt, showing what you are doing. e.g. "Openning x.com." or "Writing the post."',
@@ -767,6 +771,7 @@ Once you called human tools (e.g. 'human_operate'), and it returns success, chec
         // "observation",
         "thinking",
         "userSidePrompt",
+        "counter",
         "toolCall",
       ],
     };
@@ -778,6 +783,7 @@ Once you called human tools (e.g. 'human_operate'), and it returns success, chec
       observation: toolCall.input.observation as string | undefined,
       thinking: toolCall.input.thinking as string | undefined,
       userSidePrompt: toolCall.input.userSidePrompt as string | undefined,
+      counter: toolCall.input.counter as string | undefined,
       toolCall: {
         id: toolCall.id,
         name: toolCall.name,
