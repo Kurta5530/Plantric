@@ -40,6 +40,7 @@ export async function getWindowId(context: ExecutionContext): Promise<number> {
 
 export async function getTabId(context: ExecutionContext): Promise<number> {
   logger.debug("debug the getTabId()...");
+  logger.debug("context.variables:", context.variables);
   let tabId = context.variables.get('tabId') as any;
   if (tabId) {
     try {

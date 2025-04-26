@@ -190,6 +190,7 @@ export class BrowserUse extends ToolReturnsScreenshot<BrowserUseParam> {
           await sleep(100);
           try {
             logger.debug("executeScript...");
+            logger.debug("tabId:", tabId);
             let element_result = await executeScript(context.lyvoConfig.chromeProxy, tabId, () => {
               return (window as any).get_clickable_elements(true);
             }, []);
@@ -200,6 +201,7 @@ export class BrowserUse extends ToolReturnsScreenshot<BrowserUseParam> {
           } finally {
             await sleep(500);
             logger.debug("executeScript #2...");
+            logger.debug("tabId:", tabId);
             await executeScript(context.lyvoConfig.chromeProxy, tabId, () => {
               return (window as any).remove_highlight();
             }, []);
