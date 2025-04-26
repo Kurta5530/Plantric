@@ -91,8 +91,8 @@ export class OpenUrl extends ToolReturnsScreenshot<OpenUrlParam> {
     logger.debug('Tab ID:', tabId, 'Window ID:', windowId);
 
     // 更新上下文变量
-    context.variables.set('windowId', windowId);
-    context.variables.set('tabId', tabId);
+    // context.variables.set('windowId', windowId);
+    // context.variables.set('tabId', tabId);
     logger.debug('Updated context variables:', context.variables);
 
     // 处理新窗口的 windowIds
