@@ -127,8 +127,8 @@ export class Lyvo {
           'type': 'action',
           'action': {
             'type': 'prompt',
-            'name': "在 Boss 直聘上搜索上海运营岗位",
-            'description': "使用 open_url 工具进入 Boss 直聘网站，在搜索框输入岗位信息：“上海运营”，然后搜索。",
+            'name': "在 Boss 直聘上搜索运营岗位",
+            'description': "使用 open_url 工具进入 Boss 直聘网站，在搜索框输入岗位信息：“运营”，然后搜索。你可能需要向下滑动来展示所有5个搜索结果。",
             'tools': [
               'browser_use',
               'open_url',
@@ -138,35 +138,21 @@ export class Lyvo {
           'dependencies': [],
         },
         {
-          'id': '2',
-          'type': 'action',
-          'action': {
-            'type': 'prompt',
-            'name': "搜索页提取 URL",
-            'description': "使用 extract_content 工具在搜索页提取 5 个运营岗位子页面的 URL，并写入上下文",
-            'tools': [
-              'browser_use',
-              'extract_content',
-              'human_operate',
-            ],
-          },
-          'dependencies': ['1'],
-        },
-        {
           'id': '3',
           'type': 'action',
           'action': {
             'type': 'prompt',
             'name': "投递第 1 个运营岗位",
-            'description': "根据上下文信息打开第 1 个运营岗位：1. 使用 open_url 工具打开岗位详情页：https://www.zhipin.com/job_detail/887c0d1c7479ab4403V60tS7EltX.html；2. 使用 extract_content 工具提取页面信息；3. 使用 document_agent 工具撰写个人介绍，不超过 200 字；4. 使用 browser_use 工具点击”立即沟通“按钮；5. 使用 browser_use 工具把之前生成的个人介绍粘贴在输入框并发送。",
+            'description': "1. 打开搜索页的第 1 个搜索结果；2. 使用 extract_content 工具提取页面信息；3. 使用 document_agent 工具撰写个人介绍，不超过 200 字；4. 使用 browser_use 工具点击”立即沟通“按钮；5. 使用 browser_use 工具把之前生成的个人介绍粘贴在输入框并发送。",
             'tools': [
               'browser_use',
               'document_agent',
               'open_url',
               'human_operate',
+              'tab_management',
             ],
           },
-          'dependencies': ['2'],
+          'dependencies': ['1'],
         },
         {
           'id': '4',
@@ -174,12 +160,13 @@ export class Lyvo {
           'action': {
             'type': 'prompt',
             'name': "投递第 2 个运营岗位",
-            'description': "根据上下文信息打开第 2 个运营岗位：1. 使用 open_url 工具打开岗位详情页：https://www.zhipin.com/job_detail/dbc2ee5a76a18d2e03V70tu_FlVY.html；2. 使用 extract_content 工具提取页面信息；3. 使用 document_agent 工具撰写个人介绍，不超过 200 字；4. 使用 browser_use 工具点击”立即沟通“按钮；5. 使用 browser_use 工具把之前生成的个人介绍粘贴在输入框并发送。",
+            'description': "1. 打开搜索页的第 2 个搜索结果；2. 使用 extract_content 工具提取页面信息；3. 使用 document_agent 工具撰写个人介绍，不超过 200 字；4. 使用 browser_use 工具点击”立即沟通“按钮；5. 使用 browser_use 工具把之前生成的个人介绍粘贴在输入框并发送。",
             'tools': [
               'browser_use',
               'document_agent',
               'open_url',
               'human_operate',
+              'tab_management',
             ],
           },
           'dependencies': ['3'],
@@ -190,12 +177,13 @@ export class Lyvo {
           'action': {
             'type': 'prompt',
             'name': "投递第 3 个运营岗位",
-            'description': "根据上下文信息打开第 3 个运营岗位：1. 使用 open_url 工具打开岗位详情页：https://www.zhipin.com/job_detail/c5d55cec127b0ada03Ry2dm9FFpV.html；2. 使用 extract_content 工具提取页面信息；3. 使用 document_agent 工具撰写个人介绍，不超过 200 字；4. 使用 browser_use 工具点击”立即沟通“按钮；5. 使用 browser_use 工具把之前生成的个人介绍粘贴在输入框并发送。",
+            'description': "1. 打开搜索页的第 3 个搜索结果；2. 使用 extract_content 工具提取页面信息；3. 使用 document_agent 工具撰写个人介绍，不超过 200 字；4. 使用 browser_use 工具点击”立即沟通“按钮；5. 使用 browser_use 工具把之前生成的个人介绍粘贴在输入框并发送。",
             'tools': [
               'browser_use',
               'document_agent',
               'open_url',
               'human_operate',
+              'tab_management',
             ],
           },
           'dependencies': ['4'],
@@ -206,12 +194,13 @@ export class Lyvo {
           'action': {
             'type': 'prompt',
             'name': "投递第 4 个运营岗位",
-            'description': "根据上下文信息打开第 4 个运营岗位：1. 使用 open_url 工具打开岗位详情页：https://www.zhipin.com/job_detail/110c09c2d589bd3503V73Nm9EFBT.html；2. 使用 extract_content 工具提取页面信息；3. 使用 document_agent 工具撰写个人介绍，不超过 200 字；4. 使用 browser_use 工具点击”立即沟通“按钮；5. 使用 browser_use 工具把之前生成的个人介绍粘贴在输入框并发送。",
+            'description': "1. 打开搜索页的第 4 个搜索结果；2. 使用 extract_content 工具提取页面信息；3. 使用 document_agent 工具撰写个人介绍，不超过 200 字；4. 使用 browser_use 工具点击”立即沟通“按钮；5. 使用 browser_use 工具把之前生成的个人介绍粘贴在输入框并发送。",
             'tools': [
               'browser_use',
               'document_agent',
               'open_url',
               'human_operate',
+              'tab_management',
             ],
           },
           'dependencies': ['5'],
@@ -222,12 +211,13 @@ export class Lyvo {
           'action': {
             'type': 'prompt',
             'name': "投递第 5 个运营岗位",
-            'description': "根据上下文信息打开第 5 个运营岗位：1. 使用 open_url 工具打开岗位详情页：https://www.zhipin.com/job_detail/887c0d1c7479ab4403V60tS7EltX.html；2. 使用 extract_content 工具提取页面信息；3. 使用 document_agent 工具撰写个人介绍，不超过 200 字；4. 使用 browser_use 工具点击”立即沟通“按钮；5. 使用 browser_use 工具把之前生成的个人介绍粘贴在输入框并发送。",
+            'description': "1. 打开搜索页的第 5 个搜索结果；2. 使用 extract_content 工具提取页面信息；3. 使用 document_agent 工具撰写个人介绍，不超过 200 字；4. 使用 browser_use 工具点击”立即沟通“按钮；5. 使用 browser_use 工具把之前生成的个人介绍粘贴在输入框并发送。",
             'tools': [
               'browser_use',
               'document_agent',
               'open_url',
               'human_operate',
+              'tab_management',
             ],
           },
           'dependencies': ['6'],

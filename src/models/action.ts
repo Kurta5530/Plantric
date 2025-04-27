@@ -720,10 +720,10 @@ export class ActionImpl implements Action {
       type: "object",
       properties: {
         // comment for backup
-        // observation: {
-        //   "type": "string",
-        //   "description": 'Your observation of the previous steps. Should start with "In the previous step, I\'ve ...".',
-        // },
+        observation: {
+          "type": "string",
+          "description": 'Your observation of the previous steps. Should start with "In the previous step, I\'ve ...".',
+        },
         thinking: {
           "type": "string",
           "description": 'Your thinking draft.',
@@ -736,7 +736,7 @@ export class ActionImpl implements Action {
       },
       required: [
         // comment for backup
-        // "observation",
+        "observation",
         "thinking",
         "userSidePrompt",
         "toolCall",
