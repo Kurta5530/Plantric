@@ -14,6 +14,7 @@ import {
 import { ExecutionLogger } from '@/utils/execution-logger';
 import { WriteContextTool } from '@/common/tools/write_context';
 import { logger } from '@/common/log';
+import { ContextComporessor, NoComporess, SimpleQAComporess } from '@/common/context-compressor';
 
 function createReturnTool(
   actionName: string,
@@ -311,7 +312,10 @@ export class ActionImpl implements Action {
         throw new Error('LLM provider not set');
       }
       try {
-        await this.llmProvider.generateStream(messages, params_copy, handler);
+        const comporessor: ContextComporessor = new SimpleQAComporess();
+        const compressedMessages = comporessor.comporess(messages);
+        await new Promise<void>((resolve) => setTimeout(() => resolve(), 5000));
+        await this.llmProvider.generateStream(compressedMessages, params_copy, handler);
       } catch (e) {
         logger.warn("an error occurs when LLM generate response, retry...", e);
         continue;
@@ -748,10 +752,10 @@ Once you called human tools (e.g. 'human_operate'), and it returns success, chec
       type: "object",
       properties: {
         // comment for backup
-        // observation: {
-        //   "type": "string",
-        //   "description": 'Your observation of the previous steps. Should start with "In the previous step, I\'ve ...".',
-        // },
+        observation: {
+          "type": "string",
+          "description": 'Your observation of the previous steps. Should start with "In the previous step, I\'ve ...".',
+        },
         thinking: {
           "type": "string",
           "description": 'Your thinking draft.',
@@ -768,7 +772,7 @@ Once you called human tools (e.g. 'human_operate'), and it returns success, chec
       },
       required: [
         // comment for backup
-        // "observation",
+        "observation",
         "thinking",
         "userSidePrompt",
         "counter",
