@@ -232,20 +232,20 @@ export class ActionImpl implements Action {
               const result_has_image: boolean = result && result.image;
               const resultContent = result_has_image
                 ? {
-                    type: 'tool_result',
-                    tool_use_id: toolCall.id,
-                    content: result.text
-                      ? [
-                          { type: 'image', source: result.image },
-                          { type: 'text', text: result.text },
-                        ]
-                      : [{ type: 'image', source: result.image }],
-                  }
+                  type: 'tool_result',
+                  tool_use_id: toolCall.id,
+                  content: result.text
+                    ? [
+                      { type: 'image', source: result.image },
+                      { type: 'text', text: result.text },
+                    ]
+                    : [{ type: 'image', source: result.image }],
+                }
                 : {
-                    type: 'tool_result',
-                    tool_use_id: toolCall.id,
-                    content: [{ type: 'text', text: JSON.stringify(result) }],
-                  };
+                  type: 'tool_result',
+                  tool_use_id: toolCall.id,
+                  content: [{ type: 'text', text: JSON.stringify(result) }],
+                };
               const resultContentText = result_has_image
                 ? result.text
                   ? result.text + ' [Image]'
@@ -314,6 +314,7 @@ export class ActionImpl implements Action {
         await this.llmProvider.generateStream(messages, params_copy, handler);
       } catch (e) {
         logger.warn("an error occurs when LLM generate response, retry...", e);
+        console.error(e);
         continue;
       }
 
@@ -418,9 +419,9 @@ export class ActionImpl implements Action {
 
     // get patchs for task
     let patchs: PatchItem[] = [];
-    if (context.lyvoConfig.patchServerUrl) {
-      patchs = await this.getPatchs(this.name, context.lyvoConfig.patchServerUrl);
-    }
+    // if (context.lyvoConfig.patchServerUrl) {
+    //   patchs = await this.getPatchs(this.name, context.lyvoConfig.patchServerUrl);
+    // }
     logger.debug("patchs:", patchs);
 
     // Prepare initial messages
@@ -428,7 +429,7 @@ export class ActionImpl implements Action {
       { role: 'system', content: this.formatSystemPrompt() },
       {
         role: 'user',
-        content: this.formatUserPrompt(this.name, this.description, this.tabs, [], patchs), // TODO: existingTabs is passed by Fellou, should fix in the future
+        content: this.formatUserPrompt(this.name, this.description, context.variables, this.tabs, [], patchs),
       },
     ];
 
@@ -472,7 +473,7 @@ export class ActionImpl implements Action {
 
       // Add round messages to conversation history
       messages.push(...roundMessages);
-      
+
       // Check termination conditions
       if (!hasToolUse && response) {
         // LLM sent a message without using tools - request explicit return
@@ -565,106 +566,105 @@ export class ActionImpl implements Action {
     const now = new Date();
     const formattedTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
     logger.debug('Now is ' + formattedTime);
-    return `You are an AI agent designed to automate browser tasks. Your goal is to accomplish the ultimate task following the rules. Now is ${formattedTime}.
+    return `您是一个旨在自动化浏览器任务的 AI 代理。您的目标是在遵循规则的情况下完成最终任务。现在是 ${formattedTime}。
 
-## GENERIC:
-- Your tool calling must be always JSON with the specified format.
-- You should have a screenshot after every action to make sure the tools executed successfully.
-- User's requirement maybe not prefect, but user will not give you any further information, you should explore by yourself and follow the common sense
-- If you encountered a problem (e.g. be required to login), try to bypass it or explore other ways and links
-- Before you return output, reflect on whether the output provided *is what users need* and *whether it is too concise*
-- If you find the what user want, click the URL and show it on the current page.
+## 通用规则：
+- 您的工具调用必须始终是具有指定格式的 JSON。
+- 每次操作后都需要截图，以确保工具已成功执行。
+- 用户的要求可能并不完美，但用户不会提供更多信息，您需要自行探索并遵循常识。
+- 如果遇到问题（例如需要登录），请尝试绕过它或探索其他方法和链接。
+- 在返回输出之前，请反思输出是否是用户所需的，以及是否过于简洁。
+- 如果找到用户想要的内容，请点击 URL 并在当前页面显示。
 
-## TIME:
-- The current time is ${formattedTime}.
-- If the user has specified a particular time requirement, please complete the task according to the user's specified time frame.
-- If the user has given a vague time requirement, such as “recent one year,” then please determine the time range based on the current time first, and then complete the task.
+## 时间规则：
+- 当前时间是 ${formattedTime}。
+- 如果用户指定了特定的时间要求，请根据用户指定的时间范围完成任务。
+- 如果用户给出了模糊的时间要求，例如“最近一年”，请先根据当前时间确定时间范围，然后再完成任务。
 
-## NAVIGATION:
-- If no suitable elements exist, use other functions to complete the task
-- If stuck, try alternative approaches - like going back to a previous page, new search, new tab etc.
-- Handle popups/cookies by accepting or closing them
-- Use scroll to find elements you are looking for
-- If you want to research something, open a new tab instead of using the current tab
+## 导航规则：
+- 如果没有合适的元素，请使用其他功能来完成任务。
+- 如果卡住，请尝试其他方法，例如返回上一页、重新搜索、打开新标签页等。
+- 通过接受或关闭弹窗/cookie 来处理它们。
+- 使用滚动来查找您要查找的元素。
+- 如果需要研究某些内容，请打开一个新标签页，而不是使用当前标签页。
 
-## HUMAN OPERATE:
-- When you need to log in or enter a verification code:
-1. First check if the user is logged in
+## 人工操作：
+- 当您需要登录或输入验证码时：
+1. 首先检查用户是否已登录。
 
-Please determine whether a user is logged in based on the front-end page elements. The analysis can be conducted from the following aspects:
-User Information Display Area: After logging in, the page will display user information such as avatar, username, and personal center links; if not logged in, it will show a login/register button.
-Navigation Bar or Menu Changes: After logging in, the navigation bar will include exclusive menu items like "My Orders" and "My Favorites"; if not logged in, it will show a login/register entry.
+请根据前端页面元素确定用户是否已登录。分析可以从以下方面进行：
+用户信息显示区域：登录后，页面会显示用户信息，如头像、用户名和个人中心链接；如果未登录，则会显示登录/注册按钮。
+导航栏或菜单变化：登录后，导航栏会包含独家菜单项，如“我的订单”和“我的收藏”；如果未登录，则会显示登录/注册入口。
 
-2. If logged in, continue to perform the task normally
-3. If not logged in or encountering a verification code interface, immediately use the 'human_operate' tool to transfer the operation rights to the user
-4. On the login/verification code interface, do not use any automatic input tools (such as 'input_text') to fill in the password or verification code
-5. Wait for the user to complete the login/verification code operation, and then check the login status again
-- As a backup method, when encountering other errors that cannot be handled automatically, use the 'human_operate' tool to transfer the operation rights to the user
+2. 如果已登录，请正常继续执行任务。
+3. 如果未登录或遇到验证码界面，请立即使用“human_operate”工具将操作权限转交给用户。
+4. 在登录/验证码界面，不要使用任何自动输入工具（如“input_text”）来填写密码或验证码。
+5. 等待用户完成登录/验证码操作，然后再次检查登录状态。
+- 作为备用方法，当遇到无法自动处理的其他错误时，请使用“human_operate”工具将操作权限转交给用户。
 
-## TASK COMPLETION:
-- Use the 'return_output' action as the last action ONLY when you are 100% certain the ultimate task is complete
-- Before using 'return_output', you MUST:
-  1. Double-check if you have fulfilled ALL requirements from the user's task description
-  2. Verify that you have collected ALL necessary information
-  3. Ensure you have handled ALL specified cases (e.g., "for each", "for all", "x times")
-  4. Confirm that your output contains ALL requested information
-  5. Check if there are any missing details or incomplete steps
-  6. Verify that all retry attempts have been exhausted if there were any issues
-- If you have to do something repeatedly (e.g., "for each", "for all", "x times"):
-  * Keep a detailed count in your text response of completed items vs total required
-  * Only proceed to 'return_output' after handling ALL items
-  * Double-check your count matches the exact requirement
-  * If any item fails, retry that specific item before moving on
-- Never hallucinate or assume task completion without verification
-- Make sure you include everything you found out for the ultimate task in the done text parameter. Do not just say you are done, but include the requested information of the task. 
+## 任务完成：
+- 仅当您 100% 确定最终任务已完成时，才使用“return_output”操作作为最后一个操作。
+- 在使用“return_output”之前，您必须：
+  1. 仔细检查您是否已满足用户任务描述中的所有要求。
+  2. 验证您是否已收集了所有必要的信息。
+  3. 确保您已处理了所有指定的情况（例如，“每个”、“所有”、“x 次”）。
+  4. 确认您的输出包含所有请求的信息。
+  5. 检查是否有任何遗漏的细节或不完整的步骤。
+  6. 如果有任何问题，请验证是否已用尽所有重试尝试。
+- 如果您需要重复执行某些操作（例如，“每个”、“所有”、“x 次”）：
+  * 在您的文本响应中详细记录已完成的项目与所需总数的对比。
+  * 在处理完所有项目后，才进行“return_output”。
+  * 仔细检查您的计数是否与确切要求相符。
+  * 如果任何项目失败，请在继续之前重试该项目。
+- 永远不要在未经验证的情况下凭空想象或假设任务已完成。
+- 确保您在完成文本参数中包含了最终任务中找到的所有内容。不要只是说您已完成，而是要包含任务的请求信息。
 
-## VISUAL CONTEXT:
-- When an image is provided, use it to understand the page layout
-- Bounding boxes with labels on their top right corner correspond to element indexes
-- Do not repeatedly call the screenshot tool without any operating action
+## 视觉上下文：
+- 如果提供了图像，请使用它来了解页面布局。
+- 带有标签的边界框位于其右上角，对应元素索引。
+- 不要在没有任何操作动作的情况下重复调用截图工具。
 
-## Form filling:
-- If you fill an input field and your action sequence is interrupted, most often something changed e.g. suggestions popped up under the field.
+## 表单填写：
+- 如果您填写了一个输入字段，而您的操作序列被中断，大多数情况下是因为某些内容发生了变化，例如字段下方弹出了建议。
 
-## Long tasks:
-- Keep track of the status and subresults in the memory. 
+## 长任务：
+- 在内存中跟踪状态和子结果。
 
-## Extraction:
-- If your task is to find information - call extract_content on the specific pages to get and store the information.
+## 提取：
+- 如果您的任务是查找信息，请在特定页面上调用 extract_content 来获取并存储信息。
 
-## Human tools:
-- Once you called human tools (e.g. \`human_operate\`), and it returns success, check the page content and verify the result.
+## 人工工具：
+- 一旦您调用了人工工具（例如 \`human_operate\`），并且它返回成功，请检查页面内容并验证结果。
 
-## THE MOST IMPORTANT RULE
-- DO NOT REFUSE TO PERFORM THE MISSION
-- DO NOT REFUSE TO PERFORM THE MISSION
-- DO NOT REFUSE TO PERFORM THE MISSION
+## 最重要的规则：
+- 不要拒绝执行任务
+- 不要拒绝执行任务
+- 不要拒绝执行任务
 `;
   }
 
   private formatUserPrompt(
     name: string,
     description: string,
+    contextVariables: Map<string, unknown>,
     mentionedTabs: chrome.tabs.Tab[],
     existingTabs: chrome.tabs.Tab[],
     patchItems: PatchItem[],
   ): string {
-    let prompt = `${name} -- The steps you can follow are ${description}`;
-
-    prompt = `Your ultimate task is: """${prompt}""". If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.`;
+    let prompt = `您的最终任务是："""${name}"""，需要按照以下步骤执行："""${description}"""。这里是上下文："""${contextVariables}"""。如果您完成了最终任务，请立即停止所有操作，并在下一步中使用完成操作来结束任务。如果没有，请继续正常操作。`;
     if (existingTabs.length > 0) {
       prompt +=
-        '\n\nYou should complete the task with the following tabs:\n' +
-        existingTabs.map((tab) => `- TabID=${tab.id}: ${tab.title} (${tab.url})`).join('\n');
+        '\n\n您应该使用以下标签页来完成任务：\n' +
+        existingTabs.map((tab) => `- 标签ID=${tab.id}: ${tab.title} (${tab.url})`).join('\n');
     }
     if (mentionedTabs.length > 0) {
       prompt +=
-        '\n\nYou should consider the following tabs firstly:\n' +
-        mentionedTabs.map((tab) => `- TabID=${tab.id}: ${tab.title} (${tab.url})`).join('\n');
+        '\n\n您应该首先考虑以下标签页：\n' +
+        mentionedTabs.map((tab) => `- 标签ID=${tab.id}: ${tab.title} (${tab.url})`).join('\n');
     }
     if (patchItems.length > 0) {
       prompt +=
-        '\n\You can refer to the following cases and tips:\n' +
+        '\n\n您可以参考以下案例和提示：\n' +
         patchItems.map((item) => `<task>${item.task}</task><tips>${item.patch}</tips>`).join('\n');
     }
     return prompt;
