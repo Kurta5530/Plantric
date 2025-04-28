@@ -332,6 +332,9 @@ export async function screenshot(chromeProxy: any, windowId: number, compress?: 
       },
     } as ScreenshotResult;
     logger.debug('screenshot Got screenshot result:', result);
+    if (!data || data.length < 30) {
+      throw new Error('image error');
+    }
     return result;
   } catch (e) {
     if (isFellouBrowser(chromeProxy)) {
@@ -380,6 +383,9 @@ export async function compress_image(
         const result = reader.result as string;
         logger.debug('Got compressed image result (sliced):', result.slice(0, 200));
         resolve(result);
+      };
+      reader.onerror = () => {
+        resolve(dataUrl);
       };
       reader.readAsDataURL(blob);
     });
