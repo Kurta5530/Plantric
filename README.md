@@ -130,9 +130,11 @@ Lyvo can be used in multiple environments:
 
 <h1 align="center">
   <a href="https://github.com/LyvoAI/lyvo" target="_blank">
-    <img width="663" alt="Screenshot 2025-02-05 at 10 49 58" src="https://github.com/user-attachments/assets/59708b7e-ff27-4bbd-8d42-c2309dbd1c7c" />
+    <img width="663" alt="Screenshot 2025-02-05 at 10 49 58" src="https://github.com/user-attachments/assets/f975a03e-a96f-463d-ab17-e5b745bb81e4" />
   </a>
 </h1>
+
+
 
 [![Star History Chart](https://api.star-history.com/svg?repos=LyvoAI/lyvo&type=Date)](https://star-history.com/#LyvoAI/lyvo&Date)
 
