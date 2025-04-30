@@ -412,9 +412,11 @@ export class ActionImpl implements Action {
 
     // get already existing tabs as task background
     const currentWindow = await context.lyvoConfig.chromeProxy.windows.getCurrent();
-    const existingTabs: chrome.tabs.Tab[] = await context.lyvoConfig.chromeProxy.tabs.query({
+    let existingTabs: chrome.tabs.Tab[] = await context.lyvoConfig.chromeProxy.tabs.query({
       windowId: currentWindow.id,
     });
+    existingTabs = existingTabs.filter((tab) => {tab.title && tab.url});
+    logger.debug("existingTabs:", existingTabs);
 
     // get patchs for task
     let patchs: PatchItem[] = [];
