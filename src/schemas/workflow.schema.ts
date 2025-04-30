@@ -13,43 +13,22 @@ export const workflowSchema = {
       type: "array",
       items: {
         type: "object",
-        required: ["id", "type", "action"],
+        required: ["id", "action"],
         properties: {
           id: { type: "string" },
-          type: {
-            type: "string",
-            enum: ["action"],    // only action nodes for now; reserved for future types like condition, loop, etc.
-          },
-          dependencies: {
-            type: "array",
-            items: { type: "string" },
-          },
-          output: {
-            type: "object",
-            properties: {
-              name: { type: "string" },
-              description: { type: "string" },
-            },
-          },
           action: {
             type: "object",
-            required: ["type", "name", "description"],
+            required: ["name", "description"],
             properties: {
-              type: {
-                type: "string",
-                // enum: ["prompt", "script", "hybrid"],
-                enum: ["prompt"],
-              },
               name: { type: "string" },
-              description: { type: "string" },
+              description: {
+                type: "string",
+                description: "Note that do not use \" mark.",
+              },
             },
           },
         },
       },
-    },
-    variables: {
-      type: "object",
-      additionalProperties: true,
     },
   },
 };
