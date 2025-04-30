@@ -203,7 +203,7 @@ export class ActionImpl implements Action {
               // unwrap the toolCall
               let unwrapped = this.unwrapToolCall(toolCall);
               let input = unwrapped.toolCall.input;
-              logger.debug("unwrapped", unwrapped);
+              logger.info("LLM Response:", unwrapped);
               if (unwrapped.thinking) {
                 context.callback?.hooks.onLlmMessage?.(unwrapped.thinking);
               } else {
