@@ -7,6 +7,7 @@ import { createWorkflowPrompts, createWorkflowGenerationTool } from './templates
 import { v4 as uuidv4 } from 'uuid';
 import { LyvoConfig } from '@/types';
 import { logger } from '@/common/log';
+import { sleep } from '@/utils/sleep';
 
 export class WorkflowGenerator {
   message_history: Message[] = [];
@@ -93,6 +94,7 @@ export class WorkflowGenerator {
       } catch(e) {
         logger.warn("an error occured when generating workflow:", e);
         logger.info(`retry...${retry_counter}`);
+        await sleep(3000);
         retry_counter -= 1;
       }
     }
