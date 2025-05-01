@@ -55,7 +55,7 @@ export class WebSearch implements Tool<WebSearchParam, WebSearchResult[]> {
     let searchs = [{ url: url as string, keyword: query as string }];
     let searchInfo = await deepSearch(context, taskId, searchs, maxResults || 5, context.lyvoConfig.workingWindowId);
     let links = searchInfo.result[0]?.links || [];
-    return links.filter((s: any) => s.content) as WebSearchResult[];
+    return links.filter((s: any) => (s.content as string).slice(0, 8000)) as WebSearchResult[];
   }
 }
 
