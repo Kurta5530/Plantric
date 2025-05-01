@@ -34,7 +34,8 @@ export class Lyvo {
     this.lyvoConfig = this.buildLyvoConfig(lyvoConfig);
     this.registerTools();
     logger.info("using Lyvo@" + process.env.COMMIT_HASH);
-    logger.debug("caller's lyvoConfig:", lyvoConfig);
+    logger.debug("caller's lyvoConfig ('chromeProxy' maybe 'null'):", lyvoConfig);
+    console.log(lyvoConfig);
   }
 
   public static getLogger(): Logger<ILogObj> {
