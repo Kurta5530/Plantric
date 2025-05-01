@@ -743,22 +743,9 @@ Navigation Bar or Menu Changes: After logging in, the navigation bar will includ
     (definition.input_schema as InputSchema) = {
       type: "object",
       properties: {
-        // comment for backup
-        // observation: {
-        //   "type": "string",
-        //   "description": 'Your observation of the previous steps. Should start with "In the previous step, I\'ve ...".',
-        // },
-        evaluate_previous_goal:{
+        observation: {
           "type": "string",
-          "description": "Success|Failed|Unknown - Analyze the current elements and the image to check if the previous goals/actions are successful like intended by the task. Mention if something unexpected happened. Shortly state why/why not"
-        },
-        memory:{
-          "type": "string",
-          "description": "Description of what has been done and what you need to remember. Be very specific. Count here ALWAYS how many times you have done something and how many remain. E.g. 0 out of 10 websites analyzed. Continue with abc and xyz",
-        },
-        next_goal:{
-          "type": "string",
-          "description": 'Your observation of the previous steps. Should start with "In the previous step, the Assistant had ...".',
+          "description": 'Your observation of the previous steps. Should start with "In the previous step, I\'ve ...".',
         },
         thinking: {
           "type": "string",
@@ -775,9 +762,6 @@ Navigation Bar or Menu Changes: After logging in, the navigation bar will includ
         // "observation",
         "thinking",
         "userSidePrompt",
-        "memory",
-        "next_goal",
-        "evaluate_previous_goal",
         "toolCall",
       ],
     };
@@ -789,9 +773,6 @@ Navigation Bar or Menu Changes: After logging in, the navigation bar will includ
       observation: toolCall.input.observation as string | undefined,
       thinking: toolCall.input.thinking as string | undefined,
       userSidePrompt: toolCall.input.userSidePrompt as string | undefined,
-      evaluate_previous_goal: toolCall.input.evaluate_previous_goal as string | undefined,
-      memory: toolCall.input.memory as string | undefined,
-      next_goal: toolCall.input.next_goal as string | undefined,
       toolCall: {
         id: toolCall.id,
         name: toolCall.name,
