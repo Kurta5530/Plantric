@@ -3,7 +3,10 @@ import { ILogObj, IMeta, ISettings, Logger } from "tslog";
 function transportFormatted(logMetaMarkup: string, logArgs: unknown[], logErrors: string[], settings: ISettings<ILogObj>) {
   const logErrorsStr = (logErrors.length > 0 && logArgs.length > 0 ? "\n" : "") + logErrors.join("\n");
   settings.prettyInspectOptions.colors = settings.stylePrettyLogs;
-  console.log(logMetaMarkup, ...logArgs, logErrorsStr);
+  console.log(logMetaMarkup, ...logArgs);
+  logErrors.forEach(err => {
+    console.log(logMetaMarkup + err);
+  });
 }
 
 function formatMeta(logObjMeta?: IMeta): string {
