@@ -42,6 +42,14 @@ export class Lyvo {
     return logger;
   }
 
+  public getLoggerInstaceUUID(): string {
+    if (this.lyvoConfig.loggerInstaceUUID) {
+      return this.lyvoConfig.loggerInstaceUUID;
+    } else {
+      throw Error("loggerInstaceUUID is not configured");
+    }
+  }
+
   private buildLyvoConfig(lyvoConfig: Partial<LyvoConfig> | undefined): LyvoConfig {
     if (!lyvoConfig) {
       logger.warn("`lyvoConfig` is missing when construct `Lyvo` instance");
@@ -51,6 +59,7 @@ export class Lyvo {
       chromeProxy: typeof chrome === 'undefined' ? undefined : chrome,
       callback: undefined,
       patchServerUrl: "http://127.0.0.1:8000/lyvo",
+      loggerInstaceUUID: undefined,
     };
     return {
       ...defaultLyvoConfig,

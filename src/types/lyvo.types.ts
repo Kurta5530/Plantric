@@ -27,6 +27,7 @@ export interface LyvoConfig {
   chromeProxy?: any, // should be original `chrome` or a proxy created by `createChromeApiProxy()`
   callback?: WorkflowCallback,
   patchServerUrl?: string,
+  loggerInstaceUUID?: string,
 }
 
 
