@@ -14,6 +14,7 @@ import {
 import { ExecutionLogger } from '@/utils/execution-logger';
 import { WriteContextTool } from '@/common/tools/write_context';
 import { logger } from '@/common/log';
+import { ContextComporessor, NoComporess, SimpleQAComporess } from '@/common/context-compressor';
 
 function createReturnTool(
   actionName: string,
@@ -312,7 +313,21 @@ export class ActionImpl implements Action {
         throw new Error('LLM provider not set');
       }
       try {
-        await this.llmProvider.generateStream(messages, params_copy, handler);
+        try {
+          const comporessor: ContextComporessor = new SimpleQAComporess();
+          logger.debug("uncompressed messages:", messages);
+          const compressedMessages = comporessor.comporess(messages);
+          logger.debug("compressed messages:", messages);
+          await new Promise<void>((resolve) => setTimeout(() => resolve(), 5000));
+          await this.llmProvider.generateStream(compressedMessages, params_copy, handler);
+        } catch(e) {
+          logger.error("an error occurs when comporess context");
+          logger.error(e);
+          const comporessor: ContextComporessor = new NoComporess();
+          const compressedMessages = comporessor.comporess(messages);
+          await new Promise<void>((resolve) => setTimeout(() => resolve(), 5000));
+          await this.llmProvider.generateStream(compressedMessages, params_copy, handler);
+        }
       } catch (e) {
         logger.warn(`an error occurs when LLM generate response, retry(n=${retry_counter})...`, e);
         retry_counter -= 1;
@@ -743,7 +758,7 @@ Navigation Bar or Menu Changes: After logging in, the navigation bar will includ
         },
         next_goal:{
           "type": "string",
-          "description": "What needs to be done with the next immediate action",
+          "description": 'Your observation of the previous steps. Should start with "In the previous step, the Assistant had ...".',
         },
         thinking: {
           "type": "string",
