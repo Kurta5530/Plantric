@@ -755,7 +755,7 @@ Navigation Bar or Menu Changes: After logging in, the navigation bar will includ
       properties: {
         observation: {
           "type": "string",
-          "description": 'Your observation of the browser state.',
+          "description": 'Your observation of the previous steps. Should start with "In the previous step, I\'ve ...".',
         },
         thinking: {
           "type": "string",
