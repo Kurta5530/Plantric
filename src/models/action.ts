@@ -755,7 +755,7 @@ Navigation Bar or Menu Changes: After logging in, the navigation bar will includ
       properties: {
         observation: {
           "type": "string",
-          "description": 'Your observation of the previous steps. Should start with "In the previous step, I\'ve ...".',
+          "description": 'Your observation of the browser state.',
         },
         thinking: {
           "type": "string",
@@ -769,7 +769,7 @@ Navigation Bar or Menu Changes: After logging in, the navigation bar will includ
       },
       required: [
         // comment for backup
-        // "observation",
+        "observation",
         "thinking",
         "userSidePrompt",
         "toolCall",
@@ -788,6 +788,9 @@ Navigation Bar or Menu Changes: After logging in, the navigation bar will includ
         name: toolCall.name,
         input: toolCall.input.toolCall,
       } as ToolCall,
+    }
+    if (!toolCall.input.toolCall) {
+      logger.error("LLM returned a broken function call:", toolCall);
     }
     return result;
   }
