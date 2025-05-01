@@ -3,7 +3,7 @@
 
 <h1 align="center">
   <a href="https://github.com/LyvoAI/lyvo" target="_blank">
-    <img src="https://github.com/user-attachments/assets/55dbdd6c-2b08-4e5f-a841-8fea7c2a0b92" alt="lyvo-logo" width="200" height="200">
+    <img src="https://github.com/user-attachments/assets/4f23ce74-bc6a-4222-80a1-e74e15c47343" alt="lyvo-logo" width="200" height="200">
   </a>
   <br>
   <small>Lyvo - Build Production-ready Agentic Workflow with Natural Language</small>
@@ -11,7 +11,7 @@
 
 
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://example.com/build-status) [![Version](https://img.shields.io/github/package-json/v/LyvoAI/lyvo?color=yellow)](https://lyvo.fellou.ai/docs/release/versions/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://example.com/build-status)
 
 Lyvo (pronounced like ‘echo’) is a production-ready JavaScript framework that enables developers to create reliable agents, **from simple commands to complex workflows**. It provides a unified interface for running agents in both **computer and browser environments**.
 
@@ -56,7 +56,7 @@ await lyvo.execute(sysWorkflow);
 
 **Prompt:** `Collect the latest NASDAQ data on Yahoo Finance, including price changes, market capitalization, trading volume of major stocks, analyze the data and generate visualization reports`.
 
-https://github.com/user-attachments/assets/4087b370-8eb8-4346-a549-c4ce4d1efec3
+https://github.com/user-attachments/assets/6fea2e87-5dc7-437c-9ea8-d4b60e1125f0
 
 Click [here](https://github.com/LyvoAI/lyvo-demos/tree/main/browser-extension-stock) to get the source code.
 
@@ -64,7 +64,7 @@ Click [here](https://github.com/LyvoAI/lyvo-demos/tree/main/browser-extension-st
 
 **Prompt:** `Based on the README of LyvoAI/lyvo on github, search for competitors, highlight the key contributions of Lyvo, write a blog post advertising Lyvo, and post it on Write.as.`
 
-https://github.com/user-attachments/assets/6feaea86-2fb9-4e5c-b510-479c2473d810
+https://github.com/user-attachments/assets/671a84b6-1073-40dd-acdf-a692c97de86c
 
 Click [here](https://github.com/LyvoAI/lyvo-demos/tree/main/browser-extension-blog) to get the source code.
 
@@ -72,7 +72,7 @@ Click [here](https://github.com/LyvoAI/lyvo-demos/tree/main/browser-extension-bl
 
 **Prompt:** `Clean up all files in the current directory larger than 1MB`
 
-https://github.com/user-attachments/assets/ef7feb58-3ddd-4296-a1de-bb8b6c66e48b
+https://github.com/user-attachments/assets/7d88283c-5fce-4425-9b18-8f40d616a8e3
 
 Click [here](https://lyvo.fellou.ai/docs/computeruse/computer-node/#example-file-cleanup-workflow) to Learn more.
 
@@ -87,10 +87,10 @@ Click [here](https://lyvo.fellou.ai/docs/computeruse/computer-node/#example-file
     4. Generate test report and export
 ```
 
-https://github.com/user-attachments/assets/7716300a-c51d-41f1-8d4f-e3f593c1b6d5
+https://github.com/user-attachments/assets/3588a9c8-c00f-4985-819b-678454bfd14b
 
 
-Click [here](https://lyvo.fellou.ai/docs/browseruse/browser-web#example-login-automation-testing) to Learn more.
+Click [here](https://lyvoai.github.io/lyvo-docs/browser-web#example-login-automation-testing) to Learn more.
 
 ## Use Cases
 
@@ -103,7 +103,7 @@ Click [here](https://lyvo.fellou.ai/docs/browseruse/browser-web#example-login-au
 
 ## Documentation
 
-Visit our [documentation site](https://lyvo.fellou.ai/docs) for:
+Visit our [documentation site](https://lyvoai.github.io/lyvo-docs) for:
 
 - Getting started guide
 - API reference
@@ -118,25 +118,6 @@ Lyvo can be used in multiple environments:
 - Browser Extension
 - Web Applications
 - Node.js Applications
-
-## Community and Support
-
-- Report issues on [GitHub Issues](https://github.com/LyvoAI/lyvo/issues)
-- Join our [slack community discussions](https://join.slack.com/t/lyvo-ai/shared_invite/zt-2xhvkudv9-nHvD1g8Smp227sM51x_Meg)
-- Join our [Discard](https://discord.gg/XpFfk2e5):
-![](discard.png)
-- Contribute tools and improvements
-- Share your use cases and feedback
-
-<h1 align="center">
-  <a href="https://github.com/LyvoAI/lyvo" target="_blank">
-    <img width="663" alt="Screenshot 2025-02-05 at 10 49 58" src="https://github.com/user-attachments/assets/f975a03e-a96f-463d-ab17-e5b745bb81e4" />
-  </a>
-</h1>
-
-
-
-[![Star History Chart](https://api.star-history.com/svg?repos=LyvoAI/lyvo&type=Date)](https://star-history.com/#LyvoAI/lyvo&Date)
 
 ## License
 
