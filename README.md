@@ -56,7 +56,7 @@ await lyvo.execute(sysWorkflow);
 
 **Prompt:** `Collect the latest NASDAQ data on Yahoo Finance, including price changes, market capitalization, trading volume of major stocks, analyze the data and generate visualization reports`.
 
-https://github.com/user-attachments/assets/6fea2e87-5dc7-437c-9ea8-d4b60e1125f0
+https://github.com/user-attachments/assets/2d751b3c-bab4-4b22-9d4e-4c68af788c0e
 
 Click [here](https://github.com/LyvoAI/lyvo-demos/tree/main/browser-extension-stock) to get the source code.
 
@@ -64,7 +64,7 @@ Click [here](https://github.com/LyvoAI/lyvo-demos/tree/main/browser-extension-st
 
 **Prompt:** `Based on the README of LyvoAI/lyvo on github, search for competitors, highlight the key contributions of Lyvo, write a blog post advertising Lyvo, and post it on Write.as.`
 
-https://github.com/user-attachments/assets/671a84b6-1073-40dd-acdf-a692c97de86c
+https://github.com/user-attachments/assets/2468818f-a97a-4ffa-a383-f75e2304a1a7
 
 Click [here](https://github.com/LyvoAI/lyvo-demos/tree/main/browser-extension-blog) to get the source code.
 
@@ -72,7 +72,7 @@ Click [here](https://github.com/LyvoAI/lyvo-demos/tree/main/browser-extension-bl
 
 **Prompt:** `Clean up all files in the current directory larger than 1MB`
 
-https://github.com/user-attachments/assets/7d88283c-5fce-4425-9b18-8f40d616a8e3
+https://github.com/user-attachments/assets/a27a855c-04da-4d65-8819-726a72ec336f
 
 Click [here](https://lyvo.fellou.ai/docs/computeruse/computer-node/#example-file-cleanup-workflow) to Learn more.
 
@@ -87,7 +87,7 @@ Click [here](https://lyvo.fellou.ai/docs/computeruse/computer-node/#example-file
     4. Generate test report and export
 ```
 
-https://github.com/user-attachments/assets/3588a9c8-c00f-4985-819b-678454bfd14b
+https://github.com/user-attachments/assets/74b0ee18-8519-4ffb-9805-40ebe2e68c3f
 
 
 Click [here](https://lyvoai.github.io/lyvo-docs/browser-web#example-login-automation-testing) to Learn more.
