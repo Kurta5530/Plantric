@@ -59,7 +59,7 @@ function createReturnTool(
 }
 
 export class ActionImpl implements Action {
-  private readonly maxRounds: number = 100; // Default max rounds
+  private readonly maxRounds: number = 25; // Default max rounds
   private writeContextTool: WriteContextTool;
   private toolResults: Map<string, any> = new Map();
   private logger: ExecutionLogger = new ExecutionLogger();
