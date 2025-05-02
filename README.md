@@ -33,7 +33,7 @@ Lyvo (pronounced like ‘echo’) is a production-ready JavaScript framework tha
 npm install @lyvo-ai/lyvo
 ```
 
-> Important Notice: The following example code cannot be executed directly. Please refer to the [Lyvo Quickstart guide](https://lyvo.fellou.ai/docs/getting-started/quickstart/) guide for instructions on how to run it.
+> Important Notice: The following example code cannot be executed directly. Please refer to the [Lyvo Quickstart guide](https://lyvoai.github.io/lyvo-docs/) guide for instructions on how to run it.
 
 ```typescript
 import { Lyvo } from '@lyvo-ai/lyvo';
@@ -58,7 +58,6 @@ await lyvo.execute(sysWorkflow);
 
 https://github.com/user-attachments/assets/2d751b3c-bab4-4b22-9d4e-4c68af788c0e
 
-Click [here](https://github.com/LyvoAI/lyvo-demos/tree/main/browser-extension-stock) to get the source code.
 
 ---
 
@@ -66,7 +65,6 @@ Click [here](https://github.com/LyvoAI/lyvo-demos/tree/main/browser-extension-st
 
 https://github.com/user-attachments/assets/2468818f-a97a-4ffa-a383-f75e2304a1a7
 
-Click [here](https://github.com/LyvoAI/lyvo-demos/tree/main/browser-extension-blog) to get the source code.
 
 ---
 
@@ -74,7 +72,6 @@ Click [here](https://github.com/LyvoAI/lyvo-demos/tree/main/browser-extension-bl
 
 https://github.com/user-attachments/assets/a27a855c-04da-4d65-8819-726a72ec336f
 
-Click [here](https://lyvo.fellou.ai/docs/computeruse/computer-node/#example-file-cleanup-workflow) to Learn more.
 
 ---
 
@@ -90,7 +87,7 @@ Click [here](https://lyvo.fellou.ai/docs/computeruse/computer-node/#example-file
 https://github.com/user-attachments/assets/74b0ee18-8519-4ffb-9805-40ebe2e68c3f
 
 
-Click [here](https://lyvoai.github.io/lyvo-docs/browser-web#example-login-automation-testing) to Learn more.
+Click [here](https://lyvoai.github.io/lyvo-docs/browseruse/browser-extension.html) to Learn more.
 
 ## Use Cases
 
