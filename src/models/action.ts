@@ -633,6 +633,7 @@ Navigation Bar or Menu Changes: After logging in, the navigation bar will includ
 3. If not logged in or encountering a verification code interface, immediately use the 'human_operate' tool to transfer the operation rights to the user
 4. On the login/verification code interface, do not use any automatic input tools (such as 'input_text') to fill in the password or verification code
 5. Wait for the user to complete the login/verification code operation, and then check the login status again
+- Some key actions: Before triggering actions such as payment, deletion, and confirmation of sending, the 'human_operate' function needs to be called to have the user confirm.
 - As a backup method, when encountering other errors that cannot be handled automatically, use the 'human_operate' tool to transfer the operation rights to the user
 
 ## TASK COMPLETION:
